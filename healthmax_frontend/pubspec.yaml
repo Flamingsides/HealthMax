@@ -95,3 +95,11 @@ flutter:
       fonts:
         - asset: assets/fonts/lexend-deca-latin-400-normal.ttf
           weight: 400
+    - family: LexendTeraNormal
+      fonts:
+        - asset: assets/fonts/lexend-tera-latin-400-normal.ttf
+          weight: 400
+    - family: LexendMegaNormal
+      fonts:
+        - asset: assets/fonts/lexend-mega-latin-400-normal.ttf
+          weight: 400
