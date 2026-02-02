@@ -48,7 +48,11 @@ class _MyAppState extends State<MyApp> {
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
-          bodySmall: TextStyle(fontSize: 20),
+          bodySmall: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w400,
+            fontFamily: "LexendDecaNormal",
+          ),
         ),
       ),
       home: isSignedIn ? UserDashboard() : WelcomePage(),
@@ -61,63 +65,71 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // var screenSize = context.size;
+    return Screen(
+      child: ListView(
+        children: [
+          Text(
+            "Welcome",
+            style: Theme.of(context).textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 80),
+          Text(
+            "HealthMax: Your Virtual Health Companion",
+            style: Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 150),
+          Center(
+            child: SizedBox(
+              width: 250,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Link to user signin
+                      print("User chosen");
+                    },
+                    child: Text(
+                      "User",
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Link to healthcare provider sign in
+                      print("Healthcare Provider chosen");
+                    },
+                    child: Text(
+                      "Healthcare Provider",
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Screen template for welcome, user registration and user login pages.
+class Screen extends StatelessWidget {
+  final Widget child;
+  const Screen({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         padding: EdgeInsets.fromLTRB(12.0, 100, 12.0, 20),
         width: double.infinity,
         decoration: bgGradient1,
-        child: ListView(
-          children: [
-            Text(
-              "Welcome",
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 80),
-            Text(
-              "HealthMax: Your Virtual Health Companion",
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 150),
-            Center(
-              child: SizedBox(
-                width: 250,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: Link to user signin
-                        print("User chosen");
-                      },
-                      child: Text(
-                        "User",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: Link to healthcare provider sign in
-                        print("Healthcare Provider chosen");
-                      },
-                      child: Text(
-                        "Healthcare Provider",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+        child: child,
       ),
     );
   }
