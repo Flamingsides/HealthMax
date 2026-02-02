@@ -5,8 +5,15 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  var isSignedIn = false;
 
   // Root of the application
   @override
@@ -31,17 +38,8 @@ class MyApp extends StatelessWidget {
           bodySmall: TextStyle(fontSize: 20),
         ),
       ),
-      home: const MyHomePage(),
+      home: isSignedIn ? UserDashboard() : WelcomePage(),
     );
-  }
-}
-
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return WelcomePage();
   }
 }
 
@@ -119,5 +117,15 @@ class WelcomePage extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class UserDashboard extends StatelessWidget {
+  const UserDashboard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: Complete UserDashboard widget
+    return const Text("User Dashboard");
   }
 }
