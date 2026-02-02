@@ -12,6 +12,19 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
+// A purple background gradient for the user login and welcome pages
+final bgGradient1 = const BoxDecoration(
+  gradient: LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [
+      Color.fromARGB(255, 73, 71, 175),
+      Color.fromARGB(255, 152, 173, 223),
+    ],
+    stops: [0.0, 1.0],
+  ),
+);
+
 class _MyAppState extends State<MyApp> {
   var isSignedIn = false;
 
@@ -53,17 +66,7 @@ class WelcomePage extends StatelessWidget {
       body: Container(
         padding: EdgeInsets.fromLTRB(12.0, 100, 12.0, 20),
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [
-              Color.fromARGB(255, 73, 71, 175),
-              Color.fromARGB(255, 152, 173, 223),
-            ],
-            stops: [0.0, 1.0],
-          ),
-        ),
+        decoration: bgGradient1,
         child: ListView(
           children: [
             Text(
