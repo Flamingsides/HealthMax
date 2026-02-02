@@ -80,33 +80,39 @@ class WelcomePage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 180),
-            SizedBox(
-              width: 250,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      // TODO: Link to user signin
-                      print("User chosen");
-                    },
-                    child: Text(
-                      "User",
-                      style: Theme.of(context).textTheme.bodySmall,
+            Center(
+              child: SizedBox(
+                width: 250,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        // TODO: Link to user signin
+                        print("User chosen");
+                      },
+                      child: Text(
+                        "User",
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      // TODO: Link to healthcare provider sign in
-                      print("Healthcare Provider chosen");
-                    },
-                    child: Text(
-                      "Healthcare Provider",
-                      style: Theme.of(context).textTheme.bodySmall,
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        // TODO: Link to healthcare provider sign in
+                        print("Healthcare Provider chosen");
+                      },
+                      child: Text(
+                        "Healthcare Provider",
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
