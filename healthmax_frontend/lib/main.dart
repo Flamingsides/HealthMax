@@ -79,7 +79,7 @@ class WelcomePage extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 180),
+            const SizedBox(height: 150),
             Center(
               child: SizedBox(
                 width: 250,
