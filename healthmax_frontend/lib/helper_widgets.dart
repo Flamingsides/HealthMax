@@ -6,10 +6,13 @@ final bgGradient1 = const BoxDecoration(
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
     colors: [
+      // TODO: Get gradient details from Tengku
       Color.fromARGB(255, 73, 71, 175),
+      Color.fromARGB(255, 77, 78, 175),
+      Color.fromARGB(255, 77, 80, 170),
       Color.fromARGB(255, 152, 173, 223),
     ],
-    stops: [0.0, 1.0],
+    stops: [0.0, 0.4, 0.6, 1.0],
   ),
 );
 
