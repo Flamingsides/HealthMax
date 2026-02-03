@@ -43,8 +43,10 @@ class WelcomePage extends StatelessWidget {
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () {
-                      // TODO: Link to healthcare provider sign in
-                      print("Healthcare Provider chosen");
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => HPStartPage()),
+                      );
                     },
                     child: Text(
                       "Healthcare Provider",
@@ -61,8 +63,46 @@ class WelcomePage extends StatelessWidget {
   }
 }
 
+class HPStartPage extends StatelessWidget {
+  const HPStartPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StartPage(
+      heading1: "CARE",
+      heading2: "Beyond Clinic",
+      loginPage: (_) => HPLoginPage(),
+      registrationPage: (_) => HPRegistrationPage(),
+    );
+  }
+}
+
 class UserStartPage extends StatelessWidget {
   const UserStartPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StartPage(
+      heading1: "WELLNESS",
+      heading2: "BEGINS HERE",
+      loginPage: (_) => UserLoginPage(),
+      registrationPage: (_) => UserRegistrationPage(),
+    );
+  }
+}
+
+class StartPage extends StatelessWidget {
+  final String heading1;
+  final String heading2;
+  final WidgetBuilder loginPage;
+  final WidgetBuilder registrationPage;
+  const StartPage({
+    super.key,
+    required this.heading1,
+    required this.heading2,
+    required this.loginPage,
+    required this.registrationPage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +112,7 @@ class UserStartPage extends StatelessWidget {
           const BackButton(),
           const SizedBox(height: 100),
           Text(
-            "WELLNESS",
+            heading1,
             style: TextStyle(
               fontSize: 45,
               fontFamily: "LexendTeraNormal",
@@ -82,7 +122,7 @@ class UserStartPage extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           Text(
-            "BEGINS HERE",
+            heading2,
             style: TextStyle(
               fontSize: 30,
               fontFamily: "LexendMegaNormal",
@@ -100,7 +140,7 @@ class UserStartPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => UserLoginPage()),
+                    MaterialPageRoute(builder: loginPage),
                   );
                 },
                 buttonStyle: ElevatedButton.styleFrom(
@@ -116,7 +156,7 @@ class UserStartPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => UserRegistrationPage()),
+                    MaterialPageRoute(builder: registrationPage),
                   );
                 },
               ),
@@ -128,8 +168,27 @@ class UserStartPage extends StatelessWidget {
   }
 }
 
+class HPRegistrationPage extends StatelessWidget {
+  const HPRegistrationPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return RegistrationPage(loginPage: (_) => HPLoginPage());
+  }
+}
+
 class UserRegistrationPage extends StatelessWidget {
   const UserRegistrationPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return RegistrationPage(loginPage: (_) => UserLoginPage());
+  }
+}
+
+class RegistrationPage extends StatelessWidget {
+  final WidgetBuilder loginPage;
+  const RegistrationPage({super.key, required this.loginPage});
 
   @override
   Widget build(BuildContext context) {
@@ -156,10 +215,7 @@ class UserRegistrationPage extends StatelessWidget {
             question: "Already have an account?",
             linkText: "Login now!",
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => UserLoginPage()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: loginPage));
             },
           ),
         ],
@@ -168,8 +224,27 @@ class UserRegistrationPage extends StatelessWidget {
   }
 }
 
+class HPLoginPage extends StatelessWidget {
+  const HPLoginPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LoginPage(registrationPage: (_) => HPRegistrationPage());
+  }
+}
+
 class UserLoginPage extends StatelessWidget {
   const UserLoginPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LoginPage(registrationPage: (_) => UserRegistrationPage());
+  }
+}
+
+class LoginPage extends StatelessWidget {
+  final WidgetBuilder registrationPage;
+  const LoginPage({super.key, required this.registrationPage});
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +269,7 @@ class UserLoginPage extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => UserRegistrationPage()),
+                MaterialPageRoute(builder: registrationPage),
               );
             },
           ),
