@@ -153,15 +153,7 @@ class CustomShortButton extends CustomButton {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: SizedBox(
-        width: width,
-        child: CustomButton(
-          label: label,
-          onPressed: onPressed,
-          buttonStyle: buttonStyle,
-          textColor: textColor,
-        ),
-      ),
+      child: SizedBox(width: width, child: super.build(context)),
     );
   }
 }
