@@ -33,3 +33,33 @@ class Screen extends StatelessWidget {
     );
   }
 }
+
+// Back button that runs Navigator.pop() when pressed
+class BackButton extends StatelessWidget {
+  const BackButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          height: 50,
+          width: 50,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.zero,
+              alignment: Alignment.center,
+              iconColor: Colors.white,
+              backgroundColor: Color.fromRGBO(255, 255, 255, 0.5),
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadiusGeometry.circular(30),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: Icon(Icons.arrow_back, size: 35),
+          ),
+        ),
+      ],
+    );
+  }
+}
