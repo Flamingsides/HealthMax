@@ -63,3 +63,41 @@ class BackButton extends StatelessWidget {
     );
   }
 }
+
+class CustomInputBox extends StatelessWidget {
+  final String hint;
+  const CustomInputBox({super.key, required this.hint});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      style: TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Color.fromRGBO(255, 255, 255, 1.0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Color.fromRGBO(255, 255, 255, 1.0)),
+        ),
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.all(20),
+        fillColor: Color.fromRGBO(233, 15, 15, 0.4),
+        labelStyle: TextStyle(
+          fontSize: 16,
+          fontFamily: "LexendGigaNormal",
+          color: Color.fromRGBO(255, 255, 255, 1),
+        ),
+        hint: Text(
+          hint,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: "LexendGigaNormal",
+            color: Color.fromRGBO(255, 255, 255, 0.6),
+          ),
+        ),
+      ),
+    );
+  }
+}
