@@ -81,7 +81,6 @@ class UserStartPage extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          // const SizedBox(height: 5),
           Text(
             "BEGINS HERE",
             style: TextStyle(
@@ -121,7 +120,10 @@ class UserStartPage extends StatelessWidget {
                 style: ElevatedButton.styleFrom(padding: EdgeInsets.all(5)),
                 onPressed: () {
                   // TODO: Link to user registration page
-                  print("Register chosen");
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => UserRegistrationPage()),
+                  );
                 },
                 child: Text(
                   "REGISTER",
@@ -145,7 +147,54 @@ class UserRegistrationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Screen(
+      child: ListView(
+        children: [
+          const BackButton(),
+          const SizedBox(height: 50),
+          Text(
+            "Hello!",
+            style: TextStyle(
+              fontSize: 48,
+              fontFamily: "LexendDecaNormal",
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            "Register to get started!",
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: "LexendGigaNormal",
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 30),
+          const CustomInputBox(hint: "Username"),
+          const SizedBox(height: 20),
+          const CustomInputBox(hint: "Email"),
+          const SizedBox(height: 20),
+          const CustomInputBox(hint: "Password"),
+          const SizedBox(height: 20),
+          const CustomInputBox(hint: "Confirm Password"),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              print("Register button clicked!");
+            },
+            child: const Text("Register"),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "Already have an account? Login now!",
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 }
 
