@@ -1,95 +1,6 @@
 import 'package:flutter/material.dart' hide BackButton;
+
 import 'helper_widgets.dart';
-
-class WelcomePage extends StatelessWidget {
-  const WelcomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Screen(
-      child: ListView(
-        children: [
-          const SizedBox(height: 80),
-          Text(
-            "Welcome",
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 80),
-          Text(
-            "HealthMax: Your Virtual Health Companion",
-            style: Theme.of(context).textTheme.titleMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 150),
-          Center(
-            child: SizedBox(
-              width: 250,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => UserStartPage()),
-                      );
-                    },
-                    child: Text(
-                      "User",
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => HPStartPage()),
-                      );
-                    },
-                    child: Text(
-                      "Healthcare Provider",
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class HPStartPage extends StatelessWidget {
-  const HPStartPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StartPage(
-      heading1: "CARE",
-      heading2: "Beyond Clinic",
-      loginPage: (_) => HPLoginPage(),
-      registrationPage: (_) => HPRegistrationPage(),
-    );
-  }
-}
-
-class UserStartPage extends StatelessWidget {
-  const UserStartPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StartPage(
-      heading1: "WELLNESS",
-      heading2: "BEGINS HERE",
-      loginPage: (_) => UserLoginPage(),
-      registrationPage: (_) => UserRegistrationPage(),
-    );
-  }
-}
 
 class StartPage extends StatelessWidget {
   final String heading1;
@@ -168,24 +79,6 @@ class StartPage extends StatelessWidget {
   }
 }
 
-class HPRegistrationPage extends StatelessWidget {
-  const HPRegistrationPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return RegistrationPage(loginPage: (_) => HPLoginPage());
-  }
-}
-
-class UserRegistrationPage extends StatelessWidget {
-  const UserRegistrationPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return RegistrationPage(loginPage: (_) => UserLoginPage());
-  }
-}
-
 class RegistrationPage extends StatelessWidget {
   final WidgetBuilder loginPage;
   const RegistrationPage({super.key, required this.loginPage});
@@ -224,24 +117,6 @@ class RegistrationPage extends StatelessWidget {
   }
 }
 
-class HPLoginPage extends StatelessWidget {
-  const HPLoginPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return LoginPage(registrationPage: (_) => HPRegistrationPage());
-  }
-}
-
-class UserLoginPage extends StatelessWidget {
-  const UserLoginPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return LoginPage(registrationPage: (_) => UserRegistrationPage());
-  }
-}
-
 class LoginPage extends StatelessWidget {
   final WidgetBuilder registrationPage;
   const LoginPage({super.key, required this.registrationPage});
@@ -276,15 +151,5 @@ class LoginPage extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class UserDashboard extends StatelessWidget {
-  const UserDashboard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // TODO: Complete UserDashboard widget
-    return const Text("User Dashboard");
   }
 }

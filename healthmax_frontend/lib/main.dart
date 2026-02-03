@@ -1,6 +1,7 @@
 // dart format width=68
 import 'package:flutter/material.dart';
-import 'pages.dart';
+import 'StartPages/welcome_page.dart';
+import 'dashboard.dart';
 
 void main() {
   runApp(const MyApp());
