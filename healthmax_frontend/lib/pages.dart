@@ -94,45 +94,26 @@ class UserStartPage extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
+              // TODO: change style to match
+              // TODO: Link to user login page
+              CustomButton(
+                label: "LOGIN",
+                buttonStyle: ElevatedButton.styleFrom(
                   backgroundColor: Color.fromRGBO(150, 171, 222, 0.0),
-                  // shadowColor: Color.fromARGB(51, 0, 0, 0),
                   side: BorderSide(color: Color.fromARGB(51, 0, 0, 0)),
                   padding: EdgeInsets.all(5),
                 ),
-                onPressed: () {
-                  // TODO: Link to user login page
-                  print("Login chosen");
-                },
-                child: Text(
-                  "LOGIN",
-                  // TODO: change style to match
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontFamily: "LexendDecaNormal",
-                    color: Colors.white,
-                  ),
-                ),
+                textColor: Colors.white,
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(padding: EdgeInsets.all(5)),
+              CustomButton(
+                label: "REGISTER",
                 onPressed: () {
-                  // TODO: Link to user registration page
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => UserRegistrationPage()),
                   );
                 },
-                child: Text(
-                  "REGISTER",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontFamily: "LexendDecaNormal",
-                    color: Colors.black,
-                  ),
-                ),
               ),
             ],
           ),
@@ -181,22 +162,8 @@ class UserRegistrationPage extends StatelessWidget {
           const SizedBox(height: 20),
           const CustomInputBox(hint: "Confirm Password"),
           const SizedBox(height: 40),
-          ElevatedButton(
-            onPressed: () {
-              print("Register button clicked!");
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: const Text(
-                "Register",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: "LexendDecaNormal",
-                  fontSize: 22,
-                ),
-              ),
-            ),
-          ),
+          // TODO: Add functionality to button
+          const CustomButton(label: "Register"),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

@@ -101,3 +101,40 @@ class CustomInputBox extends StatelessWidget {
     );
   }
 }
+
+class CustomButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  final ButtonStyle? buttonStyle;
+  final Color? textColor;
+  const CustomButton({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.buttonStyle,
+    this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      style: buttonStyle,
+      onPressed:
+          onPressed ??
+          () {
+            print("$label button clicked!");
+          },
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: textColor ?? Colors.black,
+            fontFamily: "LexendDecaNormal",
+            fontSize: 22,
+          ),
+        ),
+      ),
+    );
+  }
+}
