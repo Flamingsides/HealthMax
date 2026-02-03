@@ -25,7 +25,7 @@ class Screen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        padding: EdgeInsets.fromLTRB(12.0, 20, 12.0, 20),
+        padding: EdgeInsets.all(19),
         width: double.infinity,
         decoration: bgGradient1,
         child: child,
