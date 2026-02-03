@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide BackButton;
 
-import 'helper_widgets.dart';
+import '../helper_widgets.dart';
 
 class StartPage extends StatelessWidget {
   final String heading1;
