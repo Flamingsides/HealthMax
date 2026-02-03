@@ -95,9 +95,14 @@ class UserStartPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // TODO: change style to match
-              // TODO: Link to user login page
               CustomButton(
                 label: "LOGIN",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => UserLoginPage()),
+                  );
+                },
                 buttonStyle: ElevatedButton.styleFrom(
                   backgroundColor: Color.fromRGBO(150, 171, 222, 0.0),
                   side: BorderSide(color: Color.fromARGB(51, 0, 0, 0)),
@@ -133,26 +138,9 @@ class UserRegistrationPage extends StatelessWidget {
         children: [
           const BackButton(),
           const SizedBox(height: 50),
-          Text(
-            "Hello!",
-            style: TextStyle(
-              fontSize: 48,
-              fontFamily: "LexendDecaNormal",
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 1.5,
-            ),
-          ),
+          const CustomHeading1(text: "Hello!"),
           const SizedBox(height: 3),
-          const Text(
-            "Register to get started!",
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: "LexendGigaNormal",
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          const CustomHeading2(text: "Register to get started!"),
           const SizedBox(height: 30),
           const CustomInputBox(hint: "Username"),
           const SizedBox(height: 20),
@@ -161,24 +149,54 @@ class UserRegistrationPage extends StatelessWidget {
           const CustomInputBox(hint: "Password"),
           const SizedBox(height: 20),
           const CustomInputBox(hint: "Confirm Password"),
-          const SizedBox(height: 40),
+          const SizedBox(height: 50),
           // TODO: Add functionality to button
-          const CustomButton(label: "Register"),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Already have an account?", textAlign: TextAlign.right),
-              TextButton(
-                onPressed: () {
-                  // TODO: Navigate to login page
-                  print("Go to login page");
-                },
-                child: const Text(
-                  "Login now!",
-                  style: TextStyle(color: Color.fromRGBO(65, 0, 98, 1)),
-                ),
-              ),
-            ],
+          const CustomShortButton(label: "Register", width: 200),
+          CustomQuestionLink(
+            question: "Already have an account?",
+            linkText: "Login now!",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => UserLoginPage()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class UserLoginPage extends StatelessWidget {
+  const UserLoginPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Screen(
+      child: ListView(
+        children: [
+          BackButton(),
+          const SizedBox(height: 50),
+          const CustomHeading1(text: "Welcome"),
+          const CustomHeading1(text: "back!"),
+          const SizedBox(height: 10),
+          const CustomHeading2(text: "Glad to see you again!"),
+          const SizedBox(height: 30),
+          const CustomInputBox(hint: "Username"),
+          const SizedBox(height: 20),
+          const CustomInputBox(hint: "Password"),
+          const SizedBox(height: 50),
+          const CustomShortButton(label: "Login", width: 200),
+          CustomQuestionLink(
+            question: "Don't have an account?",
+            linkText: "Register Now!",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => UserRegistrationPage()),
+              );
+            },
           ),
         ],
       ),

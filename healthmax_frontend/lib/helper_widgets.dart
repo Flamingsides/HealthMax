@@ -138,3 +138,101 @@ class CustomButton extends StatelessWidget {
     );
   }
 }
+
+class CustomShortButton extends CustomButton {
+  final double width;
+  const CustomShortButton({
+    super.key,
+    required super.label,
+    required this.width,
+    super.onPressed,
+    super.buttonStyle,
+    super.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        width: width,
+        child: CustomButton(
+          label: label,
+          onPressed: onPressed,
+          buttonStyle: buttonStyle,
+          textColor: textColor,
+        ),
+      ),
+    );
+  }
+}
+
+class CustomQuestionLink extends StatelessWidget {
+  final String question;
+  final String linkText;
+  final VoidCallback? onPressed;
+  const CustomQuestionLink({
+    super.key,
+    required this.question,
+    required this.linkText,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(question, textAlign: TextAlign.right),
+        TextButton(
+          style: ButtonStyle(
+            padding: WidgetStatePropertyAll(EdgeInsets.fromLTRB(3, 10, 15, 10)),
+          ),
+          onPressed: onPressed ?? () => print("$linkText link pressed"),
+          child: Text(
+            linkText,
+            style: TextStyle(color: Color.fromRGBO(65, 0, 98, 1)),
+            textAlign: TextAlign.left,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Custom heading for Hello! on registration page
+class CustomHeading1 extends StatelessWidget {
+  final String text;
+  const CustomHeading1({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 48,
+        fontFamily: "LexendDecaNormal",
+        fontWeight: FontWeight.w900,
+        color: Colors.white,
+        letterSpacing: 1.5,
+      ),
+    );
+  }
+}
+
+class CustomHeading2 extends StatelessWidget {
+  final String text;
+  const CustomHeading2({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 16,
+        fontFamily: "LexendGigaNormal",
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
