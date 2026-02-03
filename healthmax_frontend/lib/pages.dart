@@ -180,17 +180,38 @@ class UserRegistrationPage extends StatelessWidget {
           const CustomInputBox(hint: "Password"),
           const SizedBox(height: 20),
           const CustomInputBox(hint: "Confirm Password"),
-          const SizedBox(height: 20),
+          const SizedBox(height: 40),
           ElevatedButton(
             onPressed: () {
               print("Register button clicked!");
             },
-            child: const Text("Register"),
+            child: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: const Text(
+                "Register",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontFamily: "LexendDecaNormal",
+                  fontSize: 22,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            "Already have an account? Login now!",
-            textAlign: TextAlign.center,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Already have an account?", textAlign: TextAlign.right),
+              TextButton(
+                onPressed: () {
+                  // TODO: Navigate to login page
+                  print("Go to login page");
+                },
+                child: const Text(
+                  "Login now!",
+                  style: TextStyle(color: Color.fromRGBO(65, 0, 98, 1)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
