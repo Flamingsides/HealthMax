@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'start_pages_base.dart';
+import '../UserRegistrationPages/registration_intro.dart';
 
 class UserStartPage extends StatelessWidget {
   const UserStartPage({super.key});
@@ -20,7 +21,10 @@ class UserRegistrationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RegistrationPage(loginPage: (_) => UserLoginPage());
+    return RegistrationPage(
+      loginPage: (_) => UserLoginPage(),
+      postRegistration: (_) => RegistrationIntro(),
+    );
   }
 }
 

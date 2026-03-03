@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'start_pages_base.dart';
+import '../GeneralPages/start_pages_base.dart';
+import '../GeneralPages/page_not_found.dart';
 
 class HPStartPage extends StatelessWidget {
   const HPStartPage({super.key});
@@ -20,7 +21,10 @@ class HPRegistrationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RegistrationPage(loginPage: (_) => HPLoginPage());
+    return RegistrationPage(
+      loginPage: (_) => HPLoginPage(),
+      postRegistration: (_) => PageNotFound(),
+    );
   }
 }
 

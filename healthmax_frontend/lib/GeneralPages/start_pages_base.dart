@@ -80,8 +80,13 @@ class StartPage extends StatelessWidget {
 }
 
 class RegistrationPage extends StatelessWidget {
+  final WidgetBuilder postRegistration;
   final WidgetBuilder loginPage;
-  const RegistrationPage({super.key, required this.loginPage});
+  const RegistrationPage({
+    super.key,
+    required this.loginPage,
+    required this.postRegistration,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +108,16 @@ class RegistrationPage extends StatelessWidget {
           const CustomInputBox(hint: "Confirm Password"),
           const SizedBox(height: 50),
           // TODO: Add functionality to button
-          const CustomShortButton(label: "Register", width: 200),
+          CustomShortButton(
+            label: "Register",
+            width: 200,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: postRegistration),
+              );
+            },
+          ),
           CustomQuestionLink(
             question: "Already have an account?",
             linkText: "Login now!",
