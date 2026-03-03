@@ -144,14 +144,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  sliding_action_button:
+    dependency: "direct main"
+    description:
+      name: sliding_action_button
+      sha256: a1d37b87aef94cb24b67bf8f285f1a44e57d1d94cbb031bb3f8d5955268052f9
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.8"
   source_span:
     dependency: transitive
     description:
       name: source_span
-      sha256: "254ee5351d6cb365c859e20ee823c3bb479bf4a293c22d17a9f1bf144ce86f7c"
+      sha256: "56a02f1f4cd1a2d96303c0144c93bd6d909eea6bee6bf5a0e0b685edbd4c47ab"
       url: "https://pub.dev"
     source: hosted
-    version: "1.10.1"
+    version: "1.10.2"
   stack_trace:
     dependency: transitive
     description:

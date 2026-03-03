@@ -1,7 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:healthmax_frontend/dashboard.dart';
 import '../GeneralPages/helper_widgets.dart';
+// import 'package:sliding_action_button/sliding_action_button.dart';
 
 class RegistrationIntro extends StatelessWidget {
   const RegistrationIntro({super.key});
@@ -83,7 +83,31 @@ class RegistrationIntro extends StatelessWidget {
             top: 600,
             left: 0,
             right: 0,
-            child: Slider(value: 0, onChanged: (_) => {}),
+            child: CustomButton(
+              label: "Start.",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => UserDashboard()),
+                );
+              },
+            ),
+            // child: CircleSlideToActionButton(
+            //   width: double.maxFinite,
+            //   initialSlidingActionLabel: "",
+            //   finalSlidingActionLabel: "",
+            //   circleSlidingButtonIcon: Icon(Icons.arrow_circle_right_rounded),
+            //   onSlideActionCompleted: () => {print("Action completed")},
+            //   onSlideActionCanceled: () => {print("Action cancelled")},
+            //   parentBoxRadiusValue: 30,
+            //   leftEdgeSpacing: 6,
+            //   rightEdgeSpacing: 6,
+            //   isEnable: true,
+            //   circleSlidingButtonBackgroundColor: Colors.white,
+            //   circleSlidingButtonDisableBackgroundColor: Colors.grey,
+            //   parentBoxBackgroundColor: Color.fromARGB(50, 0, 0, 0),
+            //   parentBoxDisableBackgroundColor: Colors.grey,
+            // ),
           ),
         ],
       ),

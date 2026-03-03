@@ -118,7 +118,13 @@ class CustomButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      style: buttonStyle,
+      style:
+          buttonStyle ??
+          ElevatedButton.styleFrom(
+            backgroundColor: Color.fromRGBO(150, 171, 222, 0.0),
+            side: BorderSide(color: Color.fromARGB(51, 0, 0, 0)),
+            padding: EdgeInsets.all(5),
+          ),
       onPressed:
           onPressed ??
           () {
@@ -129,7 +135,7 @@ class CustomButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: textColor ?? Colors.black,
+            color: textColor ?? Colors.white,
             fontFamily: "LexendDecaNormal",
             fontSize: 22,
           ),
@@ -138,6 +144,24 @@ class CustomButton extends StatelessWidget {
     );
   }
 }
+
+// class CustomNavigationButton extends CustomButton {
+//   final WidgetBuilder toPage;
+
+//   const CustomNavigationButton({
+//     super.key,
+//     required super.label,
+//     super.buttonStyle,
+//     super.textColor,
+//     required this.toPage,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     onPresed = (_) => {Navigator.push(context, MaterialPageRoute(builder: this.toPage))}
+//     return super();
+//   }
+// }
 
 class CustomShortButton extends CustomButton {
   final double width;
