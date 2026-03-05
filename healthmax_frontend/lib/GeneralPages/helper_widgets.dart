@@ -16,6 +16,8 @@ final bgGradient1 = const BoxDecoration(
   ),
 );
 
+final bgWhite = const BoxDecoration(color: Colors.white);
+
 // Screen template for welcome, user registration and user login pages.
 class Screen extends StatelessWidget {
   final Widget child;

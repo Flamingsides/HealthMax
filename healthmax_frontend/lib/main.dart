@@ -25,6 +25,7 @@ class _MyAppState extends State<MyApp> {
       title: 'HealthMax',
       theme: ThemeData(
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        scaffoldBackgroundColor: Colors.white,
         textTheme: TextTheme(
           titleLarge: TextStyle(
             fontSize: 35,

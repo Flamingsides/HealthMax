@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:healthmax_frontend/UserPages/user_dashboard.dart';
+import 'package:healthmax_frontend/UserPages/registration_questions.dart';
 import '../GeneralPages/helper_widgets.dart';
 // import 'package:sliding_action_button/sliding_action_button.dart';
 
@@ -88,7 +88,10 @@ class RegistrationIntro extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => UserDashboard()),
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        RegistrationQuestions(currentIndex: 1, numQuestions: 4),
+                  ),
                 );
               },
             ),
