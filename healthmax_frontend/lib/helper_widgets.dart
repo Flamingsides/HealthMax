@@ -16,23 +16,42 @@ final bgGradient1 = const BoxDecoration(
   ),
 );
 
-// Screen template for welcome, user registration and user login pages.
+// New Blue gradient for Healthcare Providers
+final bgGradientHP = const BoxDecoration(
+  gradient: LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [
+      Color(0xFF0D47A1), // Dark Blue
+      Color(0xFF1976D2), // Medium Blue
+      Color(0xFF42A5F5), // Light Blue
+      Color(0xFF90CAF9), // Very Light Blue
+    ],
+    stops: [0.0, 0.3, 0.7, 1.0],
+  ),
+);
+
 class Screen extends StatelessWidget {
   final Widget child;
-  const Screen({super.key, required this.child});
+  final BoxDecoration? decoration; // Added optional decoration
 
+  const Screen({super.key, required this.child, this.decoration});
+
+// Screen template for welcome, user registration and user login pages.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        padding: EdgeInsets.all(19),
+        padding: const EdgeInsets.all(19),
         width: double.infinity,
-        decoration: bgGradient1,
+        // Use the passed decoration, or default to purple if null
+        decoration: decoration ?? bgGradient1, 
         child: child,
       ),
     );
   }
 }
+
 
 // Back button that runs Navigator.pop() when pressed
 class BackButton extends StatelessWidget {
