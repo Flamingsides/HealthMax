@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'GeneralPages/welcome_page.dart';
 import 'UserPages/user_dashboard.dart';
+import 'HPPages/hp_homepage.dart';
+import 'HPPages/hp_userspage.dart';
+import 'HPPages/hp_requestspage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -46,6 +49,11 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       home: isSignedIn ? UserDashboard() : WelcomePage(),
+      routes: {
+        'hp_home': (context) => const HPHomePage(),
+        'hp_users': (context) => const HPUsersPage(),
+        'hp_requests': (context) => const HPRequestsPage(),
+      }
     );
   }
 }
