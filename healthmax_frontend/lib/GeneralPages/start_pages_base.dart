@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart' hide BackButton;
-
 import 'helper_widgets.dart';
 
 class StartPage extends StatelessWidget {
@@ -7,24 +6,28 @@ class StartPage extends StatelessWidget {
   final String heading2;
   final WidgetBuilder loginPage;
   final WidgetBuilder registrationPage;
+  final BoxDecoration? decoration; // Added property
+
   const StartPage({
     super.key,
     required this.heading1,
     required this.heading2,
     required this.loginPage,
     required this.registrationPage,
+    this.decoration, // Added to constructor
   });
 
   @override
   Widget build(BuildContext context) {
     return Screen(
+      bgDecoration: decoration, // Pass it to Screen
       child: ListView(
         children: [
           const BackButton(),
           const SizedBox(height: 100),
           Text(
             heading1,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 45,
               fontFamily: "LexendTeraNormal",
               fontWeight: FontWeight.w900,
@@ -34,7 +37,7 @@ class StartPage extends StatelessWidget {
           ),
           Text(
             heading2,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 30,
               fontFamily: "LexendMegaNormal",
               color: Color.fromARGB(255, 249, 234, 67),
@@ -45,19 +48,15 @@ class StartPage extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // TODO: change style to match
               CustomButton(
                 label: "LOGIN",
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: loginPage),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: loginPage));
                 },
                 buttonStyle: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromRGBO(150, 171, 222, 0.0),
-                  side: BorderSide(color: Color.fromARGB(51, 0, 0, 0)),
-                  padding: EdgeInsets.all(5),
+                  backgroundColor: Colors.transparent,
+                  side: const BorderSide(color: Color.fromARGB(51, 0, 0, 0)),
+                  padding: const EdgeInsets.all(5),
                 ),
                 textColor: Colors.white,
               ),
@@ -65,10 +64,7 @@ class StartPage extends StatelessWidget {
               CustomButton(
                 label: "REGISTER",
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: registrationPage),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: registrationPage));
                 },
               ),
             ],
@@ -82,15 +78,18 @@ class StartPage extends StatelessWidget {
 class RegistrationPage extends StatelessWidget {
   final WidgetBuilder postRegistration;
   final WidgetBuilder loginPage;
+
   const RegistrationPage({
-    super.key,
+    super.key, 
     required this.loginPage,
     required this.postRegistration,
+     // Add this to constructor
   });
 
   @override
   Widget build(BuildContext context) {
     return Screen(
+      bgDecoration: bgGradientHP,
       child: ListView(
         children: [
           const BackButton(),
@@ -133,14 +132,17 @@ class RegistrationPage extends StatelessWidget {
 
 class LoginPage extends StatelessWidget {
   final WidgetBuilder registrationPage;
-  const LoginPage({super.key, required this.registrationPage});
+  final BoxDecoration? decoration; // Added property
+
+  const LoginPage({super.key, required this.registrationPage, this.decoration});
 
   @override
   Widget build(BuildContext context) {
     return Screen(
+      bgDecoration: decoration, // Pass it to Screen
       child: ListView(
         children: [
-          BackButton(),
+          const BackButton(),
           const SizedBox(height: 50),
           const CustomHeading1(text: "Welcome"),
           const CustomHeading1(text: "back!"),
@@ -156,10 +158,7 @@ class LoginPage extends StatelessWidget {
             question: "Don't have an account?",
             linkText: "Register Now!",
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: registrationPage),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: registrationPage));
             },
           ),
         ],
