@@ -84,7 +84,7 @@ class RegistrationIntro extends StatelessWidget {
             right: 0,
             // TODO: This should be a sliding bar (simplified atm)
             child: CustomButton(
-              label: "Start.",
+              label: "Start",
               onPressed: () {
                 Navigator.push(
                   context,
@@ -92,6 +92,7 @@ class RegistrationIntro extends StatelessWidget {
                 );
               },
             ),
+            // child: SlideToContinue(pageBuilder: (_) => RegistrationGender()),
             // child: CircleSlideToActionButton(
             //   width: double.maxFinite,
             //   initialSlidingActionLabel: "",

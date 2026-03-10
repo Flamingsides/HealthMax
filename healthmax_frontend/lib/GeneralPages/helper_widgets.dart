@@ -338,6 +338,7 @@ class SlideToContinue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliderButton(
+      glassBlurSigma: 2,
       action: () => Navigator.push(
         context,
         MaterialPageRoute(builder: pageBuilder ?? defaultPageBuilder),
