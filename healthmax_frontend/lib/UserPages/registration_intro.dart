@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:healthmax_frontend/UserPages/registration_questions.dart';
 import '../GeneralPages/helper_widgets.dart';
-// import 'package:sliding_action_button/sliding_action_button.dart';
 
 class RegistrationIntro extends StatelessWidget {
   const RegistrationIntro({super.key});
@@ -83,15 +82,13 @@ class RegistrationIntro extends StatelessWidget {
             top: 600,
             left: 0,
             right: 0,
+            // TODO: This should be a sliding bar (simplified atm)
             child: CustomButton(
               label: "Start.",
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        RegistrationQuestions(currentIndex: 1, numQuestions: 4),
-                  ),
+                  MaterialPageRoute(builder: (_) => RegistrationGender()),
                 );
               },
             ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:healthmax_frontend/GeneralPages/page_not_found.dart';
+import 'package:slider_button/slider_button.dart';
 
 // A purple background gradient for the user login and welcome pages
 final bgGradient1 = const BoxDecoration(
@@ -39,7 +41,7 @@ class Screen extends StatelessWidget {
 
   const Screen({super.key, required this.child, this.bgDecoration});
 
-// Screen template for welcome, user registration and user login pages.
+  // Screen template for welcome, user registration and user login pages.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,7 +54,6 @@ class Screen extends StatelessWidget {
     );
   }
 }
-
 
 // Back button that calls Navigator.pop() when pressed
 class BackButton extends StatelessWidget {
@@ -324,5 +325,23 @@ class ProgressBar extends StatelessWidget {
     );
 
     return Row(children: bars);
+  }
+}
+
+WidgetBuilder defaultPageBuilder = (_) => PageNotFound();
+
+class SlideToContinue extends StatelessWidget {
+  final WidgetBuilder? pageBuilder;
+
+  const SlideToContinue({super.key, this.pageBuilder});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliderButton(
+      action: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: pageBuilder ?? defaultPageBuilder),
+      ),
+    );
   }
 }
