@@ -14,6 +14,9 @@ class HPStartPage extends StatelessWidget {
       decoration: bgGradientHP,
       loginPage: (_) => const HPLoginPage(),
       registrationPage: (_) => const HPRegistrationPage(),
+      onLoginSuccess: () {
+      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      },
     );
   }
 }

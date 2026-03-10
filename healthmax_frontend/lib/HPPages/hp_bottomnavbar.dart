@@ -60,13 +60,13 @@ class HPBottomNavBar extends StatelessWidget {
 
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/');
+        Navigator.pushReplacementNamed(context, '/hp_home');
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, '/users');
+        Navigator.pushReplacementNamed(context, '/hp_users');
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/requests');
+        Navigator.pushReplacementNamed(context, '/hp_requests');
         break;
     }
   }

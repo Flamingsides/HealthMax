@@ -7,6 +7,7 @@ class StartPage extends StatelessWidget {
   final WidgetBuilder loginPage;
   final WidgetBuilder registrationPage;
   final BoxDecoration? decoration; // Added property
+  final VoidCallback? onLoginSuccess; // Added optional callback for successful login
 
   const StartPage({
     super.key,
@@ -15,6 +16,7 @@ class StartPage extends StatelessWidget {
     required this.loginPage,
     required this.registrationPage,
     this.decoration, // Added to constructor
+    this.onLoginSuccess, // Added to constructor
   });
 
   @override
@@ -23,7 +25,7 @@ class StartPage extends StatelessWidget {
       bgDecoration: decoration, // Pass it to Screen
       child: ListView(
         children: [
-          const BackButton(),
+          BackButton(),
           const SizedBox(height: 100),
           Text(
             heading1,
@@ -51,7 +53,16 @@ class StartPage extends StatelessWidget {
               CustomButton(
                 label: "LOGIN",
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: loginPage));
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(
+                      builder: (context) => LoginPage(
+                        registrationPage: registrationPage, // Pass the registration page to the login page for navigation
+                        decoration: decoration, // Pass the decoration to the login page for consistent styling
+                        onLoginSuccess: onLoginSuccess, // Pass the callback to the login page
+                      ),
+                    ),
+                  );
                 },
                 buttonStyle: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
@@ -92,7 +103,7 @@ class RegistrationPage extends StatelessWidget {
       bgDecoration: bgGradientHP,
       child: ListView(
         children: [
-          const BackButton(),
+          BackButton(),
           const SizedBox(height: 50),
           const CustomHeading1(text: "Hello!"),
           const SizedBox(height: 3),
@@ -133,8 +144,9 @@ class RegistrationPage extends StatelessWidget {
 class LoginPage extends StatelessWidget {
   final WidgetBuilder registrationPage;
   final BoxDecoration? decoration; // Added property
+  final VoidCallback? onLoginSuccess; // Added optional callback for successful login
 
-  const LoginPage({super.key, required this.registrationPage, this.decoration});
+  const LoginPage({super.key, required this.registrationPage, this.decoration, this.onLoginSuccess});
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +154,7 @@ class LoginPage extends StatelessWidget {
       bgDecoration: decoration, // Pass it to Screen
       child: ListView(
         children: [
-          const BackButton(),
+          BackButton(),
           const SizedBox(height: 50),
           const CustomHeading1(text: "Welcome"),
           const CustomHeading1(text: "back!"),
@@ -153,7 +165,16 @@ class LoginPage extends StatelessWidget {
           const SizedBox(height: 20),
           const CustomInputBox(hint: "Password"),
           const SizedBox(height: 50),
-          const CustomShortButton(label: "Login", width: 200),
+          CustomShortButton(
+            label: "Login", 
+            width: 200,
+            onPressed: (){
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                'hp_home',
+                (route) => false
+              );
+            },),
           CustomQuestionLink(
             question: "Don't have an account?",
             linkText: "Register Now!",

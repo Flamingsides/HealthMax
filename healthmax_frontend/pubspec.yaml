@@ -35,11 +35,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   sliding_action_button: ^0.0.8
-<<<<<<< HEAD
   fl_chart: ^1.1.1
-=======
   slider_button: ^3.1.0
->>>>>>> bc799dea19e0b41d38a3a321304e26378c85b148
 
 dev_dependencies:
   flutter_test:
