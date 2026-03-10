@@ -24,9 +24,10 @@ class HPBottomNavBar extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
+            // color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
-          )
+          ),
         ],
       ),
       child: ClipRRect(
@@ -45,9 +46,24 @@ class HPBottomNavBar extends StatelessWidget {
           unselectedFontSize: 12,
           onTap: (index) => _handleNavigation(context, index),
           items: [
-            _buildElegantNavItem(Icons.home_rounded, 'Home', activeColor, currentIndex == 0),
-            _buildElegantNavItem(Icons.people_alt_outlined, 'Users', activeColor, currentIndex == 1),
-            _buildElegantNavItem(Icons.analytics_outlined, 'Requests', activeColor, currentIndex == 2),
+            _buildElegantNavItem(
+              Icons.home_rounded,
+              'Home',
+              activeColor,
+              currentIndex == 0,
+            ),
+            _buildElegantNavItem(
+              Icons.people_alt_outlined,
+              'Users',
+              activeColor,
+              currentIndex == 1,
+            ),
+            _buildElegantNavItem(
+              Icons.analytics_outlined,
+              'Requests',
+              activeColor,
+              currentIndex == 2,
+            ),
           ],
         ),
       ),
@@ -72,7 +88,12 @@ class HPBottomNavBar extends StatelessWidget {
   }
 
   // ---------- 3. UI COMPONENT HELPERS ----------
-  BottomNavigationBarItem _buildElegantNavItem(IconData icon, String label, Color color, bool isActive) {
+  BottomNavigationBarItem _buildElegantNavItem(
+    IconData icon,
+    String label,
+    Color color,
+    bool isActive,
+  ) {
     return BottomNavigationBarItem(
       icon: Column(
         mainAxisSize: MainAxisSize.min,
@@ -104,7 +125,7 @@ class HPBottomNavBar extends StatelessWidget {
                           color: color.withOpacity(0.3),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
-                        )
+                        ),
                       ],
                     ),
                   ),
