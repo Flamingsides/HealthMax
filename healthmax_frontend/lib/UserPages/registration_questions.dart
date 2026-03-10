@@ -181,6 +181,84 @@ class _RegistrationGenderState extends State<RegistrationGender> {
   }
 }
 
+class EnterDOBWidget extends StatefulWidget {
+  const EnterDOBWidget({super.key});
+
+  @override
+  State<EnterDOBWidget> createState() => _EnterDOBWidgetState();
+}
+
+class _EnterDOBWidgetState extends State<EnterDOBWidget> {
+  DateTime selectedDate = DateTime.fromMillisecondsSinceEpoch(0);
+
+  Future<void> getDate() async {
+    DateTime curr = DateTime.now();
+    DateTime date18YearsAgo = DateTime(curr.year - 18, curr.month, curr.day);
+
+    DateTime? date = await showDatePicker(
+      context: context,
+      firstDate: DateTime.fromMillisecondsSinceEpoch(0),
+      lastDate: date18YearsAgo,
+    );
+
+    if (date != null) {
+      setState(() {
+        selectedDate = date;
+      });
+    }
+  }
+
+  String formatDate(DateTime date) {
+    List<String> months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    return "${date.day} ${months[date.month - 1]} ${date.year}";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.blueAccent.withAlpha(30),
+        borderRadius: BorderRadius.circular(50),
+      ),
+      padding: EdgeInsets.fromLTRB(0, 20, 0, 20),
+      child: Column(
+        children: [
+          Text(
+            formatDate(selectedDate),
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 25,
+              fontWeight: FontWeight.bold,
+              fontFamily: "LexendExaNormal",
+            ),
+          ),
+          const SizedBox(height: 80),
+          TextButton(
+            onPressed: () => getDate(),
+            style: ButtonStyle(
+              padding: WidgetStateProperty.all(EdgeInsets.all(10)),
+            ),
+            child: Text("Choose date", style: TextStyle(fontSize: 20)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class RegistrationDOB extends StatelessWidget {
   final UserAnswers userAnswers;
   const RegistrationDOB({super.key, required this.userAnswers});
@@ -203,6 +281,19 @@ class RegistrationDOB extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 100),
+        EnterDOBWidget(),
+        const SizedBox(height: 100),
+        CustomButton(
+          label: "Next",
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RegistrationDOB(userAnswers: userAnswers),
+              ),
+            );
+          },
+        ),
       ],
     );
   }
