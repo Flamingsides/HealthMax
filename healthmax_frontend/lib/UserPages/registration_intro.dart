@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:healthmax_frontend/UserPages/registration_questions.dart';
 import '../GeneralPages/helper_widgets.dart';
-// import 'package:sliding_action_button/sliding_action_button.dart';
 
 class RegistrationIntro extends StatelessWidget {
   const RegistrationIntro({super.key});
