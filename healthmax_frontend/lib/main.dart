@@ -28,7 +28,9 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       title: 'HealthMax',
       theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+        ),
         scaffoldBackgroundColor: Colors.white,
         textTheme: TextTheme(
           titleLarge: TextStyle(

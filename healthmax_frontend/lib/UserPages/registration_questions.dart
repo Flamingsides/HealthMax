@@ -29,8 +29,97 @@ class RegistrationQuestions extends StatelessWidget {
   }
 }
 
-class RegistrationGender extends StatelessWidget {
+class GenderCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final UserAnswers userAnswers;
+  final String selectedGender;
+  final void Function(String) setSelectedGender;
+
+  const GenderCard({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.userAnswers,
+    required this.selectedGender,
+    required this.setSelectedGender,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color.withAlpha(30),
+      borderRadius: BorderRadius.circular(50),
+      child: InkWell(
+        onTap: () {
+          setSelectedGender(label);
+          userAnswers.gender = label.toLowerCase();
+          print("$label selected.");
+        },
+        borderRadius: BorderRadius.circular(50),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(50),
+            border: selectedGender == label
+                ? BoxBorder.all(color: color, width: 3)
+                : null,
+          ),
+          padding: EdgeInsets.fromLTRB(10, 30, 10, 30),
+          child: Column(
+            children: [
+              Icon(icon, size: 150, color: color),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: "LexendExaNormal",
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// The following class will keep track of the user's
+// answers to each question
+class UserAnswers {
+  String? gender;
+  DateTime? dob;
+  double? weight;
+  String? weightUnit;
+  double? height;
+  String? heightUnit;
+
+  UserAnswers({
+    this.gender,
+    this.dob,
+    this.weight,
+    this.weightUnit,
+    this.height,
+    this.heightUnit,
+  });
+}
+
+class RegistrationGender extends StatefulWidget {
   const RegistrationGender({super.key});
+
+  @override
+  State<RegistrationGender> createState() => _RegistrationGenderState();
+}
+
+class _RegistrationGenderState extends State<RegistrationGender> {
+  String? selectedGender;
+  UserAnswers userAnswers = UserAnswers();
+  void setSelectedGender(String gender) {
+    setState(() => selectedGender = gender);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,46 +143,47 @@ class RegistrationGender extends StatelessWidget {
           spacing: 10,
           children: [
             Expanded(
-              child: Column(
-                children: [
-                  Icon(Icons.male, size: 150, color: Colors.blueAccent),
-                  Text(
-                    "Male",
-                    style: TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: "LexendExaNormal",
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
+              child: GenderCard(
+                icon: Icons.male,
+                color: Colors.lightBlueAccent,
+                label: "Male",
+                userAnswers: userAnswers,
+                selectedGender: selectedGender ?? "None",
+                setSelectedGender: setSelectedGender,
               ),
             ),
             Expanded(
-              child: Column(
-                children: [
-                  Icon(Icons.female, size: 150, color: Colors.purpleAccent),
-                  Text(
-                    "Female",
-                    style: TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: "LexendExaNormal",
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
+              child: GenderCard(
+                icon: Icons.female,
+                label: "Female",
+                color: Colors.purpleAccent,
+                userAnswers: userAnswers,
+                selectedGender: selectedGender ?? "None",
+                setSelectedGender: setSelectedGender,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 100),
+        CustomButton(
+          label: "Next",
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RegistrationDOB(userAnswers: userAnswers),
+              ),
+            );
+          },
         ),
       ],
     );
   }
 }
 
-class RegistrationAge extends StatelessWidget {
-  const RegistrationAge({super.key});
+class RegistrationDOB extends StatelessWidget {
+  final UserAnswers userAnswers;
+  const RegistrationDOB({super.key, required this.userAnswers});
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +193,7 @@ class RegistrationAge extends StatelessWidget {
       children: [
         const SizedBox(height: 100),
         Text(
-          "Enter your Age",
+          "Enter your date of birth",
           style: TextStyle(
             color: Colors.black,
             fontSize: 25,
@@ -112,6 +202,7 @@ class RegistrationAge extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 100),
       ],
     );
   }
