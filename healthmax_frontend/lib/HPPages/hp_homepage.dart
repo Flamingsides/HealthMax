@@ -64,7 +64,13 @@ class _HPHomePageState extends State<HPHomePage> {
           ),
 
           // PROFILE BUTTON
-          Positioned(top: 75, right: 25, child: HPGlassyProfile(onTap: () {})),
+          Positioned(
+            top: 75, 
+            right: 25, 
+            child: HPGlassyProfile(onTap: () {
+              Navigator.pushNamed(context, '/profile');
+            })
+          ),
 
           // MAIN WHITE BODY LAYER
           Column(
@@ -190,19 +196,14 @@ class _HPHomePageState extends State<HPHomePage> {
                 "10 Connected Users",
                 const Color.fromARGB(255, 158, 243, 202),
                 onTap: () =>
-                    Navigator.pushReplacementNamed(context, '/hp_users'),
+                    Navigator.pushNamed(context, '/hp_users'),
               ),
               const SizedBox(height: 12),
               _statBtn(
                 Icons.access_time,
                 "5 Requests",
                 const Color.fromARGB(255, 248, 194, 124),
-                onTap: () => Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HPRequestsPage(),
-                  ),
-                ),
+                onTap: () => Navigator.pushNamed(context, '/hp_requests'),
               ),
             ],
           ),
@@ -295,11 +296,13 @@ class _HPHomePageState extends State<HPHomePage> {
                 ['Heart Rate', 'Steps', 'Glucose Level', 'Calories'],
                 selectedMetric,
                 (v) => setState(() => selectedMetric = v!),
+                textColor: color,
               ),
               _dropdown(
                 ['Week', 'Month', 'Year'],
                 selectedTimeframe,
                 (v) => setState(() => selectedTimeframe = v!),
+                textColor: Colors.black,
               ),
             ],
           ),
@@ -441,21 +444,40 @@ class _HPHomePageState extends State<HPHomePage> {
   Widget _dropdown(
     List<String> items,
     String val,
-    ValueChanged<String?> onChanged,
-  ) {
+    ValueChanged<String?> onChanged, {
+    Color textColor = Colors.black,
+  }) {
     return DropdownButton<String>(
       value: val,
+      // Fixed: Styling the text visible when the dropdown is closed
+      selectedItemBuilder: (BuildContext context) {
+        return items.map<Widget>((String item) {
+          return Center(
+            child: Text(
+              item,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          );
+        }).toList();
+      },
       items: items
           .map(
             (i) => DropdownMenuItem(
               value: i,
-              child: Text(i, style: const TextStyle(fontSize: 12)),
+              child: Text(
+                i, 
+                style: const TextStyle(fontSize: 12, color: Colors.black)
+              ),
             ),
           )
           .toList(),
       onChanged: onChanged,
       underline: const SizedBox(),
-      icon: const Icon(Icons.arrow_drop_down),
+      icon: Icon(Icons.arrow_drop_down, color: textColor),
     );
   }
 
