@@ -60,27 +60,30 @@ class GenderCard extends StatelessWidget {
           print("$label selected.");
         },
         borderRadius: BorderRadius.circular(50),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(50),
-            border: selectedGender == label
-                ? BoxBorder.all(color: color, width: 3)
-                : null,
-          ),
-          padding: EdgeInsets.fromLTRB(10, 30, 10, 30),
-          child: Column(
-            children: [
-              Icon(icon, size: 150, color: color),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: "LexendExaNormal",
-                  letterSpacing: 1,
+        child: SizedBox(
+          height: 252,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(50),
+              border: selectedGender == label
+                  ? BoxBorder.all(color: color, width: 3)
+                  : null,
+            ),
+            padding: EdgeInsets.fromLTRB(10, 30, 10, 30),
+            child: Column(
+              children: [
+                Icon(icon, size: 150, color: color),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: "LexendExaNormal",
+                    letterSpacing: 1,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -106,6 +109,11 @@ class UserAnswers {
     this.height,
     this.heightUnit,
   });
+
+  @override
+  String toString() {
+    return "";
+  }
 }
 
 class RegistrationGender extends StatefulWidget {
@@ -206,6 +214,7 @@ class _EnterDOBWidgetState extends State<EnterDOBWidget> {
     if (date != null) {
       setState(() {
         selectedDate = date;
+        widget.userAnswers.dob = date;
       });
     }
   }
@@ -303,8 +312,30 @@ class RegistrationDOB extends StatelessWidget {
   }
 }
 
-class GetWeight extends StatelessWidget {
-  const GetWeight({super.key});
+class GetUnit extends StatefulWidget {
+  final String unit1;
+  final String unit2;
+  final Function(String unit) onUnitChanged;
+  const GetUnit({
+    super.key,
+    required this.unit1,
+    required this.unit2,
+    required this.onUnitChanged,
+  });
+
+  @override
+  State<GetUnit> createState() => _GetUnitState();
+}
+
+class _GetUnitState extends State<GetUnit> {
+  bool value = true;
+  late String activeUnit;
+
+  @override
+  void initState() {
+    super.initState();
+    activeUnit = widget.unit1;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -312,24 +343,47 @@ class GetWeight extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         RiffSwitch(
-          value: true,
+          width: 150,
+          height: 40,
+          value: value,
           onChanged: (bool newVal) {
-            print("$newVal set!");
+            if (value == newVal) return;
+            setState(() {
+              activeUnit = newVal ? widget.unit1 : widget.unit2;
+              value = newVal;
+            });
+
+            widget.onUnitChanged(activeUnit);
+            print("$activeUnit set!");
           },
           type: RiffSwitchType.simple,
-          activeText: Text("kg"),
+          activeText: Text(
+            activeUnit,
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
           activeColor: Color.from(
             alpha: 1,
             red: 0.557,
             green: 0.686,
             blue: 0.035,
           ),
-          inactiveText: Text("lb"),
+          inactiveThumbColor: Color.from(
+            alpha: 1,
+            red: 0.557,
+            green: 0.686,
+            blue: 0.035,
+          ),
+          inactiveText: Text(
+            value ? widget.unit1 : widget.unit2,
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
           inactiveTrackColor: Colors.white,
+          activeTrackColor: Colors.white,
+          borderColor: Colors.black,
+          borderWidth: 3,
+          elevation: 2,
+          animateToggle: true,
         ),
-        PageView(children: [
-            
-        ],),
       ],
     );
   }
@@ -357,7 +411,13 @@ class RegistrationWeight extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 100),
-        //GetWeight(),
+        GetUnit(
+          unit1: "kg",
+          unit2: "lb",
+          onUnitChanged: (unit) {
+            userAnswers.weightUnit = unit;
+          },
+        ),
         const SizedBox(height: 100),
         CustomButton(
           label: "Next",
@@ -383,7 +443,7 @@ class RegistrationHeight extends StatelessWidget {
   Widget build(BuildContext context) {
     return RegistrationQuestions(
       numQuestions: 4,
-      currentIndex: 2,
+      currentIndex: 3,
       children: [
         const SizedBox(height: 100),
         Text(
@@ -397,11 +457,18 @@ class RegistrationHeight extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 100),
-        // GetWeight(),
+        GetUnit(
+          unit1: "cm",
+          unit2: "in",
+          onUnitChanged: (unit) {
+            userAnswers.heightUnit = unit;
+          },
+        ),
         const SizedBox(height: 100),
         CustomButton(
           label: "Next",
           onPressed: () {
+            print(userAnswers.toString());
             Navigator.push(
               context,
               MaterialPageRoute(
