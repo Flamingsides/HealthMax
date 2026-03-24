@@ -101,7 +101,7 @@ class UserBottomNavBar extends StatelessWidget {
               ),
               if (isActive)
                 Positioned(
-                  top: -10, // FIX: Adjusted offset so it stays pinned to the top edge
+                  top: -7, // FIX: Adjusted offset so it stays pinned to the top edge
                   child: Container(
                     height: 6,
                     width: 40,

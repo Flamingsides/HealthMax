@@ -8,6 +8,10 @@ import 'HPPages/hp_homepage.dart';
 import 'HPPages/hp_userspage.dart';
 import 'HPPages/hp_requestspage.dart';
 import 'UserPages/user_homepage.dart';
+import 'UserPages/user_history.dart';
+import 'UserPages/user_calorie.dart';
+import 'UserPages/user_statistic.dart';
+import 'UserPages/user_target.dart';
 
 void main() {
   runApp(const MyApp());
@@ -60,6 +64,10 @@ class _MyAppState extends State<MyApp> {
         '/hp_requests': (context) => const HPRequestsPage(),
         '/hp_settings': (context) => const HPProfileClicked(),
         '/user_homepage': (context) => const UserHomePage(),
+        '/user_history': (context) => const UserHistoryPage(),
+        '/user_calorie': (context) => const UserCaloriePage(),
+        '/user_statistic': (context) => const UserStatisticPage(),
+        '/user_target': (context) => const UserTargetPage(),
         // Add more routes as needed
       },
     );
