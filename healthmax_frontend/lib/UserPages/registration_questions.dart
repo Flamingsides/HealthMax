@@ -112,7 +112,7 @@ class UserAnswers {
 
   @override
   String toString() {
-    return "";
+    return "Gender: $gender, DOB: ${dob?.toIso8601String().split('T')[0]}, Weight: $weight $weightUnit, Height: $height $heightUnit";
   }
 }
 
@@ -199,7 +199,7 @@ class EnterDOBWidget extends StatefulWidget {
 }
 
 class _EnterDOBWidgetState extends State<EnterDOBWidget> {
-  DateTime selectedDate = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime? selectedDate;
 
   Future<void> getDate() async {
     DateTime curr = DateTime.now();
@@ -207,8 +207,21 @@ class _EnterDOBWidgetState extends State<EnterDOBWidget> {
 
     DateTime? date = await showDatePicker(
       context: context,
-      firstDate: DateTime.fromMillisecondsSinceEpoch(0),
+      firstDate: DateTime(1900),
       lastDate: date18YearsAgo,
+      initialDate: selectedDate ?? date18YearsAgo,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF8E33FF), // Custom purple theme
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (date != null) {
@@ -221,52 +234,57 @@ class _EnterDOBWidgetState extends State<EnterDOBWidget> {
 
   String formatDate(DateTime date) {
     List<String> months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
     return "${date.day} ${months[date.month - 1]} ${date.year}";
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.blueAccent.withAlpha(30),
-        borderRadius: BorderRadius.circular(50),
-      ),
-      padding: EdgeInsets.fromLTRB(0, 20, 0, 20),
-      child: Column(
-        children: [
-          Text(
-            formatDate(selectedDate),
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-              fontFamily: "LexendExaNormal",
-            ),
+    bool hasDate = selectedDate != null;
+
+    // Upgraded Premium DOB Card
+    return GestureDetector(
+      onTap: getDate,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 30),
+        padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: hasDate ? const Color(0xFF8E33FF).withOpacity(0.5) : Colors.grey.shade300,
+            width: 2,
           ),
-          const SizedBox(height: 80),
-          TextButton(
-            onPressed: () {
-              getDate();
-            },
-            style: ButtonStyle(
-              padding: WidgetStateProperty.all(EdgeInsets.all(10)),
+          boxShadow: [
+            BoxShadow(
+              color: hasDate ? const Color(0xFF8E33FF).withOpacity(0.15) : Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            )
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.calendar_month_rounded,
+              size: 32,
+              color: hasDate ? const Color(0xFF8E33FF) : Colors.grey.shade400,
             ),
-            child: Text("Choose date", style: TextStyle(fontSize: 20)),
-          ),
-        ],
+            const SizedBox(width: 15),
+            Text(
+              hasDate ? formatDate(selectedDate!) : "Select Date",
+              style: TextStyle(
+                color: hasDate ? Colors.black87 : Colors.grey.shade500,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                fontFamily: "LexendExaNormal",
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -389,6 +407,201 @@ class _GetUnitState extends State<GetUnit> {
   }
 }
 
+// --- PREMIUM CUSTOM RULER ---
+class PremiumHorizontalRuler extends StatefulWidget {
+  final int minValue;
+  final int maxValue;
+  final int initialValue;
+  final Function(int) onChanged;
+
+  const PremiumHorizontalRuler({
+    super.key,
+    required this.minValue,
+    required this.maxValue,
+    required this.initialValue,
+    required this.onChanged,
+  });
+
+  @override
+  State<PremiumHorizontalRuler> createState() => _PremiumHorizontalRulerState();
+}
+
+class _PremiumHorizontalRulerState extends State<PremiumHorizontalRuler> {
+  late FixedExtentScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = FixedExtentScrollController(
+      initialItem: widget.initialValue - widget.minValue,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    int range = widget.maxValue - widget.minValue + 1;
+
+    return SizedBox(
+      height: 140,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          ShaderMask(
+            shaderCallback: (Rect bounds) {
+              return const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [Colors.transparent, Colors.black, Colors.black, Colors.transparent],
+                stops: [0.0, 0.35, 0.65, 1.0],
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.dstIn,
+            child: RotatedBox(
+              quarterTurns: 3,
+              child: ListWheelScrollView.useDelegate(
+                controller: _controller,
+                itemExtent: 16,
+                diameterRatio: 2.5,
+                useMagnifier: true,
+                magnification: 1.25,
+                physics: const FixedExtentScrollPhysics(),
+                onSelectedItemChanged: (index) {
+                  widget.onChanged(index + widget.minValue);
+                },
+                childDelegate: ListWheelChildBuilderDelegate(
+                  childCount: range,
+                  builder: (context, index) {
+                    int val = index + widget.minValue;
+                    bool isMajor = val % 10 == 0;
+                    bool isMedium = val % 5 == 0 && !isMajor;
+
+                    return RotatedBox(
+                      quarterTurns: 1,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: isMajor ? 3 : (isMedium ? 2 : 1.5),
+                            height: isMajor ? 45 : (isMedium ? 30 : 20),
+                            decoration: BoxDecoration(
+                              color: isMajor ? Colors.black87 : Colors.grey.shade400,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          if (isMajor) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              "$val",
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ]
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          
+          // Center Indicator
+          IgnorePointer(
+            child: Container(
+              width: 5,
+              height: 90,
+              decoration: BoxDecoration(
+                color: const Color(0xFF8E33FF),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8E33FF).withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  )
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- DYNAMIC WEIGHT SECTION ---
+class WeightInputSection extends StatefulWidget {
+  final UserAnswers userAnswers;
+  const WeightInputSection({super.key, required this.userAnswers});
+
+  @override
+  State<WeightInputSection> createState() => _WeightInputSectionState();
+}
+
+class _WeightInputSectionState extends State<WeightInputSection> {
+  bool isKg = true;
+  int selectedWeight = 60;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.userAnswers.weightUnit = "kg";
+    widget.userAnswers.weight = selectedWeight.toDouble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              "$selectedWeight",
+              style: const TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: Color(0xFF8E33FF)),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isKg ? "kg" : "lb", 
+              style: const TextStyle(fontSize: 24, color: Colors.grey, fontWeight: FontWeight.w600)
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        GetUnit(
+          unit1: "kg",
+          unit2: "lb",
+          onUnitChanged: (unit) {
+            setState(() {
+              isKg = unit == 'kg';
+              selectedWeight = isKg ? 60 : 132; // Reset relative default
+              widget.userAnswers.weightUnit = unit;
+              widget.userAnswers.weight = selectedWeight.toDouble();
+            });
+          },
+        ),
+        const SizedBox(height: 40),
+        PremiumHorizontalRuler(
+          key: ValueKey(isKg), // Forces rebuild when unit swaps to refresh scroll bounds
+          minValue: isKg ? 30 : 66,
+          maxValue: isKg ? 200 : 440,
+          initialValue: selectedWeight,
+          onChanged: (val) {
+            setState(() => selectedWeight = val);
+            widget.userAnswers.weight = val.toDouble();
+          },
+        ),
+      ],
+    );
+  }
+}
+
 class RegistrationWeight extends StatelessWidget {
   final UserAnswers userAnswers;
   const RegistrationWeight({super.key, required this.userAnswers});
@@ -399,7 +612,7 @@ class RegistrationWeight extends StatelessWidget {
       numQuestions: 4,
       currentIndex: 2,
       children: [
-        const SizedBox(height: 100),
+        const SizedBox(height: 60),
         Text(
           "Enter your weight",
           style: TextStyle(
@@ -410,15 +623,12 @@ class RegistrationWeight extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 100),
-        GetUnit(
-          unit1: "kg",
-          unit2: "lb",
-          onUnitChanged: (unit) {
-            userAnswers.weightUnit = unit;
-          },
-        ),
-        const SizedBox(height: 100),
+        const SizedBox(height: 40),
+        
+        // Use Dynamic Wrapper
+        WeightInputSection(userAnswers: userAnswers),
+        
+        const SizedBox(height: 60),
         CustomButton(
           label: "Next",
           onPressed: () {
@@ -428,6 +638,75 @@ class RegistrationWeight extends StatelessWidget {
                 builder: (_) => RegistrationHeight(userAnswers: userAnswers),
               ),
             );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// --- DYNAMIC HEIGHT SECTION ---
+class HeightInputSection extends StatefulWidget {
+  final UserAnswers userAnswers;
+  const HeightInputSection({super.key, required this.userAnswers});
+
+  @override
+  State<HeightInputSection> createState() => _HeightInputSectionState();
+}
+
+class _HeightInputSectionState extends State<HeightInputSection> {
+  bool isCm = true;
+  int selectedHeight = 170;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.userAnswers.heightUnit = "cm";
+    widget.userAnswers.height = selectedHeight.toDouble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              "$selectedHeight",
+              style: const TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: Color(0xFF8E33FF)),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isCm ? "cm" : "in", 
+              style: const TextStyle(fontSize: 24, color: Colors.grey, fontWeight: FontWeight.w600)
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        GetUnit(
+          unit1: "cm",
+          unit2: "in",
+          onUnitChanged: (unit) {
+            setState(() {
+              isCm = unit == 'cm';
+              selectedHeight = isCm ? 170 : 67; // Reset relative default
+              widget.userAnswers.heightUnit = unit;
+              widget.userAnswers.height = selectedHeight.toDouble();
+            });
+          },
+        ),
+        const SizedBox(height: 40),
+        PremiumHorizontalRuler(
+          key: ValueKey(isCm), // Forces rebuild when unit swaps to refresh scroll bounds
+          minValue: isCm ? 100 : 40,
+          maxValue: isCm ? 250 : 100,
+          initialValue: selectedHeight,
+          onChanged: (val) {
+            setState(() => selectedHeight = val);
+            widget.userAnswers.height = val.toDouble();
           },
         ),
       ],
@@ -445,7 +724,7 @@ class RegistrationHeight extends StatelessWidget {
       numQuestions: 4,
       currentIndex: 3,
       children: [
-        const SizedBox(height: 100),
+        const SizedBox(height: 60),
         Text(
           "Enter your height",
           style: TextStyle(
@@ -456,15 +735,12 @@ class RegistrationHeight extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 100),
-        GetUnit(
-          unit1: "cm",
-          unit2: "in",
-          onUnitChanged: (unit) {
-            userAnswers.heightUnit = unit;
-          },
-        ),
-        const SizedBox(height: 100),
+        const SizedBox(height: 40),
+        
+        // Use Dynamic Wrapper
+        HeightInputSection(userAnswers: userAnswers),
+        
+        const SizedBox(height: 60),
         CustomButton(
           label: "Next",
           onPressed: () {
