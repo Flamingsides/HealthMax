@@ -123,3 +123,4 @@ flutter:
     - assets/images/registration-intro-balance.png
     - assets/images/registration-intro-move.png
     - assets/images/registration-intro-rest.png
+    - .env

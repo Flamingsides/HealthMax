@@ -14,7 +14,7 @@ class CalorieEstimateService {
 
     model = GenerativeModel(
       model: 'gemini-2.0-flash',
-      apiKey: API_KEY!,
+      apiKey: API_KEY,
       generationConfig: GenerationConfig(
         // Ensure output is in the right structu (JSON)
         responseMimeType: 'application/json',
