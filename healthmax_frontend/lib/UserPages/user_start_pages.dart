@@ -10,7 +10,7 @@ class UserStartPage extends StatelessWidget {
     return StartPage(
       heading1: "WELLNESS",
       heading2: "BEGINS HERE",
-      homeRoute: '/user_home', // Ensured this matches your main.dart routes
+      homeRoute: '/user_homepage', // Pass the home route for dynamic navigation
       loginPage: (_) => const UserLoginPage(),
       registrationPage: (_) => const UserRegistrationPage(),
       onLoginSuccess: () {
