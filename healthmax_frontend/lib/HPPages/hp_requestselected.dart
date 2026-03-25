@@ -12,130 +12,182 @@ class HPRequestSelected extends StatefulWidget {
 }
 
 class _HPRequestSelectedState extends State<HPRequestSelected> {
-  // ---------- 1. MAIN BUILD METHOD ----------
+  final Color themePurple = const Color(0xFF8E33FF);
+  final Color bgOffWhite = const Color(0xFFFFFFFF); 
+
+  // --- STATE VARIABLES ---
+  String selectedMetric = 'Heart Rate';
+  String selectedTimeframe = 'Week';
+
+  // --- DYNAMIC GRAPH LOGIC ---
+  double _getMaxX() => selectedTimeframe == "Week" ? 6 : (selectedTimeframe == "Month" ? 3 : 11);
+  
+  double _getMinY() => selectedMetric == 'Heart Rate' ? 60 : 0;
+  
+  double _getMaxY() {
+    switch (selectedMetric) {
+      case 'Heart Rate': return 100;
+      case 'Steps': return 15000;
+      case 'Calories': return 3500;
+      case 'Glucose Level': return 15;
+      default: return 100;
+    }
+  }
+
+  double _getIntervalY() {
+    switch (selectedMetric) {
+      case 'Heart Rate': return 5;
+      case 'Steps': return 5000;
+      case 'Calories': return 1000;
+      case 'Glucose Level': return 5;
+      default: return 5;
+    }
+  }
+
+  List<FlSpot> _getChartData() {
+    double m = 1.0;
+    if (selectedMetric == 'Steps') m = 100.0;
+    if (selectedMetric == 'Calories') m = 20.0;
+    if (selectedMetric == 'Glucose Level') m = 0.1;
+
+    List<FlSpot> baseData;
+    if (selectedTimeframe == "Week") {
+      baseData = const [FlSpot(0, 70), FlSpot(1, 75), FlSpot(2, 72), FlSpot(3, 85), FlSpot(4, 78), FlSpot(5, 90), FlSpot(6, 82)];
+    } else if (selectedTimeframe == "Month") {
+      baseData = const [FlSpot(0, 72), FlSpot(1, 85), FlSpot(2, 78), FlSpot(3, 88)];
+    } else {
+      baseData = const [FlSpot(0, 75), FlSpot(2, 80), FlSpot(4, 85), FlSpot(6, 78), FlSpot(8, 90), FlSpot(10, 85), FlSpot(11, 88)];
+    }
+    return baseData.map((spot) => FlSpot(spot.x, spot.y * m)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    const Color themeColor = Color(0xFF8E33FF);
-
     return Scaffold(
-      backgroundColor: themeColor,
+      backgroundColor: bgOffWhite,
       body: Stack(
         children: [
-          // A. TOP LAYER: NAVIGATION & HEADER
-          Positioned(
-            top: 60,
-            left: 20,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 30),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          Positioned(
-            top: 110,
-            left: 30,
-            right: 30,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "NEW PATIENT REQUEST",
-                  style: TextStyle(
-                    color: Colors.white60, 
-                    fontWeight: FontWeight.bold, 
-                    letterSpacing: 1.5,
-                    fontSize: 12,
+          // ==========================================
+          // 1. SCROLLABLE ARCHITECTURE
+          // ==========================================
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // --- PREMIUM SLIVER APP BAR ---
+              SliverAppBar(
+                backgroundColor: themePurple,
+                expandedHeight: 250.0,
+                toolbarHeight: 70.0,
+                pinned: true,
+                elevation: 0,
+                scrolledUnderElevation: 0.0,
+                surfaceTintColor: Colors.transparent,
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 15.0, top: 10.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 24),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.user.fullName,
-                  style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  "Source: ${widget.user.device}",
-                  style: const TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-
-          // B. MIDDLE LAYER: MAIN CONTENT CARD
-          Column(
-            children: [
-              const SizedBox(height: 250),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 35),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInfoRow(),
-                        const SizedBox(height: 40),
-                        const Text(
-                          "PREVIEW DATA (LAST 24H)",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800, 
-                            fontSize: 12, 
-                            color: Colors.grey,
-                            letterSpacing: 1.1,
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.parallax,
+                  background: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(30, 65, 30, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.user.fullName,
+                            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -0.5),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildPreviewGraph(themeColor),
-                        const SizedBox(height: 30),
-                        const Text(
-                          "The user is requesting medical monitoring for heart rate fluctuations recorded via their wearable device.",
-                          style: TextStyle(color: Colors.blueGrey, height: 1.5),
-                        ),
-                        const SizedBox(height: 120), // Space for floating buttons
-                      ],
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const Icon(Icons.watch_rounded, color: Colors.white70, size: 16),
+                              const SizedBox(width: 6),
+                              Text("Device: ${widget.user.device}", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "${widget.user.gender} | ${widget.user.height.toInt()} cm | ${widget.user.weight.toInt()} kg",
+                            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
                     ),
+                  ),
+                ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(30),
+                  child: Transform.translate(
+                    offset: const Offset(0, 1),
+                    child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgOffWhite, borderRadius: const BorderRadius.vertical(top: Radius.circular(35)))),
+                  ),
+                ),
+              ),
+
+              // --- MAIN BODY CONTENT ---
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("ANALYTICS OVERVIEW", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Colors.grey, letterSpacing: 1.2)),
+                      const SizedBox(height: 20),
+                      
+                      // THE DROPDOWNS (Now fully visible!)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildDropdown(['Heart Rate', 'Steps', 'Glucose Level', 'Calories'], selectedMetric, (v) => setState(() => selectedMetric = v!), isMetric: true),
+                          _buildDropdown(['Week', 'Month', 'Year'], selectedTimeframe, (v) => setState(() => selectedTimeframe = v!), isMetric: false),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 25),
+                      _buildMainGraph(),
+                      const SizedBox(height: 25),
+                      
+                      // Stat Cards matching the screenshot
+                      Row(
+                        children: [
+                          Expanded(child: _buildStatCard("Daily Avg", "72 bpm", Colors.orange.shade400, Colors.orange.shade50)),
+                          const SizedBox(width: 15),
+                          Expanded(child: _buildStatCard("Status", "Normal", Colors.blue.shade400, Colors.blue.shade50)),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 140), // Spacer for floating bottom bar
+                    ],
                   ),
                 ),
               ),
             ],
           ),
 
-          // C. BOTTOM LAYER: DECISION ACTIONS
+          // ==========================================
+          // 2. FLOATING DARK ACTION BAR
+          // ==========================================
           Positioned(
-            bottom: 40,
-            left: 25,
-            right: 25,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _decisionBtn(
-                    "Decline", 
-                    Colors.grey.shade100, 
-                    Colors.black87, 
-                    () => Navigator.pop(context),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: _decisionBtn(
-                    "Accept Patient", 
-                    themeColor, 
-                    Colors.white, 
-                    () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("${widget.user.fullName} added to your patients.")),
-                      );
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-              ],
+            bottom: 25, left: 20, right: 20,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2E), // Dark premium grey
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _actionButton(Icons.phone_in_talk, "Contact", const Color(0xFF2ED573), () {}),
+                  _actionButton(Icons.chat_bubble_outline, "Feedback", Colors.white, () {}),
+                  _actionButton(Icons.person_remove_alt_1_outlined, "Remove", const Color(0xFFFF4757), () => Navigator.pop(context)),
+                ],
+              ),
             ),
           )
         ],
@@ -143,89 +195,144 @@ class _HPRequestSelectedState extends State<HPRequestSelected> {
     );
   }
 
-  // ---------- 2. UI COMPONENT HELPERS ----------
+  // ==========================================
+  // UI COMPONENT HELPERS
+  // ==========================================
 
-  // Helper: Gender, Age, Height, Weight Row
-  Widget _buildInfoRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _stat("Gender", widget.user.gender),
-        _stat("Height", "${widget.user.height.toInt()}cm"),
-        _stat("Weight", "${widget.user.weight.toInt()}kg"),
-        _stat("Status", "Pending"),
-      ],
-    );
-  }
-
-  // Helper: Individual Stat Item
-  Widget _stat(String label, String val) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        Text(val, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-      ],
-    );
-  }
-
-  // Helper: Quick Preview Chart
-  Widget _buildPreviewGraph(Color col) {
+ Widget _buildDropdown(List<String> items, String val, ValueChanged<String?> onChanged, {required bool isMetric}) {
     return Container(
-      height: 180,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(25),
+        color: Colors.grey.shade100, // Light grey background
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: val,
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            // Changed icon color to pure black
+            child: Icon(
+              isMetric ? Icons.keyboard_arrow_down_rounded : Icons.calendar_today_outlined, 
+              color: Colors.black, 
+              size: 16
+            ),
+          ),
+          // This controls the text when the dropdown is CLOSED
+          selectedItemBuilder: (BuildContext context) {
+            return items.map<Widget>((String item) {
+              return Center(
+                child: Text(
+                  item, 
+                  style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.black, fontSize: 13, fontFamily: "LexendExaNormal")
+                ),
+              );
+            }).toList();
+          },
+          onChanged: onChanged,
+          // This controls the text when the dropdown is OPEN
+          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 13)))).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainGraph() {
+    return Container(
+      height: 260,
+      padding: const EdgeInsets.fromLTRB(15, 25, 25, 15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
         border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: LineChart(
         LineChartData(
-          gridData: const FlGridData(show: false),
-          titlesData: const FlTitlesData(show: false),
+          gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade100, strokeWidth: 1.5)),
+          titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true, reservedSize: 30, interval: 1,
+                getTitlesWidget: (value, meta) {
+                  const style = TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey);
+                  String text = '';
+                  if (selectedTimeframe == "Week") {
+                    const days = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
+                    if (value.toInt() >= 0 && value.toInt() < days.length) text = days[value.toInt()];
+                  } else if (selectedTimeframe == "Month") {
+                    text = 'Wk ${value.toInt() + 1}';
+                  } else if (selectedTimeframe == "Year") {
+                    if (value.toInt() % 3 == 0) {
+                      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                      text = months[value.toInt()];
+                    }
+                  }
+                  if (text.isEmpty) return const SizedBox.shrink();
+                  return Padding(padding: const EdgeInsets.only(top: 10.0), child: Text(text, style: style));
+                }, 
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true, interval: _getIntervalY(), reservedSize: 35,
+                getTitlesWidget: (value, meta) {
+                  if (value == _getMinY() || value == _getMaxY()) return const SizedBox.shrink();
+                  String text = selectedMetric == 'Steps' ? '${(value / 1000).toInt()}k' : (selectedMetric == 'Glucose Level' ? value.toStringAsFixed(1) : value.toInt().toString());
+                  return Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey));
+                },
+              ),
+            ),
+          ),
           borderData: FlBorderData(show: false),
+          minX: 0, maxX: _getMaxX(),
+          minY: _getMinY(), maxY: _getMaxY(),
           lineBarsData: [
             LineChartBarData(
-              spots: const [
-                FlSpot(0, 3), FlSpot(1, 1.5), FlSpot(2, 4), 
-                FlSpot(3, 2.5), FlSpot(4, 5), FlSpot(5, 3.5),
-              ],
-              isCurved: true,
-              color: col,
-              barWidth: 4,
-              dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(show: true, color: col.withOpacity(0.05)),
-            )
+              spots: _getChartData(),
+              isCurved: true, curveSmoothness: 0.35,
+              color: themePurple, barWidth: 3.5, isStrokeCapRound: true,
+              dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 4, color: themePurple, strokeWidth: 1.5, strokeColor: Colors.white)),
+              belowBarData: BarAreaData(show: true, color: themePurple.withOpacity(0.1)), 
+            ),
           ],
         ),
+        duration: const Duration(milliseconds: 400), 
+        curve: Curves.easeOutCubic,
+      )
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, Color titleColor, Color bgColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: titleColor.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Text(title, style: TextStyle(color: titleColor, fontWeight: FontWeight.bold, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.black87)),
+        ],
       ),
     );
   }
 
-  // Helper: Accept/Decline Button Builder
-  Widget _decisionBtn(String label, Color bg, Color text, VoidCallback onTap) {
+  Widget _actionButton(IconData icon, String label, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            if (text == Colors.white)
-              BoxShadow(
-                color: bg.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              )
-          ],
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 6),
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
+        ],
       ),
     );
   }

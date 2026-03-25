@@ -13,6 +13,9 @@ class HPRequestsPage extends StatefulWidget {
 }
 
 class _HPRequestsPageState extends State<HPRequestsPage> {
+  final Color themePurple = const Color(0xFF8E33FF);
+  final Color bgOffWhite = const Color(0xFFF8F9FA);
+
   // --- STATE & DATA ---
   bool _isExpanded = false;
 
@@ -24,145 +27,157 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
     UserModel(username: "selina_k", fullName: "Selina Kyle", gender: "F", height: 170, weight: 55, device: "Apple Watch S9"),
   ];
 
-  // ---------- 1. MAIN BUILD METHOD (The Page Skeleton) ----------
   @override
   Widget build(BuildContext context) {
-    const Color themeColor = Color(0xFF8E33FF);
-
     return Scaffold(
-      backgroundColor: themeColor,
+      backgroundColor: bgOffWhite,
       body: Stack(
         children: [
-          // A. TOP BACKGROUND LAYER (Header Text)
-          Positioned(
-            top: 80, left: 25,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text("Requests.", 
-                  style: TextStyle(fontSize: 55, fontWeight: FontWeight.bold, color: Colors.white, height: 2.0)),
-              ],
-            ),
-          ),
-
-          // B. TOP BACKGROUND LAYER (Profile Widget)
-          Positioned(
-            top: 75, right: 25,
-            child: HPGlassyProfile(onTap: () {}),
-          ),
-
-          // C. MAIN CONTENT LAYER (White Container)
-          Column(
-            children: [
-              const SizedBox(height: 220), // Spacer to push container below header text
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40)),
+          // ==========================================
+          // 1. SCROLLABLE ARCHITECTURE
+          // ==========================================
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // --- PREMIUM SLIVER APP BAR ---
+              SliverAppBar(
+                backgroundColor: themePurple,
+                expandedHeight: 200.0,
+                toolbarHeight: 90.0,
+                pinned: true,
+                elevation: 0,
+                scrolledUnderElevation: 0.0,
+                surfaceTintColor: Colors.transparent,
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 30.0, top: 10.0),
+                    child: Center(child: HPGlassyProfile(onTap: () {})),
                   ),
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        // SECTION 1: Patient Applications
-                        _buildSectionLabel("PATIENT APPLICATIONS"),
-                        
-                        // SECTION 2: Expandable Request List with Glassy Blur
-                        _buildExpandableRequestList(themeColor),
-
-                        // SECTION 3: Visual Divider
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                          child: Divider(thickness: 0.5),
-                        ),
-
-                        // SECTION 4: Feedback/Consultation Area
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
-                          child: _buildFeedbackContainer(themeColor),
-                        ),
-                      ],
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.parallax,
+                  background: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(30, 40, 30, 0),
+                      child: const Text(
+                        "Requests.",
+                        style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1),
+                      ),
                     ),
                   ),
+                ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(30),
+                  child: Transform.translate(
+                    offset: const Offset(0, 1),
+                    child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgOffWhite, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))),
+                  ),
+                ),
+              ),
+
+              // --- MAIN BODY CONTENT ---
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // SECTION 1: Patient Applications Label
+                    _buildSectionLabel("PATIENT APPLICATIONS"),
+                    
+                    // SECTION 2: Expandable Request List
+                    _buildExpandableRequestList(),
+
+                    const SizedBox(height: 35),
+
+                    // SECTION 3: Feedback/Consultation Area
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 25),
+                      child: _buildFeedbackContainer(),
+                    ),
+
+                    const SizedBox(height: 120), // Bottom padding for NavBar
+                  ],
                 ),
               ),
             ],
           ),
 
-          // D. NAVIGATION LAYER (Bottom Bar)
+          // ==========================================
+          // 2. BOTTOM NAVIGATION BAR
+          // ==========================================
           Positioned(
             bottom: 0, left: 0, right: 0,
-            child: HPBottomNavBar(currentIndex: 2, activeColor: themeColor),
+            child: HPBottomNavBar(currentIndex: 2, activeColor: themePurple),
           ),
         ],
       ),
     );
   }
 
-  // ---------- 2. UI COMPONENT HELPERS (In order of appearance) ----------
-  // Helper: Section Label
+  // ==========================================
+  // UI COMPONENT HELPERS
+  // ==========================================
+
   Widget _buildSectionLabel(String label) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(30, 25, 30, 10),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 1.2)),
+      padding: const EdgeInsets.fromLTRB(30, 10, 30, 15),
+      child: Text(
+        label, 
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 1.2),
       ),
     );
   }
 
-  // Helper: The Expandable List with the Blur Effect
-  Widget _buildExpandableRequestList(Color themeColor) {
+  Widget _buildExpandableRequestList() {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-      height: _isExpanded ? 400 : 180, 
+      curve: Curves.easeOutCubic,
+      height: _isExpanded ? 420 : 200, // Adjusted heights for new card styling
+      margin: const EdgeInsets.symmetric(horizontal: 25),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
           // List Content
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50, 
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(25),
-              child: ListView.builder(
-                physics: _isExpanded ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 80), 
-                itemCount: _newRequests.length,
-                itemBuilder: (context, index) => _buildRequestTile(_newRequests[index]),
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: ListView.builder(
+              physics: _isExpanded ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(15, 15, 15, 80), // Bottom padding ensures last item isn't hidden by button
+              itemCount: _newRequests.length,
+              itemBuilder: (context, index) => _buildRequestTile(_newRequests[index]),
             ),
           ),
 
           // Glassy Blur Badge
           Positioned(
-            bottom: 10,
+            bottom: 15,
             child: GestureDetector(
               onTap: () => setState(() => _isExpanded = !_isExpanded),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(30),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                     decoration: BoxDecoration(
-                      color: themeColor.withOpacity(0.6), 
-                      borderRadius: BorderRadius.circular(25),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      color: themePurple.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                      boxShadow: [BoxShadow(color: themePurple.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_isExpanded ? "SHOW LESS" : "5 PENDING", 
-                            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        Text(
+                          _isExpanded ? "SHOW LESS" : "${_newRequests.length} PENDING", 
+                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", letterSpacing: 0.5),
+                        ),
                         const SizedBox(width: 8),
-                        Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.white, size: 18),
+                        Icon(_isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
                       ],
                     ),
                   ),
@@ -175,50 +190,70 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
     );
   }
 
-  // Helper: Individual Request Row
   Widget _buildRequestTile(UserModel user) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(15), 
-        border: Border.all(color: Colors.grey.shade100),
+        color: bgOffWhite, // Soft background to contrast against the white container
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: ListTile(
-        dense: true,
-        leading: CircleAvatar(radius: 14, backgroundColor: Colors.grey.shade50, child: const Icon(Icons.person_outline, size: 14, color: Colors.grey)),
-        title: Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 10, color: Colors.grey),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 2),
+        leading: CircleAvatar(
+          radius: 20, 
+          backgroundColor: Colors.white, 
+          child: Icon(Icons.person, size: 20, color: themePurple),
+        ),
+        title: Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        subtitle: Text("Device: ${user.device}", style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+        trailing: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          child: const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.black87),
+        ),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => HPRequestSelected(user: user))),
       ),
     );
   }
 
-  // Helper: Dark Consultation Section
-  Widget _buildFeedbackContainer(Color themeColor) {
+  Widget _buildFeedbackContainer() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(35)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A), 
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.chat_bubble_outline, color: Colors.greenAccent, size: 20),
-              SizedBox(width: 12),
-              Text("Consultation Desk", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
+              Container(
+                padding: const EdgeInsets.all(8), 
+                decoration: BoxDecoration(color: Colors.greenAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), 
+                child: const Icon(Icons.chat_bubble_outline, color: Colors.greenAccent, size: 20),
+              ),
+              const SizedBox(width: 15),
+              const Text("Consultation Desk", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: "LexendExaNormal")),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             child: Row(
               children: [
                 _feedbackAvatar("Adam", "HP"),
                 _feedbackAvatar("Sarah", "GL"),
                 _feedbackAvatar("Mike", "HR"),
-                const CircleAvatar(radius: 20, backgroundColor: Colors.white10, child: Text("+5", style: TextStyle(color: Colors.white, fontSize: 10))),
+                Container(
+                  width: 45, height: 45,
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle, border: Border.all(color: Colors.white24)),
+                  child: const Center(child: Text("+5", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+                ),
               ],
             ),
           ),
@@ -229,24 +264,28 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               minimumSize: const Size(double.infinity, 55),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: 0,
             ),
-            child: const Text("Process Feedbacks", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+            child: const Text("Process Feedbacks", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, fontFamily: "LexendExaNormal")),
           )
         ],
       ),
     );
   }
 
-  // Helper: Avatar for the Consultation section
   Widget _feedbackAvatar(String name, String label) {
     return Padding(
-      padding: const EdgeInsets.only(right: 15),
+      padding: const EdgeInsets.only(right: 20),
       child: Column(
         children: [
-          CircleAvatar(radius: 20, backgroundColor: Colors.white10, child: Text(label, style: const TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold))),
-          const SizedBox(height: 6),
-          Text(name, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+          Container(
+            width: 45, height: 45,
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
+            child: Center(child: Text(label, style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold))),
+          ),
+          const SizedBox(height: 8),
+          Text(name, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
         ],
       ),
     );
