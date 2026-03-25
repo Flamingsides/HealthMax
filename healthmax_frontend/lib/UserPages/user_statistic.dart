@@ -384,7 +384,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2ED573), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), elevation: 0),
-                        child: const Text("Request Feedback", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: "LexendExaNormal")),
+                        child: const Text("Request Feedback", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11, fontFamily: "LexendExaNormal")),
                       ),
                     ),
                   ),
