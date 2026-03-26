@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
-import 'user_bottomnavbar.dart'; 
+import 'package:healthmax_frontend/UserPages/AI_Features/ai_calorie_intake.dart';
+import 'user_bottomnavbar.dart';
+
+import 'AI_Features/ai_calorie_intake.dart';
 
 class UserCaloriePage extends StatelessWidget {
   const UserCaloriePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return CaloriePage();
     return const Scaffold(
-      backgroundColor: Color(0xFFF8F9FA), 
-      
-      // PLACEHOLDER 
+      backgroundColor: Color(0xFFF8F9FA),
+
+      // PLACEHOLDER
       body: Center(
         child: Text(
           "CALORIE",
           style: TextStyle(
             fontSize: 40,
             fontWeight: FontWeight.w900,
-            color: Colors.black26, 
+            color: Colors.black26,
             letterSpacing: 4,
             fontFamily: "LexendExaNormal",
           ),

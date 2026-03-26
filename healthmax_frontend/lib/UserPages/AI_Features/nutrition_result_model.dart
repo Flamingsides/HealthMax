@@ -6,7 +6,7 @@ class NutritionResult {
   final double totalProtein;
   final double totalCarbs;
   final double totalFat;
-  final double confidence;
+  final String confidence;
   final String notes;
 
   NutritionResult({
@@ -26,12 +26,12 @@ class NutritionResult {
       foods: (map["foods"] as List)
           .map((food) => FoodItem.fromMap(food))
           .toList(),
-      totalCalories: map["total_calories"],
-      totalProtein: map["total_protein_g"],
-      totalCarbs: map["total_carbs_g"],
-      totalFat: map["total_fat_g"],
-      confidence: map["confidence"],
-      notes: map["notes"],
+      totalCalories: (map["total_calories_kcal"] ?? 0).toInt(),
+      totalProtein: (map["total_protein_g"] ?? 0).toDouble(),
+      totalCarbs: (map["total_carbs_g"] ?? 0).toDouble(),
+      totalFat: (map["total_fat_g"] ?? 0).toDouble(),
+      confidence: (map["confidence"] ?? "00.0%"),
+      notes: map["notes"] ?? "None",
     );
   }
 }
@@ -56,7 +56,7 @@ class FoodItem {
   factory FoodItem.fromMap(Map map) => FoodItem(
     name: map["name"] ?? "Unknown Food",
     amount: map["amount"] ?? "Uncertain Amount",
-    calories: map["calories"] ?? 0,
+    calories: (map["calories_kcal"] ?? 0).toInt(),
     protein: (map["protein_g"] ?? 0).toDouble(),
     carbs: (map["carbs_g"] ?? 0).toDouble(),
     fat: (map["fat_g"] ?? 0.0).toDouble(),
