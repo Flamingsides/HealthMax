@@ -1,13 +1,97 @@
 import 'package:flutter/material.dart';
+import 'start_pages_base.dart'; 
+import '../UserPages/registration_intro.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
+  // ==========================================
+  // 1. HP ROUTING & THEME (BRIGHT AURORA)
+  // ==========================================
+  
+  BoxDecoration get _hpDecoration => const BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xFF4EE2EC), // Glowing light cyan
+        Color(0xFF00B4DB), // Vibrant mid cyan
+        Color(0xFF0083B0), // Rich ocean blue (not gloomy!)
+      ],
+    ),
+  );
+
+  WidgetBuilder _getHPRegistrationPage(String route) {
+    return (context) => RegistrationPage(
+      loginPage: (context) => LoginPage(
+        homeRoute: route,
+        registrationPage: _getHPRegistrationPage(route),
+        decoration: _hpDecoration,
+      ),
+      postRegistration: (context) => LoginPage(
+        homeRoute: route,
+        registrationPage: _getHPRegistrationPage(route),
+        decoration: _hpDecoration,
+      ),
+    );
+  }
+
+  Widget _buildHPStartPage() {
+    return StartPage(
+      heading1: "CARE",
+      heading2: "Beyond Clinic",
+      homeRoute: "/hp_home",
+      decoration: _hpDecoration, 
+      loginPage: (context) => LoginPage(
+        homeRoute: "/hp_home",
+        registrationPage: _getHPRegistrationPage("/hp_home"),
+        decoration: _hpDecoration,
+      ),
+      registrationPage: _getHPRegistrationPage("/hp_home"),
+    );
+  }
+
+  // ==========================================
+  // 2. USER ROUTING & THEME (VIBRANT INDIGO)
+  // ==========================================
+
+  BoxDecoration get _userDecoration => const BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Color(0xFFA6B1E1), // Soft, airy periwinkle
+        Color(0xFF6A75D9), // Vibrant indigo
+        Color(0xFF4C55B5), // Deep rich purple (not black!)
+      ],
+    ),
+  );
+
+  Widget _buildUserStartPage() {
+    return StartPage(
+      heading1: "WELLNESS",
+      heading2: "BEGINS HERE",
+      homeRoute: "/user_homepage",
+      decoration: _userDecoration, 
+      loginPage: (context) => LoginPage(
+        homeRoute: "/user_homepage",
+        decoration: _userDecoration,
+        registrationPage: (context) => const RegistrationIntro(), 
+      ),
+      registrationPage: (context) => const RegistrationIntro(), 
+    );
+  }
+
+  // ==========================================
+  // 3. MAIN BUILD METHOD (LIGHT & FRESH)
+  // ==========================================
   @override
   Widget build(BuildContext context) {
-    // A premium, modern gradient background
-    final Color gradientStart = const Color(0xFF8A98E8); // Soft periwinkle/blue
-    final Color gradientEnd = const Color(0xFF5D34EC);   // Deep vibrant purple
+    final Color brandHighlight = const Color(0xFF00D1FF); 
+    
+    // THE FIX: Restored the light, welcoming background!
+    final Color gradientStart = const Color(0xFF8A98E8); 
+    final Color gradientEnd = const Color(0xFF5D34EC);   
 
     return Scaffold(
       body: Container(
@@ -23,46 +107,43 @@ class WelcomePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(), // Pushes content to the middle
+              const Spacer(), 
 
-              // --- 1. GLOWING LOGO/ICON ---
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
+                  color: brandHighlight.withOpacity(0.15),
                   boxShadow: [
-                    BoxShadow(color: Colors.white.withOpacity(0.05), blurRadius: 30, spreadRadius: 10),
+                    BoxShadow(color: brandHighlight.withOpacity(0.3), blurRadius: 40, spreadRadius: 10),
                   ],
                 ),
-                child: const Icon(Icons.monitor_heart_outlined, size: 60, color: Colors.white),
+                child: Icon(Icons.monitor_heart_outlined, size: 65, color: brandHighlight),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 35),
 
-              // --- 2. THE TYPOGRAPHY OVERHAUL ---
               const Text(
                 "WELCOME TO",
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: Colors.white70,
-                  letterSpacing: 3.0,
+                  letterSpacing: 4.0,
                   fontFamily: "LexendExaNormal",
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               
-              // The massive "HealthMax" highlight
-              const Text(
+              Text(
                 "HealthMax.",
                 style: TextStyle(
-                  fontSize: 50, // Massive size!
+                  fontSize: 55, 
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -1.5,
+                  color: Colors.white, // Changed back to white so it pops on the light blue background!
+                  letterSpacing: -2.0,
                   fontFamily: "LexendExaNormal",
                   shadows: [
-                    Shadow(color: Colors.black26, blurRadius: 15, offset: Offset(0, 5)),
+                    Shadow(color: Colors.black.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 5)),
                   ],
                 ),
               ),
@@ -73,14 +154,13 @@ class WelcomePage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.white70,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
               ),
 
-              const Spacer(), // Pushes buttons to the bottom area
+              const Spacer(), 
 
-              // --- 3. PREMIUM ACTION BUTTONS ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40.0),
                 child: Column(
@@ -88,20 +168,20 @@ class WelcomePage extends StatelessWidget {
                     _buildRoleButton(
                       context, 
                       title: "User", 
-                      route: '/user_homepage', // Wires directly to the user dashboard
-                      textColor: gradientEnd,
+                      textColor: gradientEnd, 
+                      targetPage: _buildUserStartPage(),
                     ),
                     const SizedBox(height: 20),
                     _buildRoleButton(
                       context, 
                       title: "Healthcare Provider", 
-                      route: '/hp_home', // Wires directly to the HP dashboard
-                      textColor: gradientEnd,
+                      textColor: const Color(0xFF0083B0), 
+                      targetPage: _buildHPStartPage(),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 60), // Bottom padding
+              const SizedBox(height: 60), 
             ],
           ),
         ),
@@ -109,31 +189,22 @@ class WelcomePage extends StatelessWidget {
     );
   }
 
-  // Helper widget for perfect, reusable pill buttons
-  Widget _buildRoleButton(BuildContext context, {required String title, required String route, required Color textColor}) {
+  Widget _buildRoleButton(BuildContext context, {required String title, required Color textColor, required Widget targetPage}) {
     return ElevatedButton(
       onPressed: () {
-        // Navigates to the selected route and removes the welcome page from the backstack
-        Navigator.pushReplacementNamed(context, route);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => targetPage));
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white, // Pure white buttons
-        foregroundColor: textColor, // Purple text/ripple effect
-        minimumSize: const Size(double.infinity, 65), // Thick, touch-friendly height
+        backgroundColor: Colors.white, 
+        foregroundColor: textColor, 
+        minimumSize: const Size(double.infinity, 65), 
         elevation: 10,
-        shadowColor: Colors.black.withOpacity(0.3),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(35), // Perfect pill shape
-        ),
+        shadowColor: Colors.black.withOpacity(0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
       ),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w900, // Extra bold text
-          letterSpacing: 1.2,
-          fontFamily: "LexendExaNormal",
-        ),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.2, fontFamily: "LexendExaNormal"),
       ),
     );
   }

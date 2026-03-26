@@ -62,17 +62,16 @@ class StartPage extends StatelessWidget {
                         registrationPage: registrationPage, 
                         decoration: decoration, 
                         onLoginSuccess: onLoginSuccess,
-                        homeRoute: homeRoute, // 2. Pass the route down to LoginPage
+                        homeRoute: homeRoute, 
                       ),
                     ),
                   );
                 },
                 buttonStyle: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  side: const BorderSide(color: Color.fromARGB(51, 0, 0, 0)),
+                  backgroundColor: Colors.grey.shade200, // LIGHT GREY FIX!
                   padding: const EdgeInsets.all(5),
                 ),
-                textColor: Colors.white,
+                textColor: Colors.black87, // Dark text to contrast with the light button
               ),
               const SizedBox(height: 20),
               CustomButton(
@@ -80,6 +79,11 @@ class StartPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(context, MaterialPageRoute(builder: registrationPage));
                 },
+                buttonStyle: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey.shade200, // LIGHT GREY FIX!
+                  padding: const EdgeInsets.all(5),
+                ),
+                textColor: Colors.black87, // Dark text
               ),
             ],
           ),

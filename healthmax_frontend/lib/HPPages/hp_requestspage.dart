@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../theme_provider.dart'; // Ensure this path is correct
 import 'hp_bottomnavbar.dart';
 import 'hp_glassy_profile.dart';
 import 'usermodel.dart';
@@ -13,9 +15,6 @@ class HPRequestsPage extends StatefulWidget {
 }
 
 class _HPRequestsPageState extends State<HPRequestsPage> {
-  final Color themePurple = const Color(0xFF8E33FF);
-  final Color bgOffWhite = const Color(0xFFF8F9FA);
-
   // --- STATE & DATA ---
   bool _isExpanded = false;
 
@@ -29,13 +28,23 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ==========================================
+    // DYNAMIC THEME VARIABLES
+    // ==========================================
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
+    final themePurple = Theme.of(context).primaryColor;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
+    final textSecondary = isDark ? Colors.white54 : Colors.grey;
+    final dividerColor = Theme.of(context).dividerColor;
+
     return Scaffold(
-      backgroundColor: bgOffWhite,
+      backgroundColor: bgColor,
       body: Stack(
         children: [
-          // ==========================================
-          // 1. SCROLLABLE ARCHITECTURE
-          // ==========================================
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -51,7 +60,7 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
                 actions: [
                   Padding(
                     padding: const EdgeInsets.only(right: 30.0, top: 10.0),
-                    child: Center(child: HPGlassyProfile(onTap: () {})),
+                    child: Center(child: HPGlassyProfile(onTap: () => Navigator.pushNamed(context, '/hp_settings'))),
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
@@ -70,7 +79,11 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
                   preferredSize: const Size.fromHeight(30),
                   child: Transform.translate(
                     offset: const Offset(0, 1),
-                    child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgOffWhite, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))),
+                    child: Container(
+                      height: 31, 
+                      width: double.infinity, 
+                      decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))
+                    ),
                   ),
                 ),
               ),
@@ -80,18 +93,15 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // SECTION 1: Patient Applications Label
-                    _buildSectionLabel("PATIENT APPLICATIONS"),
+                    _buildSectionLabel("PATIENT APPLICATIONS", textSecondary),
                     
-                    // SECTION 2: Expandable Request List
-                    _buildExpandableRequestList(),
+                    _buildExpandableRequestList(themePurple, surfaceColor, bgColor, textPrimary, isDark, dividerColor),
 
                     const SizedBox(height: 35),
 
-                    // SECTION 3: Feedback/Consultation Area
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 25),
-                      child: _buildFeedbackContainer(),
+                      child: _buildFeedbackContainer(surfaceColor, isDark, dividerColor),
                     ),
 
                     const SizedBox(height: 120), // Bottom padding for NavBar
@@ -101,9 +111,7 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
             ],
           ),
 
-          // ==========================================
-          // 2. BOTTOM NAVIGATION BAR
-          // ==========================================
+          // --- BOTTOM NAVIGATION BAR ---
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: HPBottomNavBar(currentIndex: 2, activeColor: themePurple),
@@ -117,38 +125,38 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
   // UI COMPONENT HELPERS
   // ==========================================
 
-  Widget _buildSectionLabel(String label) {
+  Widget _buildSectionLabel(String label, Color textSecondary) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(30, 10, 30, 15),
       child: Text(
         label, 
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 1.2),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSecondary, letterSpacing: 1.2),
       ),
     );
   }
 
-  Widget _buildExpandableRequestList() {
+  Widget _buildExpandableRequestList(Color themePurple, Color surfaceColor, Color bgColor, Color textPrimary, bool isDark, Color dividerColor) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeOutCubic,
-      height: _isExpanded ? 420 : 200, // Adjusted heights for new card styling
+      height: _isExpanded ? 420 : 200, 
       margin: const EdgeInsets.symmetric(horizontal: 25),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+        border: Border.all(color: dividerColor),
+        boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
       ),
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
-          // List Content
           ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: ListView.builder(
               physics: _isExpanded ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(15, 15, 15, 80), // Bottom padding ensures last item isn't hidden by button
+              padding: const EdgeInsets.fromLTRB(15, 15, 15, 80), 
               itemCount: _newRequests.length,
-              itemBuilder: (context, index) => _buildRequestTile(_newRequests[index]),
+              itemBuilder: (context, index) => _buildRequestTile(_newRequests[index], bgColor, surfaceColor, textPrimary, isDark, dividerColor, themePurple),
             ),
           ),
 
@@ -190,41 +198,45 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
     );
   }
 
-  Widget _buildRequestTile(UserModel user) {
+  Widget _buildRequestTile(UserModel user, Color bgColor, Color surfaceColor, Color textPrimary, bool isDark, Color dividerColor, Color themePurple) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: bgOffWhite, // Soft background to contrast against the white container
+        color: bgColor, 
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: dividerColor),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 2),
         leading: CircleAvatar(
           radius: 20, 
-          backgroundColor: Colors.white, 
+          backgroundColor: surfaceColor, 
           child: Icon(Icons.person, size: 20, color: themePurple),
         ),
-        title: Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-        subtitle: Text("Device: ${user.device}", style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+        title: Text(user.fullName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textPrimary)),
+        subtitle: Text("Device: ${user.device}", style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey.shade600, fontWeight: FontWeight.w600)),
         trailing: Container(
           padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          child: const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.black87),
+          decoration: BoxDecoration(color: surfaceColor, shape: BoxShape.circle),
+          child: Icon(Icons.arrow_forward_ios_rounded, size: 12, color: textPrimary),
         ),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => HPRequestSelected(user: user))),
       ),
     );
   }
 
-  Widget _buildFeedbackContainer() {
+  Widget _buildFeedbackContainer(Color surfaceColor, bool isDark, Color dividerColor) {
+    // Keep this card distinct by forcing a dark elegant look, or matching the surface in dark mode
+    final containerColor = isDark ? surfaceColor : const Color(0xFF1A1A1A);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A), 
+        color: containerColor, 
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 8))],
+        border: isDark ? Border.all(color: dividerColor) : null,
+        boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
