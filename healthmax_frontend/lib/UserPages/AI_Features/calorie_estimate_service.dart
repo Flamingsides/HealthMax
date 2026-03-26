@@ -40,18 +40,18 @@ Respond ONLY with this exact JSON structure:
     {
       "name": "food name",
       "amount": "estimated portion (e.g. 1 cup, 150g)",
-      "calories": 000,
+      "calories_kcal": 000,
       "protein_g": 00.0,
       "carbs_g": 00.0,
       "fat_g": 00.0,
       "fiber_g": 0.0
     }
   ],
-  "total_calories": 000,
+  "total_calories_kcal": 000,
   "total_protein_g": 00.0,
   "total_carbs_g": 00.0,
   "total_fat_g": 00.0,
-  "confidence": "high/medium/low",
+  "confidence": "00.0%",
   "notes": "any important notes"
 }
 ''';
@@ -74,18 +74,18 @@ Respond ONLY with this exact JSON structure:
     {
       "name": "food name",
       "amount": "estimated portion",
-      "calories": 000,
+      "calories_kcal": 000,
       "protein_g": 00.0,
       "carbs_g": 00.0,
       "fat_g": 00.0,
       "fiber_g": 0.0
     }
   ],
-  "total_calories": 000,
+  "total_calories_kcal": 000,
   "total_protein_g": 00.0,
   "total_carbs_g": 00.0,
   "total_fat_g": 00.0,
-  "confidence": "high/medium/low",
+  "confidence": "00.0%",
   "notes": "brief description of what you see"
 }
 
