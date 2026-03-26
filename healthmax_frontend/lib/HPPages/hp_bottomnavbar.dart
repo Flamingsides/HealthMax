@@ -20,8 +20,12 @@ class HPBottomNavBar extends StatelessWidget {
     final isDark = themeProvider.isDarkMode;
 
     // Dynamically grab colors
-    final bgColor = Theme.of(context).colorScheme.surface; // White in light, Dark Grey in dark
-    final shadowColor = isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.08);
+    final bgColor = Theme.of(
+      context,
+    ).colorScheme.surface; // White in light, Dark Grey in dark
+    final shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.black.withValues(alpha: 0.08);
 
     return Container(
       decoration: BoxDecoration(
@@ -45,8 +49,20 @@ class HPBottomNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(context, Icons.home_rounded, 'Home', 0, isDark),
-              _buildNavItem(context, Icons.people_alt_outlined, 'Users', 1, isDark),
-              _buildNavItem(context, Icons.analytics_outlined, 'Requests', 2, isDark),
+              _buildNavItem(
+                context,
+                Icons.people_alt_outlined,
+                'Users',
+                1,
+                isDark,
+              ),
+              _buildNavItem(
+                context,
+                Icons.analytics_outlined,
+                'Requests',
+                2,
+                isDark,
+              ),
             ],
           ),
         ),
@@ -55,23 +71,29 @@ class HPBottomNavBar extends StatelessWidget {
   }
 
   // ---------- 2. CUSTOM NAV ITEM BUILDER ----------
-  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index, bool isDark) {
+  Widget _buildNavItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    int index,
+    bool isDark,
+  ) {
     bool isActive = currentIndex == index;
-    
+
     // Dynamic text/icon color for unselected items
     final defaultColor = isDark ? Colors.white54 : Colors.black87;
 
     return Expanded(
       child: GestureDetector(
         onTap: () => _handleNavigation(context, index),
-        behavior: HitTestBehavior.opaque, 
+        behavior: HitTestBehavior.opaque,
         child: Stack(
           alignment: Alignment.center,
           children: [
             // --- THE FIXED TOP INDICATOR ---
             if (isActive)
               Positioned(
-                top: 0, 
+                top: 0,
                 child: Container(
                   height: 5,
                   width: 40,
@@ -82,21 +104,25 @@ class HPBottomNavBar extends StatelessWidget {
                       bottomRight: Radius.circular(6),
                     ),
                     boxShadow: [
-                      BoxShadow(color: activeColor.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                      BoxShadow(
+                        color: activeColor.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
                   ),
                 ),
               ),
-            
+
             // --- ICON AND TEXT ---
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 5), 
+                const SizedBox(height: 5),
                 Icon(
                   icon,
                   size: 28,
-                  color: isActive ? activeColor : defaultColor, 
+                  color: isActive ? activeColor : defaultColor,
                 ),
                 const SizedBox(height: 4),
                 Text(
