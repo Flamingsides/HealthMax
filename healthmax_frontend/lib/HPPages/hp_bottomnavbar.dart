@@ -10,45 +10,108 @@ class HPBottomNavBar extends StatelessWidget {
     required this.activeColor,
   });
 
+  // ---------- 1. MAIN BUILD METHOD ----------
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 95,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(35),
+          topRight: Radius.circular(35),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05), // Softer, premium shadow
+            color: Colors.black.withOpacity(0.08), // Matches user shadow
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-        child: BottomNavigationBar(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          selectedItemColor: activeColor,
-          unselectedItemColor: Colors.grey.shade400,
-          currentIndex: currentIndex,
-          type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, fontFamily: "LexendExaNormal"),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11, fontFamily: "LexendExaNormal"),
-          onTap: (index) => _handleNavigation(context, index),
-          items: [
-            _buildElegantNavItem(Icons.home_rounded, 'Home', activeColor, currentIndex == 0),
-            _buildElegantNavItem(Icons.people_alt_outlined, 'Users', activeColor, currentIndex == 1),
-            _buildElegantNavItem(Icons.analytics_outlined, 'Requests', activeColor, currentIndex == 2),
+      // SafeArea ensures it perfectly hugs the bottom of the screen
+      child: SafeArea(
+        child: SizedBox(
+          height: 75, // Fixed height for perfect indicator alignment
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(context, Icons.home_rounded, 'Home', 0),
+              _buildNavItem(context, Icons.people_alt_outlined, 'Users', 1),
+              _buildNavItem(context, Icons.analytics_outlined, 'Requests', 2),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------- 2. CUSTOM NAV ITEM BUILDER ----------
+  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
+    bool isActive = currentIndex == index;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _handleNavigation(context, index),
+        behavior: HitTestBehavior.opaque, // Makes the whole expanded area clickable
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // --- THE FIXED TOP INDICATOR ---
+            if (isActive)
+              Positioned(
+                top: 0, // Locks it exactly to the top edge of the white container
+                child: Container(
+                  height: 5,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: activeColor,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(6),
+                      bottomRight: Radius.circular(6),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: activeColor.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            
+            // --- ICON AND TEXT ---
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 5), // Slight push down so it doesn't hit the indicator
+                Icon(
+                  icon,
+                  size: 28,
+                  color: isActive ? activeColor : Colors.black, // Matches user text coloring
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isActive ? activeColor : Colors.black,
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                    fontFamily: "LexendExaNormal",
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
+  // ---------- 3. NAVIGATION LOGIC ----------
   void _handleNavigation(BuildContext context, int index) {
     if (index == currentIndex) return;
+
     switch (index) {
       case 0:
         Navigator.pushReplacementNamed(context, '/hp_home');
@@ -60,39 +123,5 @@ class HPBottomNavBar extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/hp_requests');
         break;
     }
-  }
-
-  BottomNavigationBarItem _buildElegantNavItem(IconData icon, String label, Color color, bool isActive) {
-    return BottomNavigationBarItem(
-      icon: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.topCenter,
-            clipBehavior: Clip.none,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 10.0, bottom: 4.0),
-                child: Icon(icon, size: 26),
-              ),
-              if (isActive)
-                Positioned(
-                  top: -7,
-                  child: Container(
-                    height: 5,
-                    width: 35,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(6)),
-                      boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 6, offset: const Offset(0, 3))],
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-      label: label,
-    );
   }
 }
