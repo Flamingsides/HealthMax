@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../theme_provider.dart'; // Ensure this path points correctly to your theme provider!
 
 class UserBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -12,16 +14,24 @@ class UserBottomNavBar extends StatelessWidget {
   // ---------- 1. MAIN BUILD METHOD ----------
   @override
   Widget build(BuildContext context) {
+    // Listen to the theme provider
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
+    // Dynamically grab colors based on the theme
+    final bgColor = Theme.of(context).colorScheme.surface; // White in light mode, Dark Grey in dark mode
+    final shadowColor = isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.08);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: bgColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(35),
           topRight: Radius.circular(35),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: shadowColor,
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -34,11 +44,11 @@ class UserBottomNavBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(context, Icons.home_filled, 'Home', 0),
-              _buildNavItem(context, Icons.book, 'History', 1),
-              _buildNavItem(context, Icons.restaurant, 'Calorie', 2),
-              _buildNavItem(context, Icons.bar_chart, 'Statistics', 3),
-              _buildNavItem(context, Icons.track_changes_rounded, 'Target', 4),
+              _buildNavItem(context, Icons.home_filled, 'Home', 0, isDark),
+              _buildNavItem(context, Icons.book, 'History', 1, isDark),
+              _buildNavItem(context, Icons.restaurant, 'Calorie', 2, isDark),
+              _buildNavItem(context, Icons.bar_chart, 'Statistics', 3, isDark),
+              _buildNavItem(context, Icons.track_changes_rounded, 'Target', 4, isDark),
             ],
           ),
         ),
@@ -47,8 +57,11 @@ class UserBottomNavBar extends StatelessWidget {
   }
 
   // ---------- 2. CUSTOM NAV ITEM BUILDER ----------
-  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
+  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index, bool isDark) {
     bool isActive = currentIndex == index;
+    
+    // Dynamic text/icon color for unselected items
+    final defaultColor = isDark ? Colors.white54 : Colors.black87;
 
     return Expanded(
       child: GestureDetector(
@@ -89,13 +102,13 @@ class UserBottomNavBar extends StatelessWidget {
                 Icon(
                   icon,
                   size: 28,
-                  color: isActive ? activeColor : Colors.black,
+                  color: isActive ? activeColor : defaultColor, // Uses dynamic default color
                 ),
                 const SizedBox(height: 4),
                 Text(
                   label,
                   style: TextStyle(
-                    color: isActive ? activeColor : Colors.black,
+                    color: isActive ? activeColor : defaultColor, // Uses dynamic default color
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
                     fontFamily: "LexendExaNormal",
