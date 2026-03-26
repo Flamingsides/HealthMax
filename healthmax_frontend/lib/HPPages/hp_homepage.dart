@@ -94,6 +94,7 @@ class _HPHomePageState extends State<HPHomePage> {
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
+                automaticallyImplyLeading: false,
                 backgroundColor: themePurple,
                 expandedHeight: 220.0, 
                 toolbarHeight: 90.0,

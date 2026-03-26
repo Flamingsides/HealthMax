@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'user_settings.dart';
 
 class UserGlassyProfile extends StatelessWidget {
   final VoidCallback? onTap;

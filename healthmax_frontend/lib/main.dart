@@ -7,12 +7,12 @@ import 'theme_provider.dart';
 
 // --- General & User Pages ---
 import 'GeneralPages/welcome_page.dart';
-import 'UserPages/user_dashboard.dart';
 import 'UserPages/user_homepage.dart';
 import 'UserPages/HistoryPages/user_history_calorie.dart';
 import 'UserPages/user_calorie.dart';
 import 'UserPages/user_statistic.dart';
 import 'UserPages/user_target.dart';
+import 'UserPages/user_settings.dart';
 
 // --- HP Pages ---
 import 'package:healthmax_frontend/HPPages/hp_settings.dart';
@@ -59,7 +59,7 @@ class _MyAppState extends State<MyApp> {
       darkTheme: ThemeProvider.darkTheme,
       
       // Added const for performance optimization
-      home: isSignedIn ? const UserDashboard() : const WelcomePage(),
+      home: isSignedIn ? const UserHomePage(): const WelcomePage(),
       
       routes: {
         // Healthcare Provider routes
@@ -74,6 +74,7 @@ class _MyAppState extends State<MyApp> {
         '/user_calorie': (context) => const UserCaloriePage(),
         '/user_statistic': (context) => const UserStatisticPage(),
         '/user_target': (context) => const UserTargetPage(),
+        '/user_settings': (context) => const UserSettingsPage(),
       },
     );
   }

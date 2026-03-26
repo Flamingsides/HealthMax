@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../theme_provider.dart'; 
 import '../user_bottomnavbar.dart';
 import '../user_glassy_profile.dart';
 import 'user_history_calorie.dart'; 
@@ -23,7 +25,6 @@ class UserHistoryFeedbackPage extends StatefulWidget {
 
 class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
   final Color themeBlue = const Color(0xFF5A84F1);
-  final Color bgOffWhite = const Color(0xFFF8F9FA);
 
   final List<FeedbackRecord> feedbackHistory = [
     FeedbackRecord("Hospital 1", "17 December 2025", "10:00 am", "Your heart rate today is a bit above normal, try to relax for a while.", "Heart Rate", Colors.redAccent),
@@ -33,8 +34,20 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ==========================================
+    // DYNAMIC THEME VARIABLES
+    // ==========================================
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
+    final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
+    final dividerColor = Theme.of(context).dividerColor;
+
     return Scaffold(
-      backgroundColor: bgOffWhite,
+      backgroundColor: bgColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -42,6 +55,7 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
           // --- THE ELEGANT HEADER ---
           // ==========================================
           SliverAppBar(
+            automaticallyImplyLeading: false,
             backgroundColor: themeBlue,
             expandedHeight: 200.0,
             toolbarHeight: 90.0,
@@ -70,7 +84,7 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
                 height: 60,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: bgOffWhite,
+                  color: bgColor,
                   borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40)),
                 ),
                 child: Padding(
@@ -78,13 +92,13 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
                   child: Container(
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
+                      color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Row(
                       children: [
-                        _buildInactiveTab("Calorie Intake", context),
-                        _buildActiveTab("Feedback"),
+                        _buildInactiveTab("Calorie Intake", context, textSecondary),
+                        _buildActiveTab("Feedback", surfaceColor, textPrimary, isDark),
                       ],
                     ),
                   ),
@@ -105,14 +119,14 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
                   return Column(
                     children: [
                       InkWell(
-                        onTap: () => _showDetailSheet(feedback.feedbackType, feedback.message),
+                        onTap: () => _showDetailSheet(feedback.feedbackType, feedback.message, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
                         child: Container(
                           padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(25), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))]),
+                          decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(25), border: isDark ? Border.all(color: dividerColor) : null, boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))]),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              const CircleAvatar(backgroundColor: Colors.black87, radius: 22, child: Icon(Icons.local_hospital, color: Colors.white, size: 20)),
+                              CircleAvatar(backgroundColor: isDark ? Colors.white10 : Colors.black87, radius: 22, child: const Icon(Icons.local_hospital, color: Colors.white, size: 20)),
                               const SizedBox(width: 15),
                               Expanded(
                                 child: Column(
@@ -121,16 +135,16 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(feedback.hospitalName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                        Text("${feedback.date}   ${feedback.time}", style: TextStyle(fontSize: 9, color: Colors.grey.shade500)),
+                                        Text(feedback.hospitalName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textPrimary)),
+                                        Text("${feedback.date}   ${feedback.time}", style: TextStyle(fontSize: 9, color: textSecondary)),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    Text('"${feedback.message}"', style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.4)),
+                                    Text('"${feedback.message}"', style: TextStyle(fontSize: 12, color: textSecondary, height: 1.4)),
                                     const SizedBox(height: 15),
                                     Row(
                                       children: [
-                                        Text("Feedback on ", style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                                        Text("Feedback on ", style: TextStyle(fontSize: 10, color: textSecondary)),
                                         Text(feedback.feedbackType, style: TextStyle(fontSize: 10, color: feedback.typeColor, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
@@ -141,7 +155,7 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
                           ),
                         ),
                       ),
-                      if (index < feedbackHistory.length - 1) const SizedBox(height: 15), // Uses space instead of dividers for cards
+                      if (index < feedbackHistory.length - 1) const SizedBox(height: 15), 
                     ],
                   );
                 },
@@ -157,18 +171,18 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
   }
 
   // --- WIDGETS & LOGIC ---
-  Widget _buildActiveTab(String title) {
+  Widget _buildActiveTab(String title, Color surfaceColor, Color textPrimary, bool isDark) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.all(3),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))]),
+        decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))]),
         alignment: Alignment.center,
-        child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontFamily: "LexendExaNormal", fontSize: 12)),
+        child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal", fontSize: 12)),
       ),
     );
   }
 
-  Widget _buildInactiveTab(String title, BuildContext context) {
+  Widget _buildInactiveTab(String title, BuildContext context, Color textSecondary) {
     return Expanded(
       child: GestureDetector(
         onTap: () => Navigator.pushReplacement(context, PageRouteBuilder(pageBuilder: (_, __, ___) => const UserHistoryCaloriePage(), transitionDuration: Duration.zero)),
@@ -176,26 +190,26 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
           margin: const EdgeInsets.all(3),
           color: Colors.transparent,
           alignment: Alignment.center,
-          child: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade500, fontFamily: "LexendExaNormal", fontSize: 12)),
+          child: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: textSecondary, fontFamily: "LexendExaNormal", fontSize: 12)),
         ),
       ),
     );
   }
 
-  void _showDetailSheet(String title, String description) {
+  void _showDetailSheet(String title, String description, bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
     showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
       builder: (context) {
         return Container(
-          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(35))),
+          decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
           padding: const EdgeInsets.fromLTRB(30, 10, 30, 40),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))),
-              Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")),
+              Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
+              Text(title, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal", color: textPrimary)),
               const SizedBox(height: 20),
-              Container(width: double.infinity, padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade200)), child: Text(description, style: TextStyle(color: Colors.grey.shade700, height: 1.5, fontSize: 14))),
+              Container(width: double.infinity, padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: dividerColor)), child: Text(description, style: TextStyle(color: textSecondary, height: 1.5, fontSize: 14))),
               const SizedBox(height: 30),
               SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))), child: const Text("Close", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: "LexendExaNormal")))),
             ],

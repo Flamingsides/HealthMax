@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../theme_provider.dart'; // Ensure this path is correct!
 import 'user_bottomnavbar.dart'; 
 import 'user_glassy_profile.dart'; 
 
 // ==========================================
-// 1. MOCK DATA MODEL (PLACEHOLDER FOR SQL DB)
+// MOCK DATA MODEL (PLACEHOLDER FOR SQL DB)
 // ==========================================
 class UserHealthData {
   final String username;
@@ -41,8 +43,8 @@ class UserHomePage extends StatefulWidget {
 }
 
 class _UserHomePageState extends State<UserHomePage> {
-  final Color themeBlue = const Color(0xFF5A84F1);
-  final Color bgOffWhite = const Color(0xFFF8F9FA);
+  // Signature User Blue
+  final Color userBlue = const Color(0xFF5A84F1);
 
   // --- SCROLL ANIMATION STATE ---
   late ScrollController _scrollController;
@@ -54,8 +56,7 @@ class _UserHomePageState extends State<UserHomePage> {
   void initState() {
     super.initState();
     
-    // 2. INITIALIZE MOCK DATA
-    // Try changing the username to something very long to test the blur effect!
+    // INITIALIZE MOCK DATA
     myData = UserHealthData(
       username: "Tengku Adam", 
       heartRate: 90,
@@ -70,10 +71,9 @@ class _UserHomePageState extends State<UserHomePage> {
       lastUpdated: "1 minute ago",
     );
 
-    // 3. SET UP SCROLL LISTENER
+    // SET UP SCROLL LISTENER
     _scrollController = ScrollController();
     _scrollController.addListener(() {
-      // 90px is exactly when the large text starts to hide under the app bar
       if (_scrollController.offset > 90 && !_isScrolled) {
         setState(() => _isScrolled = true);
       } else if (_scrollController.offset <= 90 && _isScrolled) {
@@ -90,39 +90,50 @@ class _UserHomePageState extends State<UserHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // ==========================================
+    // DYNAMIC THEME VARIABLES
+    // ==========================================
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
+    final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
+    final dividerColor = Theme.of(context).dividerColor;
+
     return Scaffold(
-      backgroundColor: bgOffWhite,
+      backgroundColor: bgColor,
       body: CustomScrollView(
-        controller: _scrollController, // Attach the scroll listener
+        controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
           // ==========================================
-          // 4. DYNAMIC SLIVER APP BAR
+          // 1. DYNAMIC SLIVER APP BAR
           // ==========================================
           SliverAppBar(
-            backgroundColor: themeBlue,
+            automaticallyImplyLeading: false,
+            backgroundColor: userBlue,
             expandedHeight: 220.0,
             toolbarHeight: 90.0, 
             pinned: true, 
-            
             elevation: 0,
             scrolledUnderElevation: 0.0,         
             surfaceTintColor: Colors.transparent, 
             
-            // --- THE FOLDED TITLE (Fades in on scroll) ---
+            // --- THE FOLDED TITLE ---
             title: AnimatedOpacity(
               duration: const Duration(milliseconds: 250),
-              opacity: _isScrolled ? 1.0 : 0.0, // Only visible when scrolled down
+              opacity: _isScrolled ? 1.0 : 0.0, 
               child: Padding(
                 padding: const EdgeInsets.only(left: 15.0, top: 10.0),
                 child: ShaderMask(
-                  // Creates the blur/fade effect for long usernames
                   shaderCallback: (Rect bounds) {
                     return const LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                       colors: [Colors.white, Colors.white, Colors.transparent],
-                      stops: [0.0, 0.85, 1.0], // Fades out the last 15% of the text
+                      stops: [0.0, 0.85, 1.0], 
                     ).createShader(bounds);
                   },
                   blendMode: BlendMode.dstIn,
@@ -130,22 +141,16 @@ class _UserHomePageState extends State<UserHomePage> {
                     "Hi, ${myData.username}!",
                     maxLines: 1,
                     softWrap: false,
-                    overflow: TextOverflow.clip, // Prevents "..." from appearing
-                    style: const TextStyle(
-                      fontSize: 24, 
-                      fontWeight: FontWeight.w900, 
-                      color: Colors.white, 
-                      fontFamily: "LexendExaNormal"
-                    ),
+                    overflow: TextOverflow.clip, 
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal"),
                   ),
                 ),
               ),
             ),
-
-            actions: const [
+            actions: [
               Padding(
-                padding: EdgeInsets.only(right: 30.0, top: 10.0),
-                child: Center(child: UserGlassyProfile()),
+                padding: const EdgeInsets.only(right: 30.0, top: 10.0),
+                child: Center(child: UserGlassyProfile(onTap: () => Navigator.pushNamed(context, '/user_settings'))), // Added navigation to settings!
               ),
             ],
             
@@ -158,29 +163,11 @@ class _UserHomePageState extends State<UserHomePage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // This large text automatically hides under the solid AppBar as you scroll
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Hi,",
-                            style: TextStyle(
-                              fontSize: 45, 
-                              fontWeight: FontWeight.w900, 
-                              color: Colors.white, 
-                              height: 1.1, 
-                              fontFamily: "LexendExaNormal"
-                            ),
-                          ),
-                          Text(
-                            "${myData.username}!", 
-                            style: const TextStyle(
-                              fontSize: 35, 
-                              fontWeight: FontWeight.bold, 
-                              color: Colors.white, 
-                              fontFamily: "LexendExaNormal"
-                            ),
-                          ),
+                          const Text("Hi,", style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, fontFamily: "LexendExaNormal")),
+                          Text("${myData.username}!", style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: "LexendExaNormal")),
                         ],
                       ),
                     ],
@@ -197,11 +184,8 @@ class _UserHomePageState extends State<UserHomePage> {
                   height: 31, 
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: bgOffWhite, 
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
+                    color: bgColor, // Adapts to theme!
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40)),
                   ),
                 ),
               ),
@@ -209,11 +193,11 @@ class _UserHomePageState extends State<UserHomePage> {
           ),
 
           // ==========================================
-          // 5. SCROLLABLE BODY CONTENT
+          // 2. SCROLLABLE BODY CONTENT
           // ==========================================
           SliverToBoxAdapter(
             child: Container(
-              color: bgOffWhite, 
+              color: bgColor, 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -223,15 +207,10 @@ class _UserHomePageState extends State<UserHomePage> {
                     child: Container(
                       padding: const EdgeInsets.all(25),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: surfaceColor,
                         borderRadius: BorderRadius.circular(35),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.06), 
-                            blurRadius: 20, 
-                            offset: const Offset(0, 8)
-                          ),
-                        ],
+                        border: isDark ? Border.all(color: dividerColor) : null,
+                        boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 8))],
                       ),
                       child: Column(
                         children: [
@@ -249,6 +228,8 @@ class _UserHomePageState extends State<UserHomePage> {
                                     status: myData.heartRateStatus,
                                     title: "Heart Rate",
                                     description: "Your heart rate is currently stable and within the normal resting range. Consistency is looking great.",
+                                    textPrimary: textPrimary,
+                                    textSecondary: textSecondary,
                                   ),
                                   const SizedBox(height: 15),
                                   _buildMetric(
@@ -259,6 +240,8 @@ class _UserHomePageState extends State<UserHomePage> {
                                     status: myData.bloodGlucoseStatus,
                                     title: "Blood Glucose",
                                     description: "Blood glucose levels are optimal, indicating a healthy metabolic response.",
+                                    textPrimary: textPrimary,
+                                    textSecondary: textSecondary,
                                   ),
                                   const SizedBox(height: 15),
                                   _buildMetric(
@@ -269,6 +252,8 @@ class _UserHomePageState extends State<UserHomePage> {
                                     status: myData.envNoiseStatus,
                                     title: "Env. Noise",
                                     description: "Environmental noise exposure is within safe limits.",
+                                    textPrimary: textPrimary,
+                                    textSecondary: textSecondary,
                                   ),
                                 ],
                               ),
@@ -282,13 +267,10 @@ class _UserHomePageState extends State<UserHomePage> {
                                     CircularProgressIndicator(
                                       value: 1.0, 
                                       strokeWidth: 10, 
-                                      color: Colors.grey.shade100
+                                      color: isDark ? Colors.white10 : Colors.grey.shade100
                                     ),
                                     TweenAnimationBuilder(
-                                      tween: Tween<double>(
-                                        begin: 0, 
-                                        end: (myData.currentSteps / myData.targetSteps).clamp(0.0, 1.0)
-                                      ), 
+                                      tween: Tween<double>(begin: 0, end: (myData.currentSteps / myData.targetSteps).clamp(0.0, 1.0)), 
                                       duration: const Duration(seconds: 2),
                                       curve: Curves.easeOutCubic,
                                       builder: (context, value, child) {
@@ -304,15 +286,10 @@ class _UserHomePageState extends State<UserHomePage> {
                                     Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        const Text("Steps:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                        Text("Steps:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textSecondary)),
                                         Text(
                                           myData.currentSteps.toString(),
-                                          style: const TextStyle(
-                                            fontSize: 32, 
-                                            fontWeight: FontWeight.w900, 
-                                            fontFamily: "LexendExaNormal", 
-                                            letterSpacing: -1
-                                          ),
+                                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1),
                                         ),
                                       ],
                                     ),
@@ -322,20 +299,17 @@ class _UserHomePageState extends State<UserHomePage> {
                             ],
                           ),
                           
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 15),
-                            child: Divider(color: Colors.black12, height: 1),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            child: Divider(color: dividerColor, height: 1),
                           ),
                           
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                "Last Updated : ${myData.lastUpdated}", 
-                                style: TextStyle(color: Colors.grey.shade500, fontSize: 12)
-                              ),
+                              Text("Last Updated : ${myData.lastUpdated}", style: TextStyle(color: textSecondary, fontSize: 12)),
                               const SizedBox(width: 8),
-                              Icon(Icons.sync, size: 16, color: Colors.grey.shade500),
+                              Icon(Icons.sync, size: 16, color: textSecondary),
                             ],
                           )
                         ],
@@ -346,17 +320,15 @@ class _UserHomePageState extends State<UserHomePage> {
                   const SizedBox(height: 35),
 
                   // --- QUICK ACTION SECTION ---
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 25),
-                    child: Text(
-                      "Quick Action", 
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25),
+                    child: Text("Quick Action", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                   ),
                   const SizedBox(height: 15),
                   
+                  // THE OVERFLOW FIX: Height increased from 130 to 160
                   SizedBox(
-                    height: 110,
+                    height: 160, 
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
@@ -368,6 +340,7 @@ class _UserHomePageState extends State<UserHomePage> {
                           title: "Burn Calories",
                           subtitle: "${myData.caloriesToBurn} Calories left to burn",
                           isProgress: true,
+                          surfaceColor: surfaceColor, textPrimary: textPrimary, textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark
                         ),
                         const SizedBox(width: 15),
                         _buildQuickActionCard(
@@ -376,6 +349,7 @@ class _UserHomePageState extends State<UserHomePage> {
                           title: "17 December 2026",
                           subtitle: "Heart Appointment\nHospital 1",
                           isAppointment: true,
+                          surfaceColor: surfaceColor, textPrimary: textPrimary, textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark
                         ),
                       ],
                     ),
@@ -384,12 +358,9 @@ class _UserHomePageState extends State<UserHomePage> {
                   const SizedBox(height: 35),
 
                   // --- FEEDBACK SECTION ---
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 25),
-                    child: Text(
-                      "Feedback", 
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25),
+                    child: Text("Feedback", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                   ),
                   const SizedBox(height: 15),
                   
@@ -397,17 +368,9 @@ class _UserHomePageState extends State<UserHomePage> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
-                        _buildFeedbackCard(
-                          "Dr. Ahmad Syafiq", 
-                          "Heart Rate consistency is looking excellent this week. Keep up the light cardio.", 
-                          "10:30 AM"
-                        ),
-                        _buildFeedbackCard(
-                          "Nutritionist Sarah", 
-                          "Your glucose levels have stabilized perfectly after we adjusted your dinner macros.", 
-                          "Yesterday"
-                        ),
-                        const SizedBox(height: 40), 
+                        _buildFeedbackCard("Dr. Ahmad Syafiq", "Heart Rate consistency is looking excellent this week. Keep up the light cardio.", "10:30 AM", surfaceColor, textPrimary, textSecondary, dividerColor, userBlue, isDark),
+                        _buildFeedbackCard("Nutritionist Sarah", "Your glucose levels have stabilized perfectly after we adjusted your dinner macros.", "Yesterday", surfaceColor, textPrimary, textSecondary, dividerColor, userBlue, isDark),
+                        const SizedBox(height: 100), // Bottom padding for Nav Bar
                       ],
                     ),
                   ),
@@ -421,33 +384,23 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  // --- HELPER WIDGETS ---
-  // (Remaining helper widgets stay the same as previous)
+  // ==========================================
+  // HELPER WIDGETS
+  // ==========================================
 
   Widget _buildMetric({
-    required IconData icon, 
-    required Color color, 
-    required String value, 
-    required String unit, 
-    required String status,
-    required String title,
-    required String description,
+    required IconData icon, required Color color, required String value, required String unit, required String status,
+    required String title, required String description, required Color textPrimary, required Color textSecondary
   }) {
     return GestureDetector(
-      onTap: () => _showDataDetails(title, value, unit, status, color, description),
+      onTap: () => _showDataDetails(title, value, unit, status, color, description, textPrimary, textSecondary),
       child: Container(
         color: Colors.transparent, 
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))
-                ],
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))]),
               child: Icon(icon, color: Colors.white, size: 28),
             ),
             const SizedBox(width: 15),
@@ -458,17 +411,14 @@ class _UserHomePageState extends State<UserHomePage> {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")),
+                    Text(value, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                     const SizedBox(width: 4),
-                    Text(unit, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
+                    Text(unit, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textSecondary)),
                   ],
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.greenAccent.withOpacity(0.4), 
-                    borderRadius: BorderRadius.circular(10)
-                  ),
+                  decoration: BoxDecoration(color: Colors.greenAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
                   child: Text(status, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
                 ),
               ],
@@ -480,23 +430,18 @@ class _UserHomePageState extends State<UserHomePage> {
   }
 
   Widget _buildQuickActionCard({
-    required IconData icon, 
-    required Color iconBgColor, 
-    required String title, 
-    required String subtitle, 
-    bool isProgress = false,
-    bool isAppointment = false,
+    required IconData icon, required Color iconBgColor, required String title, required String subtitle, 
+    bool isProgress = false, bool isAppointment = false,
+    required Color surfaceColor, required Color textPrimary, required Color textSecondary, required Color dividerColor, required bool isDark
   }) {
     return Container(
       width: 260,
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 5))
-        ],
+        border: Border.all(color: dividerColor),
+        boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Row(
         children: [
@@ -511,26 +456,26 @@ class _UserHomePageState extends State<UserHomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textPrimary)),
                 const SizedBox(height: 4),
-                Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey.shade600, height: 1.2)),
+                Text(subtitle, style: TextStyle(fontSize: 10, color: textSecondary, height: 1.2)),
                 if (isProgress) ...[
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
                     value: 0.6,
-                    backgroundColor: Colors.grey.shade200,
+                    backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
                     valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD93D)),
                     borderRadius: BorderRadius.circular(5),
                     minHeight: 5,
                   ),
                 ],
                 if (isAppointment) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      Text("Cancel", style: TextStyle(fontSize: 10, color: Colors.red.shade400, fontWeight: FontWeight.bold)),
+                      Text("Cancel", style: TextStyle(fontSize: 11, color: Colors.red.shade400, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 15),
-                      const Text("Reschedule", style: TextStyle(fontSize: 10, color: Colors.black45, fontWeight: FontWeight.bold)),
+                      Text("Reschedule", style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.bold)),
                     ],
                   )
                 ]
@@ -542,22 +487,20 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  Widget _buildFeedbackCard(String doctor, String message, String time) {
+  Widget _buildFeedbackCard(String doctor, String message, String time, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, Color userBlue, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: dividerColor),
+        boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            backgroundColor: themeBlue.withOpacity(0.1), 
-            child: Icon(Icons.medical_services_rounded, color: themeBlue, size: 20)
-          ),
+          CircleAvatar(backgroundColor: userBlue.withOpacity(0.1), child: Icon(Icons.medical_services_rounded, color: userBlue, size: 20)),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
@@ -566,12 +509,12 @@ class _UserHomePageState extends State<UserHomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(doctor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    Text(time, style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+                    Text(doctor, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
+                    Text(time, style: TextStyle(color: textSecondary, fontSize: 11)),
                   ],
                 ),
                 const SizedBox(height: 5),
-                Text(message, style: TextStyle(color: Colors.grey.shade700, fontSize: 12, height: 1.4)),
+                Text(message, style: TextStyle(color: textSecondary, fontSize: 12, height: 1.4)),
               ],
             ),
           ),
@@ -580,34 +523,29 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  void _showDataDetails(String title, String value, String unit, String status, Color color, String description) {
+  void _showDataDetails(String title, String value, String unit, String status, Color color, String description, Color textPrimary, Color textSecondary) {
+    final isDark = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final dividerColor = Theme.of(context).dividerColor;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white, 
-            borderRadius: BorderRadius.vertical(top: Radius.circular(35))
+          decoration: BoxDecoration(
+            color: surfaceColor, 
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(35))
           ),
           padding: const EdgeInsets.fromLTRB(30, 10, 30, 40),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 50, 
-                height: 5, 
-                margin: const EdgeInsets.only(bottom: 30), 
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))
-              ),
-              Container(
-                padding: const EdgeInsets.all(20), 
-                decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), 
-                child: Icon(Icons.insights_rounded, color: color, size: 50)
-              ),
+              Container(width: 50, height: 5, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
+              Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: Icon(Icons.insights_rounded, color: color, size: 50)),
               const SizedBox(height: 20),
-              Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")),
+              Text(title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -616,28 +554,28 @@ class _UserHomePageState extends State<UserHomePage> {
                 children: [
                   Text(value, style: TextStyle(fontSize: 50, fontWeight: FontWeight.w900, color: color)),
                   const SizedBox(width: 8),
-                  Text(unit, style: const TextStyle(fontSize: 20, color: Colors.black54, fontWeight: FontWeight.bold)),
+                  Text(unit, style: TextStyle(fontSize: 20, color: textSecondary, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 25),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50, 
+                  color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade50, 
                   borderRadius: BorderRadius.circular(20), 
-                  border: Border.all(color: Colors.grey.shade200)
+                  border: Border.all(color: dividerColor)
                 ),
                 child: Column(
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.analytics_outlined, color: Colors.black54, size: 20),
+                        Icon(Icons.analytics_outlined, color: textSecondary, size: 20),
                         const SizedBox(width: 10),
-                        Text("Behavior Analysis", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+                        Text("Behavior Analysis", style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary)),
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(description, style: TextStyle(color: Colors.grey.shade600, height: 1.5, fontSize: 13)),
+                    Text(description, style: TextStyle(color: textSecondary, height: 1.5, fontSize: 13)),
                   ],
                 ),
               ),
@@ -647,7 +585,7 @@ class _UserHomePageState extends State<UserHomePage> {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: themeBlue, 
+                    backgroundColor: userBlue, 
                     padding: const EdgeInsets.symmetric(vertical: 18), 
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
                   ),

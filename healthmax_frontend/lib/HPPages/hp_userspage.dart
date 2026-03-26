@@ -46,6 +46,7 @@ class _HPUsersPageState extends State<HPUsersPage> {
             slivers: [
               // --- PREMIUM SLIVER APP BAR ---
               SliverAppBar(
+                automaticallyImplyLeading: false,
                 backgroundColor: themePurple,
                 expandedHeight: 200.0,
                 toolbarHeight: 90.0,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../theme_provider.dart'; // Adjust path if needed
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
 
@@ -10,7 +12,7 @@ class TargetItem {
   String description;
   int currentValue;
   int targetValue;
-  int duration; // Added explicit duration
+  int duration; 
   String unit;
   int rewardPoints;
 
@@ -46,13 +48,15 @@ class UserTargetPage extends StatefulWidget {
 
 class _UserTargetPageState extends State<UserTargetPage> {
   final Color themeBlue = const Color(0xFF5A84F1);
-  final Color bgOffWhite = const Color(0xFFF8F9FA);
+
+  // --- SCROLL ANIMATION STATE ---
+  late ScrollController _scrollController;
+  bool _isScrolled = false;
 
   // --- MOCK DATA ---
   final int _userScore = 1234;
   final String _username = "Tengku Adam";
 
-  // Made this a mutable list so we can add/edit/remove!
   final List<TargetItem> _targets = [
     TargetItem(
       title: "Steps",
@@ -95,41 +99,106 @@ class _UserTargetPageState extends State<UserTargetPage> {
   void initState() {
     super.initState();
     _currentUserRank = RankingUser(42, _username, _userScore, isCurrentUser: true);
+    
+    _scrollController = ScrollController();
+    _scrollController.addListener(() {
+      if (_scrollController.offset > 70 && !_isScrolled) {
+        setState(() => _isScrolled = true);
+      } else if (_scrollController.offset <= 70 && _isScrolled) {
+        setState(() => _isScrolled = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   int get _completedTargets => _targets.where((t) => t.isCompleted).length;
 
   @override
   Widget build(BuildContext context) {
+    // ==========================================
+    // DYNAMIC THEME VARIABLES
+    // ==========================================
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
+    final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
+    final dividerColor = Theme.of(context).dividerColor;
+
     return Scaffold(
-      backgroundColor: bgOffWhite,
+      backgroundColor: bgColor,
       body: CustomScrollView(
+        controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
           // ==========================================
           // 2. ELEGANT APP BAR
           // ==========================================
           SliverAppBar(
+            automaticallyImplyLeading: false,
             backgroundColor: themeBlue,
-            expandedHeight: 180.0,
+            expandedHeight: 200.0,
             toolbarHeight: 90.0,
             pinned: true,
             elevation: 0,
             scrolledUnderElevation: 0.0,
             surfaceTintColor: Colors.transparent,
+            
+            // --- THE FOLDED TITLE ---
+            title: AnimatedOpacity(
+              duration: const Duration(milliseconds: 250),
+              opacity: _isScrolled ? 1.0 : 0.0,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 15.0, top: 10.0),
+                child: ShaderMask(
+                  shaderCallback: (Rect bounds) {
+                    return const LinearGradient(
+                      begin: Alignment.centerLeft, end: Alignment.centerRight,
+                      colors: [Colors.white, Colors.white, Colors.transparent],
+                      stops: [0.0, 0.85, 1.0], 
+                    ).createShader(bounds);
+                  },
+                  blendMode: BlendMode.dstIn,
+                  child: const Text(
+                    "Your Target.",
+                    maxLines: 1, softWrap: false, overflow: TextOverflow.clip, 
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal"),
+                  ),
+                ),
+              ),
+            ),
             actions: const [
               Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile())),
             ],
-            title: const Padding(
-              padding: EdgeInsets.only(left: 15.0),
-              child: Text("Your\nTarget.", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1)),
+            
+            // --- THE EXPANDED LARGE TEXT ---
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.parallax, 
+              background: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(30, 20, 30, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text("Your\nTarget.", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1)),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            flexibleSpace: const FlexibleSpaceBar(background: SizedBox.shrink()),
+
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(30),
               child: Transform.translate(
                 offset: const Offset(0, 1),
-                child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgOffWhite, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))),
+                child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))),
               ),
             ),
           ),
@@ -147,35 +216,38 @@ class _UserTargetPageState extends State<UserTargetPage> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))]),
+                    decoration: BoxDecoration(
+                      color: surfaceColor, 
+                      borderRadius: BorderRadius.circular(30), 
+                      border: isDark ? Border.all(color: dividerColor) : null,
+                      boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))]
+                    ),
                     child: Column(
                       children: [
-                        Text("Your Score : $_userScore", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+                        Text("Your Score : $_userScore", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
                         const SizedBox(height: 20),
                         
                         Container(
                           padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: themeBlue, width: 2.5)),
+                          decoration: BoxDecoration(color: isDark ? bgColor : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: themeBlue, width: 2.5)),
                           child: Column(
                             children: [
                               Text("$_completedTargets/${_targets.length} Achieved!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue, fontFamily: "LexendExaNormal")),
                               const SizedBox(height: 4),
                               Text(
                                 _targets.length == _completedTargets ? "All targets completed! Great job!" : "Complete ${_targets.length - _completedTargets} more to get extra points!", 
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                                style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 25),
                               
-                              // Check if list is empty
                               if (_targets.isEmpty)
                                 Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 20),
-                                  child: Text("No targets set. Tap the button below to start!", style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.bold)),
+                                  child: Text("No targets set. Tap the button below to start!", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)),
                                 )
                               else
-                                // Map through dynamic targets and pass the index!
-                                ..._targets.asMap().entries.map((entry) => _buildTargetProgress(entry.value, entry.key)),
+                                ..._targets.asMap().entries.map((entry) => _buildTargetProgress(entry.value, entry.key, textPrimary, textSecondary, isDark)),
                             ],
                           ),
                         ),
@@ -186,27 +258,32 @@ class _UserTargetPageState extends State<UserTargetPage> {
                   const SizedBox(height: 40),
 
                   // --- RANKING SECTION ---
-                  const Text("Ranking", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")),
+                  Text("Ranking", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
                   
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(25),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.grey.shade200), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))]),
+                    decoration: BoxDecoration(
+                      color: surfaceColor, 
+                      borderRadius: BorderRadius.circular(30), 
+                      border: Border.all(color: dividerColor), 
+                      boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))]
+                    ),
                     child: Column(
                       children: [
-                        ..._topRankings.map((user) => _buildRankingRow(user)),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
+                        ..._topRankings.map((user) => _buildRankingRow(user, textPrimary)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                           child: Column(
                             children: [
-                              Icon(Icons.circle, size: 4, color: Colors.black26), SizedBox(height: 4),
-                              Icon(Icons.circle, size: 4, color: Colors.black26), SizedBox(height: 4),
-                              Icon(Icons.circle, size: 4, color: Colors.black26),
+                              Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26), const SizedBox(height: 4),
+                              Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26), const SizedBox(height: 4),
+                              Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26),
                             ],
                           ),
                         ),
-                        _buildRankingRow(_currentUserRank),
+                        _buildRankingRow(_currentUserRank, textPrimary),
                       ],
                     ),
                   ),
@@ -226,7 +303,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 10.0),
         child: FloatingActionButton.extended(
-          onPressed: () => _showTargetActionModal(null), // Null means "Create New"
+          onPressed: () => _showTargetActionModal(null),
           backgroundColor: themeBlue,
           elevation: 8,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -242,7 +319,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
 
   // --- HELPER WIDGETS ---
 
-  Widget _buildTargetProgress(TargetItem target, int index) {
+  Widget _buildTargetProgress(TargetItem target, int index, Color textPrimary, Color textSecondary, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 25.0),
       child: Column(
@@ -250,31 +327,30 @@ class _UserTargetPageState extends State<UserTargetPage> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center, // Center aligned for the button
+            crossAxisAlignment: CrossAxisAlignment.center, 
             children: [
               Expanded(
                 child: Row(
                   children: [
-                    Text(target.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                    Text(target.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textPrimary)),
                     const SizedBox(width: 8),
                     if (target.isCompleted)
                       Text("+${target.rewardPoints} pts", style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
-              // --- THE NEW EDIT BUTTON ---
               GestureDetector(
-                onTap: () => _showTargetActionModal(index), // Pass index to edit
+                onTap: () => _showTargetActionModal(index), 
                 child: Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-                  child: Icon(Icons.edit_rounded, size: 16, color: Colors.grey.shade600),
+                  decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+                  child: Icon(Icons.edit_rounded, size: 16, color: textSecondary),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          Text(target.description, style: TextStyle(fontSize: 11, color: Colors.grey.shade800, fontWeight: FontWeight.w600)),
+          Text(target.description, style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
           
           ClipRRect(
@@ -282,7 +358,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
             child: LinearProgressIndicator(
               value: target.progress,
               minHeight: 6,
-              backgroundColor: Colors.grey.shade300,
+              backgroundColor: isDark ? Colors.white10 : Colors.grey.shade300,
               valueColor: AlwaysStoppedAnimation<Color>(target.isCompleted ? const Color(0xFF2ED573) : const Color(0xFFFF4757)),
             ),
           ),
@@ -291,8 +367,8 @@ class _UserTargetPageState extends State<UserTargetPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("${target.currentValue} ${target.unit} / ${target.targetValue} ${target.unit}", style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-              Text("${(target.progress * 100).toInt()}%", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)),
+              Text("${target.currentValue} ${target.unit} / ${target.targetValue} ${target.unit}", style: TextStyle(fontSize: 10, color: textSecondary, fontWeight: FontWeight.bold)),
+              Text("${(target.progress * 100).toInt()}%", style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: textPrimary)),
             ],
           ),
         ],
@@ -300,7 +376,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
     );
   }
 
-  Widget _buildRankingRow(RankingUser user) {
+  Widget _buildRankingRow(RankingUser user, Color textPrimary) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -308,11 +384,11 @@ class _UserTargetPageState extends State<UserTargetPage> {
         children: [
           Row(
             children: [
-              SizedBox(width: 30, child: Text("${user.rank}.", style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : Colors.black87))),
-              Text(user.name, style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : Colors.black87, fontFamily: user.isCurrentUser ? "LexendExaNormal" : null)),
+              SizedBox(width: 30, child: Text("${user.rank}.", style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : textPrimary))),
+              Text(user.name, style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : textPrimary, fontFamily: user.isCurrentUser ? "LexendExaNormal" : null)),
             ],
           ),
-          Text("Score: ${user.score}", style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : Colors.black87)),
+          Text("Score: ${user.score}", style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : textPrimary)),
         ],
       ),
     );
@@ -325,7 +401,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
     bool isEditing = editIndex != null;
     TargetItem? existingTarget = isEditing ? _targets[editIndex] : null;
 
-    // Available Metrics
     final List<Map<String, String>> metricOptions = [
       {"title": "Steps", "unit": "steps"},
       {"title": "Calorie Balance", "unit": "kcal"},
@@ -333,52 +408,54 @@ class _UserTargetPageState extends State<UserTargetPage> {
       {"title": "Heart Rate", "unit": "bpm"},
     ];
 
-    // Form State variables
     String selectedMetricTitle = existingTarget?.title ?? metricOptions[0]["title"]!;
     String selectedUnit = existingTarget?.unit ?? metricOptions[0]["unit"]!;
     
-    // Controllers for the input fields
     TextEditingController amountController = TextEditingController(text: isEditing ? existingTarget!.targetValue.toString() : "");
     TextEditingController durationController = TextEditingController(text: isEditing ? existingTarget!.duration.toString() : "");
+
+    // Grab theme data for the modal
+    final isDark = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
+    final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true, // Allows keyboard to push modal up
+      isScrollControlled: true, 
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            
-            // Safety measure: dynamically push UI up when keyboard appears
             final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
             return Container(
-              decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(35))),
-              padding: EdgeInsets.fromLTRB(30, 10, 30, 40 + bottomPadding), // Dynamic padding!
-              child: SingleChildScrollView( // Prevents overflow when keyboard is open
+              decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
+              padding: EdgeInsets.fromLTRB(30, 10, 30, 40 + bottomPadding), 
+              child: SingleChildScrollView( 
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)))),
+                    Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: isDark ? Colors.white24 : Colors.grey.shade300, borderRadius: BorderRadius.circular(10)))),
                     
-                    Text(isEditing ? "Edit Target" : "Set New Target", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")),
+                    Text(isEditing ? "Edit Target" : "Set New Target", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                     const SizedBox(height: 5),
-                    Text(isEditing ? "Modify your current goal parameters." : "Select your metric and set a challenging goal.", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                    Text(isEditing ? "Modify your current goal parameters." : "Select your metric and set a challenging goal.", style: TextStyle(color: textSecondary, fontSize: 13)),
                     const SizedBox(height: 30),
 
-                    // --- 1. METRIC SELECTOR (CHOICE CHIPS) ---
-                    const Text("Select Metric", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    // --- 1. METRIC SELECTOR ---
+                    Text("Select Metric", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 10, runSpacing: 10,
                       children: metricOptions.map((option) {
                         bool isSelected = selectedMetricTitle == option["title"];
                         return ChoiceChip(
-                          label: Text(option["title"]!, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black87, fontSize: 12)),
+                          label: Text(option["title"]!, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : textPrimary, fontSize: 12)),
                           selected: isSelected,
                           selectedColor: themeBlue,
-                          backgroundColor: Colors.grey.shade100,
+                          backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100,
                           showCheckmark: false,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
                           onSelected: (selected) {
@@ -397,22 +474,21 @@ class _UserTargetPageState extends State<UserTargetPage> {
                     // --- 2. INPUT FIELDS ROW ---
                     Row(
                       children: [
-                        // Target Amount Input
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("Target Amount", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text("Target Amount", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
                               const SizedBox(height: 10),
                               TextFormField(
                                 controller: amountController,
                                 keyboardType: TextInputType.number,
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: textPrimary),
                                 decoration: InputDecoration(
-                                  filled: true, fillColor: Colors.grey.shade100,
+                                  filled: true, fillColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100,
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                                   suffixText: selectedUnit,
-                                  suffixStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade500),
+                                  suffixStyle: TextStyle(fontWeight: FontWeight.bold, color: textSecondary),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                                 ),
                               ),
@@ -420,22 +496,21 @@ class _UserTargetPageState extends State<UserTargetPage> {
                           ),
                         ),
                         const SizedBox(width: 15),
-                        // Duration Input
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("Duration", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text("Duration", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
                               const SizedBox(height: 10),
                               TextFormField(
                                 controller: durationController,
                                 keyboardType: TextInputType.number,
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: textPrimary),
                                 decoration: InputDecoration(
-                                  filled: true, fillColor: Colors.grey.shade100,
+                                  filled: true, fillColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100,
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                                   suffixText: "days",
-                                  suffixStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade500),
+                                  suffixStyle: TextStyle(fontWeight: FontWeight.bold, color: textSecondary),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                                 ),
                               ),
@@ -452,35 +527,27 @@ class _UserTargetPageState extends State<UserTargetPage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Very basic validation
                           if (amountController.text.isEmpty || durationController.text.isEmpty) return;
                           
                           int amount = int.parse(amountController.text);
                           int duration = int.parse(durationController.text);
                           
-                          // Mock generated description
                           String newDesc = "Achieve $amount $selectedUnit in $duration Days.";
                           if (selectedMetricTitle == "Calorie Balance") newDesc = "Maintain a Net Calorie deficit of $amount $selectedUnit for $duration days straight.";
 
                           setState(() {
                             if (isEditing) {
-                              // Update existing
                               _targets[editIndex].title = selectedMetricTitle;
                               _targets[editIndex].targetValue = amount;
                               _targets[editIndex].duration = duration;
                               _targets[editIndex].unit = selectedUnit;
                               _targets[editIndex].description = newDesc;
                             } else {
-                              // Create new
                               _targets.add(
                                 TargetItem(
-                                  title: selectedMetricTitle,
-                                  description: newDesc,
-                                  currentValue: 0, // Starts at 0
-                                  targetValue: amount,
-                                  duration: duration,
-                                  unit: selectedUnit,
-                                  rewardPoints: (amount / duration).clamp(10, 500).toInt(), // Mock calc
+                                  title: selectedMetricTitle, description: newDesc, currentValue: 0,
+                                  targetValue: amount, duration: duration, unit: selectedUnit,
+                                  rewardPoints: (amount / duration).clamp(10, 500).toInt(),
                                 )
                               );
                             }
@@ -493,18 +560,15 @@ class _UserTargetPageState extends State<UserTargetPage> {
                       ),
                     ),
 
-                    // --- DYNAMIC REMOVE BUTTON (ONLY SHOWS IF EDITING) ---
                     if (isEditing) ...[
                       const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
                         child: TextButton(
                           onPressed: () {
-                            setState(() {
-                              _targets.removeAt(editIndex);
-                            });
+                            setState(() => _targets.removeAt(editIndex));
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Target Removed", style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: const Color(0xFFFF4757), behavior: SnackBarBehavior.floating));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text("Target Removed", style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: const Color(0xFFFF4757), behavior: SnackBarBehavior.floating));
                           },
                           child: const Text("Delete Target", style: TextStyle(color: Color(0xFFFF4757), fontWeight: FontWeight.bold, fontSize: 14)),
                         ),

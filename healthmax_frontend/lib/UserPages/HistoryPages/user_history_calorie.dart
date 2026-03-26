@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; 
+import 'package:provider/provider.dart';
+import '../../theme_provider.dart'; 
 import '../user_bottomnavbar.dart';
 import '../user_glassy_profile.dart';
 import 'user_history_feedback.dart'; 
@@ -26,7 +27,6 @@ class UserHistoryCaloriePage extends StatefulWidget {
 
 class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
   final Color themeBlue = const Color(0xFF5A84F1);
-  final Color bgOffWhite = const Color(0xFFF8F9FA);
 
   final List<CalorieRecord> calorieHistory = [
     CalorieRecord("Burger", 1, "25g", "40g", "15g", 375, Icons.lunch_dining, Colors.orange),
@@ -40,8 +40,20 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
 
   @override
   Widget build(BuildContext context) {
+    // ==========================================
+    // DYNAMIC THEME VARIABLES
+    // ==========================================
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
+    final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
+    final dividerColor = Theme.of(context).dividerColor;
+
     return Scaffold(
-      backgroundColor: bgOffWhite,
+      backgroundColor: bgColor,
       body: Stack(
         children: [
           CustomScrollView(
@@ -51,6 +63,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
               // --- THE ELEGANT HEADER ---
               // ==========================================
               SliverAppBar(
+                automaticallyImplyLeading: false,
                 backgroundColor: themeBlue,
                 expandedHeight: 200.0,
                 toolbarHeight: 90.0,
@@ -63,10 +76,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                 ],
                 title: const Padding(
                   padding: EdgeInsets.only(left: 15.0),
-                  child: Text(
-                    "History.", 
-                    style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1),
-                  ),
+                  child: Text("History.", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1)),
                 ),
                 flexibleSpace: const FlexibleSpaceBar(
                   collapseMode: CollapseMode.parallax,
@@ -78,7 +88,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                     height: 60,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: bgOffWhite, 
+                      color: bgColor, 
                       borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40)),
                     ),
                     child: Padding(
@@ -86,13 +96,13 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                       child: Container(
                         height: 40, 
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade200, 
+                          color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade200, 
                           borderRadius: BorderRadius.circular(30), 
                         ),
                         child: Row(
                           children: [
-                            _buildActiveTab("Calorie Intake"),
-                            _buildInactiveTab("Feedback", context),
+                            _buildActiveTab("Calorie Intake", surfaceColor, textPrimary, isDark),
+                            _buildInactiveTab("Feedback", context, textSecondary),
                           ],
                         ),
                       ),
@@ -113,7 +123,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                       return Column(
                         children: [
                           InkWell(
-                            onTap: () => _showDetailSheet(item.foodName, "Detailed macronutrient breakdown for ${item.foodName}."),
+                            onTap: () => _showDetailSheet(item.foodName, "Detailed macronutrient breakdown for ${item.foodName}.", isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Row(
@@ -132,21 +142,21 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Text(item.foodName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")),
-                                            Text("Quantity : ${item.quantity}", style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                                            Text(item.foodName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
+                                            Text("Quantity : ${item.quantity}", style: TextStyle(fontSize: 11, color: textSecondary)),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Row(
                                           children: [
-                                            Expanded(child: Text("Protein : ${item.protein}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
-                                            Expanded(child: Text("Carbs : ${item.carbs}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
+                                            Expanded(child: Text("Protein : ${item.protein}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary))),
+                                            Expanded(child: Text("Carbs : ${item.carbs}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary))),
                                           ],
                                         ),
                                         const SizedBox(height: 5),
-                                        Text("Fats : ${item.fats}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                                        Text("Fats : ${item.fats}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)),
                                         const SizedBox(height: 8),
-                                        Align(alignment: Alignment.centerRight, child: Text("Calories : ${item.calories} kcal", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900))),
+                                        Align(alignment: Alignment.centerRight, child: Text("Calories : ${item.calories} kcal", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary))),
                                       ],
                                     ),
                                   ),
@@ -154,7 +164,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                               ),
                             ),
                           ),
-                          if (index < calorieHistory.length - 1) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Divider(color: Colors.grey.shade200, thickness: 1)),
+                          if (index < calorieHistory.length - 1) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Divider(color: dividerColor, thickness: 1)),
                         ],
                       );
                     },
@@ -162,7 +172,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)), // Adjusted padding
+              const SliverToBoxAdapter(child: SizedBox(height: 100)), 
             ],
           ),
           
@@ -172,19 +182,14 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Container(
-              height: 130, // Taller height for a very gradual, elegant fade
+              height: 130, 
               width: double.infinity,
-              // We use a pure color gradient instead of a blur to avoid sharp edges
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [
-                    bgOffWhite,                  // Solid background color at the bottom
-                    bgOffWhite.withOpacity(0.8), // Starts fading
-                    bgOffWhite.withOpacity(0.0), // Completely transparent at the top
-                  ],
-                  stops: const [0.0, 0.5, 1.0],  // Controls the smoothness of the curve
+                  colors: [bgColor, bgColor.withOpacity(0.8), bgColor.withOpacity(0.0)],
+                  stops: const [0.0, 0.5, 1.0], 
                 ),
               ),
               child: Align(
@@ -196,15 +201,13 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                     decoration: BoxDecoration(
                       color: themeBlue, 
                       borderRadius: BorderRadius.circular(30), 
-                      boxShadow: [
-                        BoxShadow(color: themeBlue.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 6))
-                      ],
+                      boxShadow: [BoxShadow(color: themeBlue.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 6))],
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(30),
-                        onTap: _showCalorieBreakdownSheet,
+                        onTap: () => _showCalorieBreakdownSheet(isDark, surfaceColor, textPrimary, dividerColor),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 25),
                           child: Row(
@@ -212,10 +215,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                             children: [
                               const Icon(Icons.local_fire_department, color: Colors.white, size: 20),
                               const SizedBox(width: 8),
-                              Text(
-                                "Total: $_totalCalories kcal", 
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13, fontFamily: "LexendExaNormal"),
-                              ),
+                              Text("Total: $_totalCalories kcal", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13, fontFamily: "LexendExaNormal")),
                             ],
                           ),
                         ),
@@ -233,22 +233,22 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
   }
 
   // --- WIDGETS & LOGIC ---
-  Widget _buildActiveTab(String title) {
+  Widget _buildActiveTab(String title, Color surfaceColor, Color textPrimary, bool isDark) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.all(3), 
         decoration: BoxDecoration(
-          color: Colors.white, 
+          color: surfaceColor, 
           borderRadius: BorderRadius.circular(30), 
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))]
+          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))]
         ),
         alignment: Alignment.center,
-        child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontFamily: "LexendExaNormal", fontSize: 12)),
+        child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal", fontSize: 12)),
       ),
     );
   }
 
-  Widget _buildInactiveTab(String title, BuildContext context) {
+  Widget _buildInactiveTab(String title, BuildContext context, Color textSecondary) {
     return Expanded(
       child: GestureDetector(
         onTap: () => Navigator.pushReplacement(context, PageRouteBuilder(pageBuilder: (_, __, ___) => const UserHistoryFeedbackPage(), transitionDuration: Duration.zero)),
@@ -256,20 +256,20 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
           margin: const EdgeInsets.all(3),
           color: Colors.transparent,
           alignment: Alignment.center,
-          child: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade500, fontFamily: "LexendExaNormal", fontSize: 12)),
+          child: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: textSecondary, fontFamily: "LexendExaNormal", fontSize: 12)),
         ),
       ),
     );
   }
 
-  void _showDetailSheet(String title, String description) {
+  void _showDetailSheet(String title, String description, bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
     showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
-      builder: (context) => _buildBottomSheetLayout(title, Text(description, style: TextStyle(color: Colors.grey.shade700, height: 1.5, fontSize: 14))),
+      builder: (context) => _buildBottomSheetLayout(title, Text(description, style: TextStyle(color: textSecondary, height: 1.5, fontSize: 14)), isDark, surfaceColor, textPrimary, dividerColor),
     );
   }
 
-  void _showCalorieBreakdownSheet() {
+  void _showCalorieBreakdownSheet(bool isDark, Color surfaceColor, Color textPrimary, Color dividerColor) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -285,38 +285,39 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("${item.quantity}x ${item.foodName}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                    Text("+ ${item.calories} kcal", style: TextStyle(fontSize: 16, color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
+                    Text("${item.quantity}x ${item.foodName}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary)),
+                    Text("+ ${item.calories} kcal", style: TextStyle(fontSize: 16, color: textPrimary.withOpacity(0.7), fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
             ),
-            const Divider(thickness: 1),
+            Divider(thickness: 1, color: dividerColor),
             const SizedBox(height: 5),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Total Intake", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+                Text("Total Intake", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", color: textPrimary)),
                 Text("$_totalCalories kcal", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue)),
               ],
             ),
           ],
         ),
+        isDark, surfaceColor, textPrimary, dividerColor
       ),
     );
   }
 
-  Widget _buildBottomSheetLayout(String title, Widget content) {
+  Widget _buildBottomSheetLayout(String title, Widget content, bool isDark, Color surfaceColor, Color textPrimary, Color dividerColor) {
     return Container(
-      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(35))),
+      decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
       padding: const EdgeInsets.fromLTRB(30, 10, 30, 40),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))),
-          Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")),
+          Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
+          Text(title, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal", color: textPrimary)),
           const SizedBox(height: 20),
-          Container(width: double.infinity, padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade200)), child: content),
+          Container(width: double.infinity, padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: dividerColor)), child: content),
           const SizedBox(height: 30),
           SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))), child: const Text("Close", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: "LexendExaNormal")))),
         ],
