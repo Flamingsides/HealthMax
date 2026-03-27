@@ -113,6 +113,13 @@ class UserSettingsPage extends StatelessWidget {
                       children: [
                         _buildProfileOption(Icons.account_circle_outlined, "Account Information", "", textPrimary, textSecondary),
                         _buildDivider(dividerColor),
+                        // --- NEW: Notifications ---
+                        _buildProfileOption(Icons.notifications_none_rounded, "Notifications", "On", textPrimary, textSecondary),
+                        _buildDivider(dividerColor),
+                        // --- NEW: Manage Healthcare Providers ---
+                        _buildProfileOption(Icons.medical_services_outlined, "Manage Healthcare Providers", "1 Connected", textPrimary, userBlue),
+                        _buildDivider(dividerColor),
+                        
                         _buildProfileOption(Icons.watch_rounded, "Connected Devices", "Apple Watch", textPrimary, userBlue),
                         _buildDivider(dividerColor),
                         _buildProfileOption(Icons.track_changes_rounded, "Health Goals", "Weight Loss", textPrimary, textSecondary),
@@ -144,6 +151,18 @@ class UserSettingsPage extends StatelessWidget {
                   Text("ACTIONS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
 
+                  // --- NEW: VERIFY EMAIL BUTTON ---
+                  _buildActionButton(
+                    label: "VERIFY EMAIL", 
+                    icon: Icons.mark_email_read_rounded, 
+                    bgColor: const Color(0xFFF59E0B).withValues(alpha: 0.1), // Golden/Yellow tint
+                    textColor: const Color(0xFFF59E0B), 
+                    onTap: () {
+                      // TODO: Add verification logic
+                    }
+                  ),
+                  const SizedBox(height: 12),
+
                   _buildActionButton(
                     label: "EXPORT HEALTH DATA", 
                     icon: Icons.ios_share_rounded, 
@@ -152,6 +171,7 @@ class UserSettingsPage extends StatelessWidget {
                     onTap: () => _handleExport(context, userBlue)
                   ),
                   const SizedBox(height: 12),
+
                   _buildActionButton(
                     label: "LOG OUT", 
                     icon: Icons.logout_rounded, 
@@ -218,7 +238,7 @@ class UserSettingsPage extends StatelessWidget {
   // LOGIC & DIALOG HELPERS
   // ==========================================
 
-  void _handleExport(BuildContext context, Color userBlue) {
+  void _handleExport(BuildContext context, Color userBlue) { 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text("Preparing your health records...", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)), 
