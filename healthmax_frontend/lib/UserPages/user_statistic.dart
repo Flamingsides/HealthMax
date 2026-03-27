@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart'; 
 import 'package:provider/provider.dart';
-import '../theme_provider.dart'; // Adjust path if needed
+import '../theme_provider.dart'; 
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
 
 class UserStatisticPage extends StatefulWidget {
-  const UserStatisticPage({super.key});
+  // NEW: Added parameter to allow smart-routing from the homepage!
+  final String? initialMetric;
+  
+  const UserStatisticPage({super.key, this.initialMetric});
 
   @override
   State<UserStatisticPage> createState() => _UserStatisticPageState();
@@ -15,13 +18,11 @@ class UserStatisticPage extends StatefulWidget {
 class _UserStatisticPageState extends State<UserStatisticPage> {
   final Color themeBlue = const Color(0xFF5A84F1);
 
-  // --- SCROLL ANIMATION STATE ---
   late ScrollController _scrollController;
   bool _isScrolled = false;
 
-  // --- STATE VARIABLES ---
   String _selectedTimeframe = "Day";
-  String _selectedMetric = "Heart Rate";
+  late String _selectedMetric; // Changed to late to allow dynamic initialization
 
   final List<String> _timeframes = ["Day", "Week", "Month", "6 Month", "Year"];
   final List<String> _metrics = ["Heart Rate", "Steps", "Blood Glucose", "Env. Noise"];
@@ -29,6 +30,14 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   @override
   void initState() {
     super.initState();
+    
+    // NEW: If the homepage passed a metric, select it! Otherwise, default to Heart Rate.
+    if (widget.initialMetric != null && _metrics.contains(widget.initialMetric)) {
+      _selectedMetric = widget.initialMetric!;
+    } else {
+      _selectedMetric = "Heart Rate";
+    }
+
     _scrollController = ScrollController();
     _scrollController.addListener(() {
       if (_scrollController.offset > 70 && !_isScrolled) {
@@ -122,9 +131,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
 
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // DYNAMIC THEME VARIABLES
-    // ==========================================
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -142,7 +148,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // --- APP BAR ---
               SliverAppBar(
                 automaticallyImplyLeading: false,
                 backgroundColor: themeBlue,
@@ -152,8 +157,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                 elevation: 0,
                 scrolledUnderElevation: 0.0,
                 surfaceTintColor: Colors.transparent,
-                
-                // --- THE FOLDED TITLE ---
                 title: AnimatedOpacity(
                   duration: const Duration(milliseconds: 250),
                   opacity: _isScrolled ? 1.0 : 0.0,
@@ -179,8 +182,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                 actions: const [
                   Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile())),
                 ],
-                
-                // --- THE EXPANDED LARGE TEXT ---
                 flexibleSpace: FlexibleSpaceBar(
                   collapseMode: CollapseMode.parallax, 
                   background: SafeArea(
@@ -195,8 +196,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                     ),
                   ),
                 ),
-                
-                // --- TIMEFRAME PILL ---
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(60),
                   child: Container(
@@ -222,7 +221,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                 ),
               ),
 
-              // --- CONTENT ---
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -230,8 +228,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 20),
-                      
-                      // --- AVERAGE & METRIC DROPDOWN ---
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -274,8 +270,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                       ),
                       
                       const SizedBox(height: 25),
-                      
-                      // --- DYNAMIC MAIN LINE CHART ---
                       Container(
                         height: 280,
                         padding: const EdgeInsets.fromLTRB(15, 25, 25, 15),
@@ -331,8 +325,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                       ),
 
                       const SizedBox(height: 40),
-                      
-                      // --- HIGHLIGHTS SECTION ---
                       Text("Highlights", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                       const SizedBox(height: 15),
                       
@@ -352,7 +344,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                             Text("Your $_selectedMetric trend is looking healthy based on your recent averages.", style: TextStyle(fontSize: 13, color: textSecondary, height: 1.4)),
                             const SizedBox(height: 25),
                             
-                            // Data Row
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -390,8 +381,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                             ),
                             
                             const SizedBox(height: 20),
-                            
-                            // Mini Dual-Line Chart
                             SizedBox(
                               height: 120,
                               child: LineChart(
@@ -428,7 +417,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
             ],
           ),
 
-          // --- FOG-FADE BOTTOM BUTTONS ---
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Container(
@@ -477,7 +465,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     );
   }
 
-  // --- HELPER WIDGET ---
   Widget _buildTimeframeTab(String title) {
     bool isSelected = _selectedTimeframe == title;
     return Expanded(
