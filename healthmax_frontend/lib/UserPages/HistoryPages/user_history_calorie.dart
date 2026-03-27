@@ -4,19 +4,7 @@ import '../../theme_provider.dart';
 import '../user_bottomnavbar.dart';
 import '../user_glassy_profile.dart';
 import 'user_history_feedback.dart'; 
-
-class CalorieRecord {
-  final String foodName;
-  final int quantity;
-  final String protein;
-  final String carbs;
-  final String fats;
-  final int calories;
-  final IconData placeholderIcon;
-  final Color iconColor;
-
-  CalorieRecord(this.foodName, this.quantity, this.protein, this.carbs, this.fats, this.calories, this.placeholderIcon, this.iconColor);
-}
+import '../calorie_provider.dart';
 
 class UserHistoryCaloriePage extends StatefulWidget {
   const UserHistoryCaloriePage({super.key});
@@ -28,29 +16,43 @@ class UserHistoryCaloriePage extends StatefulWidget {
 class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
   final Color themeBlue = const Color(0xFF5A84F1);
 
-  final List<CalorieRecord> calorieHistory = [
-    CalorieRecord("Burger", 1, "25g", "40g", "15g", 375, Icons.lunch_dining, Colors.orange),
-    CalorieRecord("Salad", 1, "5g", "10g", "3g", 90, Icons.eco, Colors.green),
-    CalorieRecord("Nasi Kandar", 1, "35g", "80g", "25g", 720, Icons.rice_bowl, Colors.redAccent),
-    CalorieRecord("Apple", 3, "1.8g", "75g", "0.9g", 145, Icons.apple, Colors.red),
-    CalorieRecord("Oatmeal", 1, "10g", "45g", "5g", 250, Icons.breakfast_dining, Colors.brown),
-  ];
-
-  int get _totalCalories => calorieHistory.fold(0, (sum, item) => sum + item.calories);
+  // --- SORTING STATE ---
+  String _currentSort = 'Newest First'; 
 
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // DYNAMIC THEME VARIABLES
-    // ==========================================
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final calorieData = Provider.of<CalorieProvider>(context);
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
     final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
     final dividerColor = Theme.of(context).dividerColor;
+
+    // --- APPLY SORTING LOGIC ---
+    List<CalorieRecord> sortedHistory = List.from(calorieData.calorieHistory);
+    switch (_currentSort) {
+      case 'Newest First':
+        sortedHistory.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        break;
+      case 'Oldest First':
+        sortedHistory.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        break;
+      case 'Calories: High to Low':
+        sortedHistory.sort((a, b) => b.calories.compareTo(a.calories));
+        break;
+      case 'Calories: Low to High':
+        sortedHistory.sort((a, b) => a.calories.compareTo(b.calories));
+        break;
+      case 'A - Z':
+        sortedHistory.sort((a, b) => a.foodName.toLowerCase().compareTo(b.foodName.toLowerCase()));
+        break;
+      case 'Z - A':
+        sortedHistory.sort((a, b) => b.foodName.toLowerCase().compareTo(a.foodName.toLowerCase()));
+        break;
+    }
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -59,9 +61,6 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ==========================================
-              // --- THE ELEGANT HEADER ---
-              // ==========================================
               SliverAppBar(
                 automaticallyImplyLeading: false,
                 backgroundColor: themeBlue,
@@ -71,8 +70,16 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                 elevation: 0,
                 scrolledUnderElevation: 0.0,
                 surfaceTintColor: Colors.transparent,
-                actions: const [
-                  Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile())),
+                actions: [
+                  // --- NEW: THE ELEGANT SORT BUTTON ---
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10.0, right: 10.0),
+                    child: IconButton(
+                      icon: const Icon(Icons.sort_rounded, color: Colors.white, size: 28),
+                      onPressed: () => _showSortSheet(isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
+                    ),
+                  ),
+                  const Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile())),
                 ],
                 title: const Padding(
                   padding: EdgeInsets.only(left: 15.0),
@@ -85,20 +92,13 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(60), 
                   child: Container(
-                    height: 60,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: bgColor, 
-                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40)),
-                    ),
+                    height: 60, width: double.infinity,
+                    decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40))),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(30, 10, 30, 10), 
                       child: Container(
                         height: 40, 
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade200, 
-                          borderRadius: BorderRadius.circular(30), 
-                        ),
+                        decoration: BoxDecoration(color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade200, borderRadius: BorderRadius.circular(30)),
                         child: Row(
                           children: [
                             _buildActiveTab("Calorie Intake", surfaceColor, textPrimary, isDark),
@@ -111,15 +111,13 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                 ),
               ),
               
-              // ==========================================
-              // --- CALORIE LIST ---
-              // ==========================================
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final item = calorieHistory[index];
+                      // USE THE SORTED LIST HERE
+                      final item = sortedHistory[index];
                       return Column(
                         children: [
                           InkWell(
@@ -164,11 +162,11 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                               ),
                             ),
                           ),
-                          if (index < calorieHistory.length - 1) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Divider(color: dividerColor, thickness: 1)),
+                          if (index < sortedHistory.length - 1) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Divider(color: dividerColor, thickness: 1)),
                         ],
                       );
                     },
-                    childCount: calorieHistory.length,
+                    childCount: sortedHistory.length,
                   ),
                 ),
               ),
@@ -176,20 +174,14 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
             ],
           ),
           
-          // ==========================================
-          // --- THE SEAMLESS "FOG FADE" FOOTER ---
-          // ==========================================
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Container(
-              height: 130, 
-              width: double.infinity,
+              height: 130, width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [bgColor, bgColor.withOpacity(0.8), bgColor.withOpacity(0.0)],
-                  stops: const [0.0, 0.5, 1.0], 
+                  begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                  colors: [bgColor, bgColor.withOpacity(0.8), bgColor.withOpacity(0.0)], stops: const [0.0, 0.5, 1.0], 
                 ),
               ),
               child: Align(
@@ -199,15 +191,14 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                   child: Container(
                     height: 48, 
                     decoration: BoxDecoration(
-                      color: themeBlue, 
-                      borderRadius: BorderRadius.circular(30), 
+                      color: themeBlue, borderRadius: BorderRadius.circular(30), 
                       boxShadow: [BoxShadow(color: themeBlue.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 6))],
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(30),
-                        onTap: () => _showCalorieBreakdownSheet(isDark, surfaceColor, textPrimary, dividerColor),
+                        onTap: () => _showCalorieBreakdownSheet(sortedHistory, calorieData.totalEaten, isDark, surfaceColor, textPrimary, dividerColor),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 25),
                           child: Row(
@@ -215,7 +206,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                             children: [
                               const Icon(Icons.local_fire_department, color: Colors.white, size: 20),
                               const SizedBox(width: 8),
-                              Text("Total: $_totalCalories kcal", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13, fontFamily: "LexendExaNormal")),
+                              Text("Total: ${calorieData.totalEaten} kcal", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13, fontFamily: "LexendExaNormal")),
                             ],
                           ),
                         ),
@@ -237,11 +228,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.all(3), 
-        decoration: BoxDecoration(
-          color: surfaceColor, 
-          borderRadius: BorderRadius.circular(30), 
-          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))]
-        ),
+        decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))]),
         alignment: Alignment.center,
         child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal", fontSize: 12)),
       ),
@@ -252,12 +239,38 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
     return Expanded(
       child: GestureDetector(
         onTap: () => Navigator.pushReplacement(context, PageRouteBuilder(pageBuilder: (_, __, ___) => const UserHistoryFeedbackPage(), transitionDuration: Duration.zero)),
-        child: Container(
-          margin: const EdgeInsets.all(3),
-          color: Colors.transparent,
-          alignment: Alignment.center,
-          child: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: textSecondary, fontFamily: "LexendExaNormal", fontSize: 12)),
-        ),
+        child: Container(margin: const EdgeInsets.all(3), color: Colors.transparent, alignment: Alignment.center, child: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: textSecondary, fontFamily: "LexendExaNormal", fontSize: 12))),
+      ),
+    );
+  }
+
+  // --- SORT BOTTOM SHEET ---
+ // --- SORT BOTTOM SHEET ---
+  void _showSortSheet(bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
+    final sortOptions = ['Newest First', 'Oldest First', 'Calories: High to Low', 'Calories: Low to High', 'A - Z', 'Z - A'];
+    
+    showModalBottomSheet(
+      context: context, 
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true, // <-- 1. Allows sheet to expand past 50% of screen height
+      builder: (context) => _buildBottomSheetLayout(
+        "Sort By", 
+        // <-- 2. Wraps the column in a scroller to prevent any future overflow!
+        SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: sortOptions.map((option) => ListTile(
+              onTap: () {
+                setState(() => _currentSort = option);
+                Navigator.pop(context);
+              },
+              contentPadding: EdgeInsets.zero,
+              title: Text(option, style: TextStyle(color: textPrimary, fontWeight: _currentSort == option ? FontWeight.bold : FontWeight.normal)),
+              trailing: _currentSort == option ? Icon(Icons.check_circle_rounded, color: themeBlue) : null,
+            )).toList(),
+          ),
+        ), 
+        isDark, surfaceColor, textPrimary, dividerColor
       ),
     );
   }
@@ -269,17 +282,15 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
     );
   }
 
-  void _showCalorieBreakdownSheet(bool isDark, Color surfaceColor, Color textPrimary, Color dividerColor) {
+  void _showCalorieBreakdownSheet(List<CalorieRecord> dataList, int total, bool isDark, Color surfaceColor, Color textPrimary, Color dividerColor) {
     showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+      context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
       builder: (context) => _buildBottomSheetLayout(
         "Daily Breakdown",
         Column(
           mainAxisSize: MainAxisSize.min, 
           children: [
-            ...calorieHistory.map(
+            ...dataList.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 15),
                 child: Row(
@@ -297,7 +308,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Total Intake", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", color: textPrimary)),
-                Text("$_totalCalories kcal", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue)),
+                Text("$total kcal", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue)),
               ],
             ),
           ],

@@ -5,20 +5,7 @@ import '../theme_provider.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
 import 'user_log_food.dart';
-
-// --- MOCK DATA CLASS ---
-class CalorieRecord {
-  final String foodName;
-  final int quantity;
-  final String protein;
-  final String carbs;
-  final String fats;
-  final int calories;
-  final IconData placeholderIcon;
-  final Color iconColor;
-
-  CalorieRecord(this.foodName, this.quantity, this.protein, this.carbs, this.fats, this.calories, this.placeholderIcon, this.iconColor);
-}
+import 'calorie_provider.dart';
 
 class UserCaloriePage extends StatefulWidget {
   const UserCaloriePage({super.key});
@@ -33,47 +20,12 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   late ScrollController _scrollController;
   bool _isScrolled = false;
 
-  // --- 1. MOCK DATA (EATEN) ---
-  final List<CalorieRecord> calorieHistory = [
-    CalorieRecord("Burger", 1, "25g", "40g", "15g", 375, Icons.lunch_dining, Colors.orange),
-    CalorieRecord("Salad", 1, "5g", "10g", "3g", 90, Icons.eco, Colors.green),
-    CalorieRecord("Nasi Kandar", 1, "35g", "80g", "25g", 720, Icons.rice_bowl, Colors.redAccent),
-    CalorieRecord("Apple", 3, "1.8g", "75g", "0.9g", 145, Icons.apple, Colors.red),
-    CalorieRecord("Oatmeal", 1, "10g", "45g", "5g", 250, Icons.breakfast_dining, Colors.brown),
-  ];
-
-  // --- 2. TARGETS & MOCK ACTIVITY (BURNED) ---
-  final int targetCalories = 2500;
-  final int targetCarbs = 300;
-  final int targetProtein = 120;
-  final int targetFats = 70;
-  
-  // Pulling the exact step count from your UserTargetPage mock data!
-  final int currentSteps = 8843; 
-  final int workoutCalories = 150; // Extra active calories
-
-  late int burnedCalories;
-  late int totalEaten;
-  late int leftCalories;
-  late double totalCarbs;
-  late double totalProtein;
-  late double totalFats;
-
   @override
   void initState() {
     super.initState();
+    // ALL hardcoded data and manual math has been removed. 
+    // The Provider handles all of this automatically now!
     
-    // Calculate Burned Calories dynamically! (Roughly 0.04 kcal per step + workout)
-    burnedCalories = (currentSteps * 0.04).toInt() + workoutCalories;
-
-    // Calculate Eaten Totals
-    totalEaten = calorieHistory.fold(0, (sum, item) => sum + item.calories);
-    leftCalories = targetCalories - totalEaten + burnedCalories;
-    
-    totalCarbs = calorieHistory.fold(0.0, (sum, item) => sum + double.parse(item.carbs.replaceAll('g', '')));
-    totalProtein = calorieHistory.fold(0.0, (sum, item) => sum + double.parse(item.protein.replaceAll('g', '')));
-    totalFats = calorieHistory.fold(0.0, (sum, item) => sum + double.parse(item.fats.replaceAll('g', '')));
-
     _scrollController = ScrollController();
     _scrollController.addListener(() {
       if (_scrollController.offset > 70 && !_isScrolled) {
@@ -94,6 +46,9 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    
+    // --- THIS IS THE LIVE BRAIN ---
+    final calorieData = Provider.of<CalorieProvider>(context);
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
@@ -177,7 +132,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                           color: surfaceColor, 
                           borderRadius: BorderRadius.circular(30), 
                           border: isDark ? Border.all(color: dividerColor) : null,
-                          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
+                          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))]
                         ),
                         child: Column(
                           children: [
@@ -189,10 +144,10 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                 // --- EATEN BUTTON ---
                                 _buildClickableStat(
                                   label: "Eaten", 
-                                  value: totalEaten, 
+                                  value: calorieData.totalEaten, // WIRED
                                   textPrimary: textPrimary, 
                                   textSecondary: textSecondary,
-                                  onTap: () => _showEatenBreakdown(isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
+                                  onTap: () => _showEatenBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
                                 ),
                                 
                                 // --- CIRCULAR GAUGE ---
@@ -203,14 +158,16 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                     children: [
                                       CircularProgressIndicator(value: 1.0, strokeWidth: 12, color: isDark ? Colors.white10 : Colors.grey.shade100),
                                       TweenAnimationBuilder(
-                                        tween: Tween<double>(begin: 0, end: (totalEaten / targetCalories).clamp(0.0, 1.0)), 
+                                        // WIRED
+                                        tween: Tween<double>(begin: 0, end: (calorieData.totalEaten / calorieData.targetCalories).clamp(0.0, 1.0)), 
                                         duration: const Duration(seconds: 2), curve: Curves.easeOutCubic,
                                         builder: (context, value, child) => CircularProgressIndicator(value: value, strokeWidth: 12, backgroundColor: Colors.transparent, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF7A00)), strokeCap: StrokeCap.round),
                                       ),
                                       Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Text("$leftCalories", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
+                                          // WIRED
+                                          Text("${calorieData.leftCalories}", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
                                           Text("kcal left.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textSecondary)),
                                         ],
                                       ),
@@ -221,10 +178,10 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                 // --- BURNED BUTTON ---
                                 _buildClickableStat(
                                   label: "Burned", 
-                                  value: burnedCalories, 
+                                  value: calorieData.burnedCalories, // WIRED
                                   textPrimary: textPrimary, 
                                   textSecondary: textSecondary,
-                                  onTap: () => _showBurnedBreakdown(isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
+                                  onTap: () => _showBurnedBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
                                 ),
                               ],
                             ),
@@ -246,7 +203,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                               decoration: BoxDecoration(
                                 color: surfaceColor, borderRadius: BorderRadius.circular(30), 
                                 border: isDark ? Border.all(color: dividerColor) : null,
-                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
+                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))]
                               ),
                               child: Column(
                                 children: [
@@ -254,7 +211,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                   const SizedBox(height: 25),
                                   SizedBox(
                                     height: 140,
-                                    child: PieChart(PieChartData(sectionsSpace: 0, centerSpaceRadius: 30, startDegreeOffset: 270, sections: _getMacroSections())),
+                                    child: PieChart(PieChartData(sectionsSpace: 0, centerSpaceRadius: 30, startDegreeOffset: 270, sections: _getMacroSections(calorieData))), // WIRED
                                   ),
                                   const SizedBox(height: 35),
                                   Align(
@@ -285,18 +242,19 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                               decoration: BoxDecoration(
                                 color: surfaceColor, borderRadius: BorderRadius.circular(30), 
                                 border: isDark ? Border.all(color: dividerColor) : null,
-                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
+                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))]
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Center(child: Text("Summary", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal"))),
                                   const SizedBox(height: 25),
-                                  _buildSummaryMacro("Carbohydrates", totalCarbs.toInt(), targetCarbs, textPrimary, textSecondary),
+                                  // WIRED
+                                  _buildSummaryMacro("Carbohydrates", calorieData.totalCarbs.toInt(), calorieData.targetCarbs, textPrimary, textSecondary),
                                   const SizedBox(height: 20),
-                                  _buildSummaryMacro("Protein", totalProtein.toInt(), targetProtein, textPrimary, textSecondary),
+                                  _buildSummaryMacro("Protein", calorieData.totalProtein.toInt(), calorieData.targetProtein, textPrimary, textSecondary),
                                   const SizedBox(height: 20),
-                                  _buildSummaryMacro("Fats", totalFats.toInt(), targetFats, textPrimary, textSecondary),
+                                  _buildSummaryMacro("Fats", calorieData.totalFats.toInt(), calorieData.targetFats, textPrimary, textSecondary),
                                 ],
                               ),
                             ),
@@ -336,15 +294,14 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   // HELPER WIDGETS
   // ==========================================
 
-  // THE NEW INTERACTIVE STAT BUTTON
   Widget _buildClickableStat({required String label, required int value, required Color textPrimary, required Color textSecondary, required VoidCallback onTap}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(15),
-        splashColor: themeBlue.withValues(alpha: 0.1),
-        highlightColor: themeBlue.withValues(alpha: 0.05),
+        splashColor: themeBlue.withOpacity(0.1),
+        highlightColor: themeBlue.withOpacity(0.05),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
           child: Column(
@@ -354,7 +311,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                 children: [
                   Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: textSecondary, fontSize: 13)),
                   const SizedBox(width: 4),
-                  Icon(Icons.info_outline_rounded, size: 14, color: textSecondary.withValues(alpha: 0.5)),
+                  Icon(Icons.info_outline_rounded, size: 14, color: textSecondary.withOpacity(0.5)),
                 ],
               ),
               const SizedBox(height: 5),
@@ -369,7 +326,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
 
   // --- BOTTOM SHEETS ---
 
-  void _showEatenBreakdown(bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
+  void _showEatenBreakdown(CalorieProvider data, bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
     showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
       builder: (context) => _buildBottomSheetLayout(
@@ -378,7 +335,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
         content: Column(
           mainAxisSize: MainAxisSize.min, 
           children: [
-            ...calorieHistory.map(
+            ...data.calorieHistory.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 15),
                 child: Row(
@@ -402,7 +359,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Total Eaten", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", color: textPrimary)),
-                Text("$totalEaten kcal", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: themeBlue)),
+                Text("${data.totalEaten} kcal", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: themeBlue)),
               ],
             ),
           ],
@@ -411,7 +368,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
     );
   }
 
-  void _showBurnedBreakdown(bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
+  void _showBurnedBreakdown(CalorieProvider data, bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
     showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
       builder: (context) => _buildBottomSheetLayout(
@@ -430,10 +387,10 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                     children: [
                       const Icon(Icons.directions_walk_rounded, color: Color(0xFFFF9F43), size: 18),
                       const SizedBox(width: 10),
-                      Text("Walking ($currentSteps steps)", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: textPrimary)),
+                      Text("Walking (${data.currentSteps} steps)", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: textPrimary)),
                     ],
                   ),
-                  Text("- ${(currentSteps * 0.04).toInt()} kcal", style: TextStyle(fontSize: 15, color: textSecondary, fontWeight: FontWeight.bold)),
+                  Text("- ${(data.currentSteps * 0.04).toInt()} kcal", style: TextStyle(fontSize: 15, color: textSecondary, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -450,7 +407,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                       Text("Active Workout", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: textPrimary)),
                     ],
                   ),
-                  Text("- $workoutCalories kcal", style: TextStyle(fontSize: 15, color: textSecondary, fontWeight: FontWeight.bold)),
+                  Text("- ${data.workoutCalories} kcal", style: TextStyle(fontSize: 15, color: textSecondary, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -460,7 +417,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Total Burned", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", color: textPrimary)),
-                Text("$burnedCalories kcal", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFFFF7A00))),
+                Text("${data.burnedCalories} kcal", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFFFF7A00))),
               ],
             ),
           ],
@@ -488,16 +445,16 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   }
 
   // --- MACRO CHARTS ---
-  List<PieChartSectionData> _getMacroSections() {
-    double totalMacros = totalCarbs + totalProtein + totalFats;
+  List<PieChartSectionData> _getMacroSections(CalorieProvider data) {
+    double totalMacros = data.totalCarbs + data.totalProtein + data.totalFats;
     if (totalMacros == 0) totalMacros = 1; 
 
     const TextStyle titleStyle = TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: "LexendExaNormal");
 
     return [
-      PieChartSectionData(color: const Color(0xFF2ED573), value: (totalCarbs / totalMacros) * 100, title: '${((totalCarbs / totalMacros) * 100).toInt()}%', radius: 35, titleStyle: titleStyle),
-      PieChartSectionData(color: const Color(0xFFFFD93D), value: (totalProtein / totalMacros) * 100, title: '${((totalProtein / totalMacros) * 100).toInt()}%', radius: 35, titleStyle: titleStyle),
-      PieChartSectionData(color: themeBlue, value: (totalFats / totalMacros) * 100, title: '${((totalFats / totalMacros) * 100).toInt()}%', radius: 35, titleStyle: titleStyle),
+      PieChartSectionData(color: const Color(0xFF2ED573), value: (data.totalCarbs / totalMacros) * 100, title: '${((data.totalCarbs / totalMacros) * 100).toInt()}%', radius: 35, titleStyle: titleStyle),
+      PieChartSectionData(color: const Color(0xFFFFD93D), value: (data.totalProtein / totalMacros) * 100, title: '${((data.totalProtein / totalMacros) * 100).toInt()}%', radius: 35, titleStyle: titleStyle),
+      PieChartSectionData(color: themeBlue, value: (data.totalFats / totalMacros) * 100, title: '${((data.totalFats / totalMacros) * 100).toInt()}%', radius: 35, titleStyle: titleStyle),
     ];
   }
 
@@ -507,7 +464,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 14, height: 14, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: textPrimary.withValues(alpha: 0.2), width: 1))),
+          Container(width: 14, height: 14, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: textPrimary.withOpacity(0.2), width: 1))),
           const SizedBox(width: 10),
           Text(label, style: TextStyle(fontSize: 12, color: textPrimary, fontWeight: FontWeight.w600)),
         ],

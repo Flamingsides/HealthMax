@@ -122,7 +122,7 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
                         onTap: () => _showDetailSheet(feedback.feedbackType, feedback.message, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
                         child: Container(
                           padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(25), border: isDark ? Border.all(color: dividerColor) : null, boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))]),
+                          decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(25), border: isDark ? Border.all(color: dividerColor) : null, boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.03), blurRadius: 8, offset: const Offset(0, 4))]),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
@@ -175,7 +175,7 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.all(3),
-        decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))]),
+        decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.04), blurRadius: 4, offset: const Offset(0, 2))]),
         alignment: Alignment.center,
         child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal", fontSize: 12)),
       ),

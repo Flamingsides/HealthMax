@@ -7,6 +7,7 @@ import '../theme_provider.dart';
 import 'user_bottomnavbar.dart';
 import 'AI_Features/calorie_estimate_service.dart';
 import 'AI_Features/nutrition_result_model.dart';
+import 'calorie_provider.dart';
 
 class UserLogFoodPage extends StatefulWidget {
   const UserLogFoodPage({super.key});
@@ -89,13 +90,13 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
             Text('Select Image Source', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: textPrimary, fontFamily: "LexendExaNormal")),
             const SizedBox(height: 20),
             ListTile(
-              leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: themeBlue.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.camera_alt_rounded, color: themeBlue)),
+              leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: themeBlue.withValues(alpha:0.1), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.camera_alt_rounded, color: themeBlue)),
               title: Text('Camera', style: TextStyle(fontWeight: FontWeight.w800, color: textPrimary)),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             const SizedBox(height: 10),
             ListTile(
-              leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color(0xFFFF9F43).withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.photo_library_rounded, color: Color(0xFFFF9F43))),
+              leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color(0xFFFF9F43).withValues(alpha:0.1), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.photo_library_rounded, color: Color(0xFFFF9F43))),
               title: Text('Gallery', style: TextStyle(fontWeight: FontWeight.w800, color: textPrimary)),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -223,8 +224,70 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
                       // Bottom Action Button
                       GestureDetector(
                         onTap: () {
-                          // TODO: Handle saving the food data to DB
-                          Navigator.pop(context);
+                          if (_isAiMode) {
+                            // ==========================================
+                            // 1. AI MODE SAVE LOGIC
+                            // ==========================================
+                            if (_result == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Please analyze food first!"), backgroundColor: Colors.redAccent),
+                              );
+                              return;
+                            }
+                            
+                            // Smart quantity parsing! Finds the first number in the AI "amount" string
+                            int parsedQty = 1;
+                            if (_result!.foods.isNotEmpty) {
+                              final match = RegExp(r'\d+').firstMatch(_result!.foods.first.amount);
+                              if (match != null) parsedQty = int.parse(match.group(0)!);
+                            }
+
+                            final newRecord = CalorieRecord(
+                              _result!.foods.isNotEmpty ? _result!.foods.first.name : "AI Meal", 
+                              parsedQty, // No longer hardcoded!
+                              "${_result!.totalProtein.toStringAsFixed(0)}g", 
+                              "${_result!.totalCarbs.toStringAsFixed(0)}g", 
+                              "${_result!.totalFat.toStringAsFixed(0)}g", 
+                              _result!.totalCalories, 
+                              Icons.auto_awesome, 
+                              themeBlue,
+                              DateTime.now() // Added Timestamp for sorting!
+                            );
+                            
+                            Provider.of<CalorieProvider>(context, listen: false).addFoodRecord(newRecord);
+                            Navigator.pop(context);
+
+                          } else {
+                            // ==========================================
+                            // 2. MANUAL MODE SAVE LOGIC
+                            // ==========================================
+                            if (_manualNameCtrl.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Please enter a meal name!"), backgroundColor: Colors.redAccent),
+                              );
+                              return;
+                            }
+
+                            int calories = int.tryParse(_manualCalCtrl.text.trim()) ?? 0;
+                            String protein = _manualProteinCtrl.text.trim().isEmpty ? "0g" : "${_manualProteinCtrl.text.trim()}g";
+                            String carbs = _manualCarbCtrl.text.trim().isEmpty ? "0g" : "${_manualCarbCtrl.text.trim()}g";
+                            String fats = _manualFatCtrl.text.trim().isEmpty ? "0g" : "${_manualFatCtrl.text.trim()}g";
+
+                            final newRecord = CalorieRecord(
+                              _manualNameCtrl.text.trim(), 
+                              1, 
+                              protein, 
+                              carbs, 
+                              fats, 
+                              calories, 
+                              Icons.restaurant, 
+                              const Color(0xFF2ED573),
+                              DateTime.now() // Added Timestamp for sorting!
+                            );
+
+                            Provider.of<CalorieProvider>(context, listen: false).addFoodRecord(newRecord);
+                            Navigator.pop(context);
+                          }
                         },
                         child: Container(
                           width: double.infinity,
@@ -270,10 +333,10 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
             color: isActive ? (isDark ? Colors.white12 : Colors.white) : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
             border: isActive && !isDark ? Border.all(color: Colors.grey.shade300) : null,
-            boxShadow: isActive && !isDark ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
+            boxShadow: isActive && !isDark ? [BoxShadow(color: Colors.black.withValues(alpha:0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
           ),
           alignment: Alignment.center,
-          child: Text(title, style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.w600, color: isActive ? textPrimary : textPrimary.withOpacity(0.5), fontSize: 12, fontFamily: "LexendExaNormal")),
+          child: Text(title, style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.w600, color: isActive ? textPrimary : textPrimary.withValues(alpha:0.5), fontSize: 12, fontFamily: "LexendExaNormal")),
         ),
       ),
     );
@@ -301,11 +364,11 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.fastfood_rounded, size: 40, color: textPrimary.withOpacity(0.2)),
+                    Icon(Icons.fastfood_rounded, size: 40, color: textPrimary.withValues(alpha:0.2)),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(color: isDark ? Colors.black54 : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: textPrimary.withOpacity(0.2))),
+                      decoration: BoxDecoration(color: isDark ? Colors.black54 : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: textPrimary.withValues(alpha:0.2))),
                       child: Text("upload or take a picture", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textPrimary)),
                     ),
                   ],
@@ -350,12 +413,12 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
         // --- Divider ---
         Row(
           children: [
-            Expanded(child: Divider(color: textPrimary.withOpacity(0.2), thickness: 1.5)),
+            Expanded(child: Divider(color: textPrimary.withValues(alpha:0.2), thickness: 1.5)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Text("AI Estimation", style: TextStyle(fontWeight: FontWeight.w900, color: textPrimary, fontSize: 12, fontFamily: "LexendExaNormal")),
             ),
-            Expanded(child: Divider(color: textPrimary.withOpacity(0.2), thickness: 1.5)),
+            Expanded(child: Divider(color: textPrimary.withValues(alpha:0.2), thickness: 1.5)),
           ],
         ),
 
