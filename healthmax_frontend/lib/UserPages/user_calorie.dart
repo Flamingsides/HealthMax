@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../theme_provider.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
+import 'user_log_food.dart';
 
 // --- MOCK DATA CLASS ---
 class CalorieRecord {
@@ -316,7 +317,9 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 10.0),
         child: FloatingActionButton.extended(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const UserLogFoodPage()));
+          },
           backgroundColor: themeBlue, elevation: 8,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           label: const Padding(
