@@ -18,7 +18,7 @@ class UserLogFoodPage extends StatefulWidget {
 
 class _UserLogFoodPageState extends State<UserLogFoodPage> {
   final Color themeBlue = const Color(0xFF5A84F1);
-  final Color actionGreen = const Color(0xFF55FF55); // The bright green from the mockup
+  final Color actionGreen = const Color(0xFF55FF55); 
 
   // --- STATE ---
   bool _isAiMode = true;
@@ -72,7 +72,6 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
   }
 
   Future<void> _pickAndAnalyzeImage() async {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final surfaceColor = Theme.of(context).colorScheme.surface;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
 
@@ -90,13 +89,13 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
             Text('Select Image Source', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: textPrimary, fontFamily: "LexendExaNormal")),
             const SizedBox(height: 20),
             ListTile(
-              leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: themeBlue.withValues(alpha:0.1), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.camera_alt_rounded, color: themeBlue)),
+              leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: themeBlue.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.camera_alt_rounded, color: themeBlue)),
               title: Text('Camera', style: TextStyle(fontWeight: FontWeight.w800, color: textPrimary)),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             const SizedBox(height: 10),
             ListTile(
-              leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color(0xFFFF9F43).withValues(alpha:0.1), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.photo_library_rounded, color: Color(0xFFFF9F43))),
+              leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color(0xFFFF9F43).withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.photo_library_rounded, color: Color(0xFFFF9F43))),
               title: Text('Gallery', style: TextStyle(fontWeight: FontWeight.w800, color: textPrimary)),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -146,12 +145,33 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
     return Scaffold(
       backgroundColor: scaffoldBg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          child: Column(
-            children: [
-              // --- THE MAIN CARD ---
-              Expanded(
+        child: Column(
+          children: [
+            // --- DYNAMIC FLOATING BACK BUTTON ---
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      // Uses glassy white since the background is always dark here
+                      color: Colors.white.withOpacity(0.1), 
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+                    ),
+                    child: const Icon(Icons.undo_rounded, color: Colors.white, size: 24),
+                  ),
+                ),
+              ),
+            ),
+
+            // --- THE MAIN CARD ---
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -160,37 +180,15 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
                   ),
                   child: Column(
                     children: [
-                      // Header Section (Back Button + Title)
+                      // Header Section (Title)
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: isDark ? Colors.white10 : Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: isDark ? Border.all(color: Colors.white24) : Border.all(color: Colors.grey.shade300),
-                                  ),
-                                  child: Icon(Icons.undo_rounded, color: textPrimary, size: 24),
-                                ),
-                              ),
-                            ),
-                            Text(
-                              "Log Food.",
-                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1.0),
-                            ),
-                          ],
+                        padding: const EdgeInsets.fromLTRB(20, 25, 20, 15),
+                        child: Text(
+                          "Log Food.",
+                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1.0),
                         ),
                       ),
                       
-                      const SizedBox(height: 10),
-
                       // Segmented Toggle
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 40),
@@ -244,14 +242,14 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
 
                             final newRecord = CalorieRecord(
                               _result!.foods.isNotEmpty ? _result!.foods.first.name : "AI Meal", 
-                              parsedQty, // No longer hardcoded!
+                              parsedQty, 
                               "${_result!.totalProtein.toStringAsFixed(0)}g", 
                               "${_result!.totalCarbs.toStringAsFixed(0)}g", 
                               "${_result!.totalFat.toStringAsFixed(0)}g", 
                               _result!.totalCalories, 
                               Icons.auto_awesome, 
                               themeBlue,
-                              DateTime.now() // Added Timestamp for sorting!
+                              DateTime.now() // Timestamp for sorting!
                             );
                             
                             Provider.of<CalorieProvider>(context, listen: false).addFoodRecord(newRecord);
@@ -282,7 +280,7 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
                               calories, 
                               Icons.restaurant, 
                               const Color(0xFF2ED573),
-                              DateTime.now() // Added Timestamp for sorting!
+                              DateTime.now() // Timestamp for sorting!
                             );
 
                             Provider.of<CalorieProvider>(context, listen: false).addFoodRecord(newRecord);
@@ -310,12 +308,12 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20), // Spacing before the bottom nav bar
-            ],
-          ),
+            ),
+            const SizedBox(height: 20), // Spacing before the bottom nav bar
+          ],
         ),
       ),
-      bottomNavigationBar: const UserBottomNavBar(currentIndex: 2), // Calorie tab active
+      bottomNavigationBar: const UserBottomNavBar(currentIndex: 2), 
     );
   }
 
@@ -333,10 +331,10 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
             color: isActive ? (isDark ? Colors.white12 : Colors.white) : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
             border: isActive && !isDark ? Border.all(color: Colors.grey.shade300) : null,
-            boxShadow: isActive && !isDark ? [BoxShadow(color: Colors.black.withValues(alpha:0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
+            boxShadow: isActive && !isDark ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
           ),
           alignment: Alignment.center,
-          child: Text(title, style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.w600, color: isActive ? textPrimary : textPrimary.withValues(alpha:0.5), fontSize: 12, fontFamily: "LexendExaNormal")),
+          child: Text(title, style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.w600, color: isActive ? textPrimary : textPrimary.withOpacity(0.5), fontSize: 12, fontFamily: "LexendExaNormal")),
         ),
       ),
     );
@@ -364,11 +362,11 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.fastfood_rounded, size: 40, color: textPrimary.withValues(alpha:0.2)),
+                    Icon(Icons.fastfood_rounded, size: 40, color: textPrimary.withOpacity(0.2)),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(color: isDark ? Colors.black54 : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: textPrimary.withValues(alpha:0.2))),
+                      decoration: BoxDecoration(color: isDark ? Colors.black54 : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: textPrimary.withOpacity(0.2))),
                       child: Text("upload or take a picture", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textPrimary)),
                     ),
                   ],
@@ -413,12 +411,12 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
         // --- Divider ---
         Row(
           children: [
-            Expanded(child: Divider(color: textPrimary.withValues(alpha:0.2), thickness: 1.5)),
+            Expanded(child: Divider(color: textPrimary.withOpacity(0.2), thickness: 1.5)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Text("AI Estimation", style: TextStyle(fontWeight: FontWeight.w900, color: textPrimary, fontSize: 12, fontFamily: "LexendExaNormal")),
             ),
-            Expanded(child: Divider(color: textPrimary.withValues(alpha:0.2), thickness: 1.5)),
+            Expanded(child: Divider(color: textPrimary.withOpacity(0.2), thickness: 1.5)),
           ],
         ),
 
@@ -502,7 +500,7 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
             hintText: 'add a comment..',
             hintStyle: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
             filled: true,
-            fillColor: isDark ? Colors.white10 : const Color(0xFFD9D9D9), // Matches mockup grey box
+            fillColor: isDark ? Colors.white10 : const Color(0xFFD9D9D9), 
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
             contentPadding: const EdgeInsets.all(20),
           ),
@@ -533,7 +531,7 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
                 hintText: hint,
                 hintStyle: TextStyle(color: textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
                 filled: true,
-                fillColor: isDark ? Colors.white10 : const Color(0xFFD9D9D9), // Matches mockup input pills
+                fillColor: isDark ? Colors.white10 : const Color(0xFFD9D9D9), 
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
               ),

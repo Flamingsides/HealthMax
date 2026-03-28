@@ -23,8 +23,6 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   @override
   void initState() {
     super.initState();
-    // ALL hardcoded data and manual math has been removed. 
-    // The Provider handles all of this automatically now!
     
     _scrollController = ScrollController();
     _scrollController.addListener(() {
@@ -138,50 +136,60 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                           children: [
                             Text("Today", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                             const SizedBox(height: 25),
+                            
+                            // RESPONSIVE ROW FIX FOR MOBILE
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly, 
+                              mainAxisAlignment: MainAxisAlignment.center, 
                               children: [
                                 // --- EATEN BUTTON ---
-                                _buildClickableStat(
-                                  label: "Eaten", 
-                                  value: calorieData.totalEaten, // WIRED
-                                  textPrimary: textPrimary, 
-                                  textSecondary: textSecondary,
-                                  onTap: () => _showEatenBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
+                                Expanded( 
+                                  child: _buildClickableStat(
+                                    label: "Eaten", 
+                                    value: calorieData.totalEaten, 
+                                    textPrimary: textPrimary, 
+                                    textSecondary: textSecondary,
+                                    onTap: () => _showEatenBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
+                                  ),
                                 ),
                                 
                                 // --- CIRCULAR GAUGE ---
-                                SizedBox(
-                                  width: 140, height: 140,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      CircularProgressIndicator(value: 1.0, strokeWidth: 12, color: isDark ? Colors.white10 : Colors.grey.shade100),
-                                      TweenAnimationBuilder(
-                                        // WIRED
-                                        tween: Tween<double>(begin: 0, end: (calorieData.totalEaten / calorieData.targetCalories).clamp(0.0, 1.0)), 
-                                        duration: const Duration(seconds: 2), curve: Curves.easeOutCubic,
-                                        builder: (context, value, child) => CircularProgressIndicator(value: value, strokeWidth: 12, backgroundColor: Colors.transparent, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF7A00)), strokeCap: StrokeCap.round),
-                                      ),
-                                      Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          // WIRED
-                                          Text("${calorieData.leftCalories}", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
-                                          Text("kcal left.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textSecondary)),
-                                        ],
-                                      ),
-                                    ],
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                                  child: SizedBox(
+                                    width: 130, height: 130, 
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        CircularProgressIndicator(value: 1.0, strokeWidth: 12, color: isDark ? Colors.white10 : Colors.grey.shade100),
+                                        TweenAnimationBuilder(
+                                          tween: Tween<double>(begin: 0, end: (calorieData.totalEaten / calorieData.targetCalories).clamp(0.0, 1.0)), 
+                                          duration: const Duration(seconds: 2), curve: Curves.easeOutCubic,
+                                          builder: (context, value, child) => CircularProgressIndicator(value: value, strokeWidth: 12, backgroundColor: Colors.transparent, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF7A00)), strokeCap: StrokeCap.round),
+                                        ),
+                                        Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text("${calorieData.leftCalories}", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
+                                            ),
+                                            Text("kcal left.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textSecondary)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 
                                 // --- BURNED BUTTON ---
-                                _buildClickableStat(
-                                  label: "Burned", 
-                                  value: calorieData.burnedCalories, // WIRED
-                                  textPrimary: textPrimary, 
-                                  textSecondary: textSecondary,
-                                  onTap: () => _showBurnedBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
+                                Expanded( 
+                                  child: _buildClickableStat(
+                                    label: "Burned", 
+                                    value: calorieData.burnedCalories, 
+                                    textPrimary: textPrimary, 
+                                    textSecondary: textSecondary,
+                                    onTap: () => _showBurnedBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
+                                  ),
                                 ),
                               ],
                             ),
@@ -211,7 +219,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                   const SizedBox(height: 25),
                                   SizedBox(
                                     height: 140,
-                                    child: PieChart(PieChartData(sectionsSpace: 0, centerSpaceRadius: 30, startDegreeOffset: 270, sections: _getMacroSections(calorieData))), // WIRED
+                                    child: PieChart(PieChartData(sectionsSpace: 0, centerSpaceRadius: 30, startDegreeOffset: 270, sections: _getMacroSections(calorieData))), 
                                   ),
                                   const SizedBox(height: 35),
                                   Align(
@@ -249,7 +257,6 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                 children: [
                                   Center(child: Text("Summary", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal"))),
                                   const SizedBox(height: 25),
-                                  // WIRED
                                   _buildSummaryMacro("Carbohydrates", calorieData.totalCarbs.toInt(), calorieData.targetCarbs, textPrimary, textSecondary),
                                   const SizedBox(height: 20),
                                   _buildSummaryMacro("Protein", calorieData.totalProtein.toInt(), calorieData.targetProtein, textPrimary, textSecondary),
@@ -303,19 +310,28 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
         splashColor: themeBlue.withOpacity(0.1),
         highlightColor: themeBlue.withOpacity(0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5), // Reduced padding for mobile
           child: Column(
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: textSecondary, fontSize: 13)),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown, 
+                      child: Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: textSecondary, fontSize: 13))
+                    )
+                  ),
                   const SizedBox(width: 4),
                   Icon(Icons.info_outline_rounded, size: 14, color: textSecondary.withOpacity(0.5)),
                 ],
               ),
               const SizedBox(height: 5),
-              Text("$value", style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+              FittedBox( 
+                fit: BoxFit.scaleDown,
+                child: Text("$value", style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+              ),
               Text("kcal", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textSecondary)),
             ],
           ),
