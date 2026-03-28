@@ -58,8 +58,9 @@ class HPRegistrationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RegistrationPage(
+      role: "hp", // <-- NEW: Tells the FastAPI backend this is a Healthcare Provider!
       loginPage: (_) => const HPLoginPage(),
-      postRegistration: (_) => const PageNotFound(),
+      postRegistration: (_) => const PageNotFound(), // They will go here after registering
     );
   }
 }
@@ -70,9 +71,10 @@ class HPLoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LoginPage(
+      role: "hp", // <-- NEW: Tells the FastAPI backend this is a Healthcare Provider!
       decoration: bgGradientHP,
       registrationPage: (_) => const HPRegistrationPage(),
-      homeRoute: '/hp_home', // Added the missing required parameter
+      homeRoute: '/hp_home', 
     );
   }
 }

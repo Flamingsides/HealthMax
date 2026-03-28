@@ -1,43 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme_provider.dart'; // Adjust path if needed
+import '../theme_provider.dart'; 
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
-
-// ==========================================
-// 1. MOCK DATA MODELS
-// ==========================================
-class TargetItem {
-  String title;
-  String description;
-  int currentValue;
-  int targetValue;
-  int duration; 
-  String unit;
-  int rewardPoints;
-
-  TargetItem({
-    required this.title,
-    required this.description,
-    required this.currentValue,
-    required this.targetValue,
-    required this.duration,
-    required this.unit,
-    required this.rewardPoints,
-  });
-
-  double get progress => (currentValue / targetValue).clamp(0.0, 1.0);
-  bool get isCompleted => currentValue >= targetValue;
-}
-
-class RankingUser {
-  final int rank;
-  final String name;
-  final int score;
-  final bool isCurrentUser;
-
-  RankingUser(this.rank, this.name, this.score, {this.isCurrentUser = false});
-}
+import 'goal_provider.dart'; // Import the new provider!
 
 class UserTargetPage extends StatefulWidget {
   const UserTargetPage({super.key});
@@ -48,65 +14,27 @@ class UserTargetPage extends StatefulWidget {
 
 class _UserTargetPageState extends State<UserTargetPage> {
   final Color themeBlue = const Color(0xFF5A84F1);
+  final Color themePurple = const Color(0xFF8E33FF); 
 
-  // --- SCROLL ANIMATION STATE ---
   late ScrollController _scrollController;
   bool _isScrolled = false;
-
-  // --- MOCK DATA ---
-  final int _userScore = 1234;
-  final String _username = "Tengku Adam";
-
-  final List<TargetItem> _targets = [
-    TargetItem(
-      title: "Steps",
-      description: "Achieve 10,000 steps in 5 Days.",
-      currentValue: 8843,
-      targetValue: 10000,
-      duration: 5,
-      unit: "steps",
-      rewardPoints: 123,
-    ),
-    TargetItem(
-      title: "Calorie Balance",
-      description: "Maintain a Net Calorie deficit of 1,000 kcal for 10 days straight.",
-      currentValue: 1000,
-      targetValue: 1000,
-      duration: 10,
-      unit: "kcal",
-      rewardPoints: 550,
-    ),
-    TargetItem(
-      title: "Noise Control",
-      description: "Spend less than 2 hours today in environments above 85 dB.",
-      currentValue: 1,
-      targetValue: 2,
-      duration: 1,
-      unit: "hours",
-      rewardPoints: 50,
-    ),
-  ];
-
-  final List<RankingUser> _topRankings = [
-    RankingUser(1, "Suhaib", 3450),
-    RankingUser(2, "Abdul", 3120),
-    RankingUser(3, "Bhulan", 2980),
-  ];
-
-  late RankingUser _currentUserRank;
+  
+  // Controls the "Live" AI thinking animation
+  bool _isAiCalculating = true; 
 
   @override
   void initState() {
     super.initState();
-    _currentUserRank = RankingUser(42, _username, _userScore, isCurrentUser: true);
+    
+    // Trigger the AI "calculation" effect for 2 seconds when page opens
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _isAiCalculating = false);
+    });
     
     _scrollController = ScrollController();
     _scrollController.addListener(() {
-      if (_scrollController.offset > 70 && !_isScrolled) {
-        setState(() => _isScrolled = true);
-      } else if (_scrollController.offset <= 70 && _isScrolled) {
-        setState(() => _isScrolled = false);
-      }
+      if (_scrollController.offset > 70 && !_isScrolled) setState(() => _isScrolled = true);
+      else if (_scrollController.offset <= 70 && _isScrolled) setState(() => _isScrolled = false);
     });
   }
 
@@ -116,15 +44,13 @@ class _UserTargetPageState extends State<UserTargetPage> {
     super.dispose();
   }
 
-  int get _completedTargets => _targets.where((t) => t.isCompleted).length;
-
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // DYNAMIC THEME VARIABLES
-    // ==========================================
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    
+    // --- THIS IS THE API BRAIN ---
+    final goalData = Provider.of<GoalProvider>(context);
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
@@ -132,14 +58,18 @@ class _UserTargetPageState extends State<UserTargetPage> {
     final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
     final dividerColor = Theme.of(context).dividerColor;
 
+    int completedTargets = goalData.targets.where((t) => t.isCompleted).length;
+
     return Scaffold(
       backgroundColor: bgColor,
-      body: CustomScrollView(
+      body: goalData.isLoading 
+        ? Center(child: CircularProgressIndicator(color: themeBlue)) // Show loading while fetching from API
+        : CustomScrollView(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
           // ==========================================
-          // 2. ELEGANT APP BAR
+          // ELEGANT APP BAR
           // ==========================================
           SliverAppBar(
             automaticallyImplyLeading: false,
@@ -151,60 +81,37 @@ class _UserTargetPageState extends State<UserTargetPage> {
             scrolledUnderElevation: 0.0,
             surfaceTintColor: Colors.transparent,
             
-            // --- THE FOLDED TITLE ---
             title: AnimatedOpacity(
               duration: const Duration(milliseconds: 250),
               opacity: _isScrolled ? 1.0 : 0.0,
               child: Padding(
                 padding: const EdgeInsets.only(left: 15.0, top: 10.0),
                 child: ShaderMask(
-                  shaderCallback: (Rect bounds) {
-                    return const LinearGradient(
-                      begin: Alignment.centerLeft, end: Alignment.centerRight,
-                      colors: [Colors.white, Colors.white, Colors.transparent],
-                      stops: [0.0, 0.85, 1.0], 
-                    ).createShader(bounds);
-                  },
+                  shaderCallback: (Rect bounds) => const LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Colors.white, Colors.white, Colors.transparent], stops: [0.0, 0.85, 1.0]).createShader(bounds),
                   blendMode: BlendMode.dstIn,
-                  child: const Text(
-                    "Your Target.",
-                    maxLines: 1, softWrap: false, overflow: TextOverflow.clip, 
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal"),
-                  ),
+                  child: const Text("Your Target.", maxLines: 1, softWrap: false, overflow: TextOverflow.clip, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal")),
                 ),
               ),
             ),
-            actions: const [
-              Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile())),
-            ],
+            actions: const [Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile()))],
             
-            // --- THE EXPANDED LARGE TEXT ---
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax, 
               background: SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(30, 20, 30, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text("Your\nTarget.", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1)),
-                    ],
-                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text("Your\nTarget.", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1))]),
                 ),
               ),
             ),
-
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(30),
-              child: Transform.translate(
-                offset: const Offset(0, 1),
-                child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))),
-              ),
+              child: Transform.translate(offset: const Offset(0, 1), child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40))))),
             ),
           ),
 
           // ==========================================
-          // 3. SCROLLABLE BODY
+          // SCROLLABLE BODY
           // ==========================================
           SliverToBoxAdapter(
             child: Padding(
@@ -212,7 +119,127 @@ class _UserTargetPageState extends State<UserTargetPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- SCORE & TARGET CARD ---
+                  
+                  // --- UPGRADED: MAIN GOAL CARD WITH LIVE AI PROGRESS ---
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(25),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark ? [themePurple.withValues(alpha: 0.2), surfaceColor] : [themePurple.withValues(alpha: 0.1), Colors.white],
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: themePurple.withValues(alpha: 0.5), width: 1.5),
+                      boxShadow: isDark ? [] : [BoxShadow(color: themePurple.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, 10))],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(color: themePurple.withValues(alpha: 0.2), shape: BoxShape.circle),
+                                  child: Icon(Icons.flag_circle_rounded, color: themePurple, size: 20),
+                                ),
+                                const SizedBox(width: 10),
+                                Text("MAIN GOAL", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: themePurple, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
+                              ],
+                            ),
+                            GestureDetector(
+                              onTap: () => _showMainGoalEditorSheet(goalData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+                                child: Text("Edit", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textPrimary)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        if (goalData.mainGoal.title == "N/A") ...[
+                          Text("No Goal Yet", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                          const SizedBox(height: 8),
+                          Text("Set a main health goal to let AI personalize your experience.", style: TextStyle(color: textSecondary, fontSize: 13)),
+                        ] else ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(goalData.mainGoal.title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                                  const SizedBox(height: 4),
+                                  Text("Target: ${goalData.mainGoal.targetValue}", style: TextStyle(color: textSecondary, fontSize: 14, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              // Live Animation Percentage
+                              Text(
+                                _isAiCalculating ? "--%" : "${(goalData.mainGoal.aiProgress * 100).toInt()}%", 
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: _isAiCalculating ? textSecondary : themePurple, fontFamily: "LexendExaNormal")
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // The Animated Progress Bar
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween<double>(begin: 0.0, end: _isAiCalculating ? 0.0 : goalData.mainGoal.aiProgress),
+                              duration: const Duration(seconds: 1),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, _) => LinearProgressIndicator(
+                                value: value,
+                                minHeight: 8,
+                                backgroundColor: isDark ? Colors.white10 : Colors.grey.shade300,
+                                valueColor: AlwaysStoppedAnimation<Color>(themePurple),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Live AI Insight Box
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 500),
+                            child: _isAiCalculating 
+                              ? _buildAiLoadingState(isDark)
+                              : Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: themePurple.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(15),
+                                    border: Border.all(color: themePurple.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(Icons.auto_awesome, color: themePurple, size: 18),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          "AI Insight: ${goalData.mainGoal.aiInsightText}", 
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : Colors.black87, height: 1.4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                          )
+                        ]
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 25),
+
+                  // --- SCORE & SUB-TARGET CARD ---
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -224,7 +251,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                     ),
                     child: Column(
                       children: [
-                        Text("Your Score : $_userScore", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                        Text("Your Score : ${goalData.userScore}", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
                         const SizedBox(height: 20),
                         
                         Container(
@@ -232,22 +259,18 @@ class _UserTargetPageState extends State<UserTargetPage> {
                           decoration: BoxDecoration(color: isDark ? bgColor : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: themeBlue, width: 2.5)),
                           child: Column(
                             children: [
-                              Text("$_completedTargets/${_targets.length} Achieved!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue, fontFamily: "LexendExaNormal")),
+                              Text("$completedTargets/${goalData.targets.length} Achieved!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue, fontFamily: "LexendExaNormal")),
                               const SizedBox(height: 4),
                               Text(
-                                _targets.length == _completedTargets ? "All targets completed! Great job!" : "Complete ${_targets.length - _completedTargets} more to get extra points!", 
-                                style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600),
-                                textAlign: TextAlign.center,
+                                goalData.targets.length == completedTargets ? "All targets completed! Great job!" : "Complete ${goalData.targets.length - completedTargets} more to get extra points!", 
+                                style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600), textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 25),
                               
-                              if (_targets.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 20),
-                                  child: Text("No targets set. Tap the button below to start!", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)),
-                                )
+                              if (goalData.targets.isEmpty)
+                                Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: Text("No targets set. Tap the button below to start!", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)))
                               else
-                                ..._targets.asMap().entries.map((entry) => _buildTargetProgress(entry.value, entry.key, textPrimary, textSecondary, isDark)),
+                                ...goalData.targets.asMap().entries.map((entry) => _buildTargetProgress(entry.value, entry.key, textPrimary, textSecondary, isDark)),
                             ],
                           ),
                         ),
@@ -265,14 +288,12 @@ class _UserTargetPageState extends State<UserTargetPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(
-                      color: surfaceColor, 
-                      borderRadius: BorderRadius.circular(30), 
-                      border: Border.all(color: dividerColor), 
-                      boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
+                      color: surfaceColor, borderRadius: BorderRadius.circular(30), 
+                      border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
                     ),
                     child: Column(
                       children: [
-                        ..._topRankings.map((user) => _buildRankingRow(user, textPrimary)),
+                        ...goalData.topRankings.map((user) => _buildRankingRow(user, textPrimary)),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: Column(
@@ -283,11 +304,10 @@ class _UserTargetPageState extends State<UserTargetPage> {
                             ],
                           ),
                         ),
-                        _buildRankingRow(_currentUserRank, textPrimary),
+                        _buildRankingRow(goalData.currentUserRank, textPrimary),
                       ],
                     ),
                   ),
-                  
                   const SizedBox(height: 120), 
                 ],
               ),
@@ -296,21 +316,14 @@ class _UserTargetPageState extends State<UserTargetPage> {
         ],
       ),
       
-      // ==========================================
-      // 4. FLOATING SET TARGET BUTTON
-      // ==========================================
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 10.0),
         child: FloatingActionButton.extended(
-          onPressed: () => _showTargetActionModal(null),
-          backgroundColor: themeBlue,
-          elevation: 8,
+          onPressed: () {}, // Leave sub-target addition logic for later
+          backgroundColor: themeBlue, elevation: 8,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          label: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10),
-            child: Text("Set New Target", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: "LexendExaNormal")),
-          ),
+          label: const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text("Set New Target", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: "LexendExaNormal"))),
         ),
       ),
       bottomNavigationBar: const UserBottomNavBar(currentIndex: 4), 
@@ -318,6 +331,21 @@ class _UserTargetPageState extends State<UserTargetPage> {
   }
 
   // --- HELPER WIDGETS ---
+
+  Widget _buildAiLoadingState(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(15)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: themePurple, strokeWidth: 2)),
+          const SizedBox(width: 10),
+          Expanded(child: Text("AI is analyzing your recent history...", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white54 : Colors.black54))),
+        ],
+      ),
+    );
+  }
 
   Widget _buildTargetProgress(TargetItem target, int index, Color textPrimary, Color textSecondary, bool isDark) {
     return Padding(
@@ -334,13 +362,12 @@ class _UserTargetPageState extends State<UserTargetPage> {
                   children: [
                     Text(target.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textPrimary)),
                     const SizedBox(width: 8),
-                    if (target.isCompleted)
-                      Text("+${target.rewardPoints} pts", style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold)),
+                    if (target.isCompleted) Text("+${target.rewardPoints} pts", style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
               GestureDetector(
-                onTap: () => _showTargetActionModal(index), 
+                onTap: () {}, 
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
@@ -356,8 +383,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: target.progress,
-              minHeight: 6,
+              value: target.progress, minHeight: 6,
               backgroundColor: isDark ? Colors.white10 : Colors.grey.shade300,
               valueColor: AlwaysStoppedAnimation<Color>(target.isCompleted ? const Color(0xFF2ED573) : const Color(0xFFFF4757)),
             ),
@@ -395,30 +421,15 @@ class _UserTargetPageState extends State<UserTargetPage> {
   }
 
   // ==========================================
-  // 5. THE UNIFIED CREATE / EDIT MODAL
+  // MAIN GOAL EDITOR MODAL
   // ==========================================
-  void _showTargetActionModal(int? editIndex) {
-    bool isEditing = editIndex != null;
-    TargetItem? existingTarget = isEditing ? _targets[editIndex] : null;
-
-    final List<Map<String, String>> metricOptions = [
-      {"title": "Steps", "unit": "steps"},
-      {"title": "Calorie Balance", "unit": "kcal"},
-      {"title": "Noise Control", "unit": "hours"},
-      {"title": "Heart Rate", "unit": "bpm"},
-    ];
-
-    String selectedMetricTitle = existingTarget?.title ?? metricOptions[0]["title"]!;
-    String selectedUnit = existingTarget?.unit ?? metricOptions[0]["unit"]!;
+  void _showMainGoalEditorSheet(GoalProvider dataProvider, bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
+    TextEditingController targetController = TextEditingController(
+      text: dataProvider.mainGoal.targetValue == "N/A" ? "" : dataProvider.mainGoal.targetValue.replaceAll(RegExp(r'[^0-9]'), '')
+    );
     
-    TextEditingController amountController = TextEditingController(text: isEditing ? existingTarget!.targetValue.toString() : "");
-    TextEditingController durationController = TextEditingController(text: isEditing ? existingTarget!.duration.toString() : "");
-
-    // Grab theme data for the modal
-    final isDark = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
-    final surfaceColor = Theme.of(context).colorScheme.surface;
-    final textPrimary = Theme.of(context).colorScheme.onSurface;
-    final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
+    final List<String> goalOptions = ["Lose Weight", "More Steps", "Less Sugar", "Build Muscle"];
+    String tempSelectedGoal = dataProvider.mainGoal.title == "N/A" ? goalOptions[0] : dataProvider.mainGoal.title;
 
     showModalBottomSheet(
       context: context,
@@ -432,148 +443,81 @@ class _UserTargetPageState extends State<UserTargetPage> {
             return Container(
               decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
               padding: EdgeInsets.fromLTRB(30, 10, 30, 40 + bottomPadding), 
-              child: SingleChildScrollView( 
+              child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: isDark ? Colors.white24 : Colors.grey.shade300, borderRadius: BorderRadius.circular(10)))),
+                    Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10)))),
                     
-                    Text(isEditing ? "Edit Target" : "Set New Target", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
+                    Text("Edit Main Goal", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                     const SizedBox(height: 5),
-                    Text(isEditing ? "Modify your current goal parameters." : "Select your metric and set a challenging goal.", style: TextStyle(color: textSecondary, fontSize: 13)),
+                    Text("Update your primary health objective. The backend will recalculate this.", style: TextStyle(color: textSecondary, fontSize: 13)),
                     const SizedBox(height: 30),
 
-                    // --- 1. METRIC SELECTOR ---
-                    Text("Select Metric", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
-                    const SizedBox(height: 10),
                     Wrap(
                       spacing: 10, runSpacing: 10,
-                      children: metricOptions.map((option) {
-                        bool isSelected = selectedMetricTitle == option["title"];
+                      children: goalOptions.map((goal) {
+                        bool isSelected = tempSelectedGoal == goal;
                         return ChoiceChip(
-                          label: Text(option["title"]!, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : textPrimary, fontSize: 12)),
+                          label: Text(goal, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : textPrimary, fontSize: 12)),
                           selected: isSelected,
-                          selectedColor: themeBlue,
+                          selectedColor: themePurple,
                           backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100,
                           showCheckmark: false,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
                           onSelected: (selected) {
-                            if (selected) {
-                              setModalState(() {
-                                selectedMetricTitle = option["title"]!;
-                                selectedUnit = option["unit"]!;
-                              });
-                            }
+                            if (selected) setModalState(() => tempSelectedGoal = goal);
                           },
                         );
                       }).toList(),
                     ),
                     const SizedBox(height: 25),
 
-                    // --- 2. INPUT FIELDS ROW ---
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Target Amount", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
-                              const SizedBox(height: 10),
-                              TextFormField(
-                                controller: amountController,
-                                keyboardType: TextInputType.number,
-                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: textPrimary),
-                                decoration: InputDecoration(
-                                  filled: true, fillColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100,
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-                                  suffixText: selectedUnit,
-                                  suffixStyle: TextStyle(fontWeight: FontWeight.bold, color: textSecondary),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Duration", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
-                              const SizedBox(height: 10),
-                              TextFormField(
-                                controller: durationController,
-                                keyboardType: TextInputType.number,
-                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: textPrimary),
-                                decoration: InputDecoration(
-                                  filled: true, fillColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100,
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-                                  suffixText: "days",
-                                  suffixStyle: TextStyle(fontWeight: FontWeight.bold, color: textSecondary),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    Text("Target Value", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: targetController,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: textPrimary),
+                      decoration: InputDecoration(
+                        filled: true, fillColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                        hintText: "e.g., 60",
+                        hintStyle: TextStyle(color: textSecondary),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                      ),
                     ),
-                    
                     const SizedBox(height: 40),
 
-                    // --- SAVE BUTTON ---
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          if (amountController.text.isEmpty || durationController.text.isEmpty) return;
+                          if (targetController.text.isEmpty) return;
                           
-                          int amount = int.parse(amountController.text);
-                          int duration = int.parse(durationController.text);
-                          
-                          String newDesc = "Achieve $amount $selectedUnit in $duration Days.";
-                          if (selectedMetricTitle == "Calorie Balance") newDesc = "Maintain a Net Calorie deficit of $amount $selectedUnit for $duration days straight.";
+                          String unit = "";
+                          if (tempSelectedGoal == "Lose Weight" || tempSelectedGoal == "Build Muscle") unit = "kg";
+                          else if (tempSelectedGoal == "More Steps") unit = "steps";
+                          else if (tempSelectedGoal == "Less Sugar") unit = "g";
 
-                          setState(() {
-                            if (isEditing) {
-                              _targets[editIndex].title = selectedMetricTitle;
-                              _targets[editIndex].targetValue = amount;
-                              _targets[editIndex].duration = duration;
-                              _targets[editIndex].unit = selectedUnit;
-                              _targets[editIndex].description = newDesc;
-                            } else {
-                              _targets.add(
-                                TargetItem(
-                                  title: selectedMetricTitle, description: newDesc, currentValue: 0,
-                                  targetValue: amount, duration: duration, unit: selectedUnit,
-                                  rewardPoints: (amount / duration).clamp(10, 500).toInt(),
-                                )
-                              );
-                            }
-                          });
+                          // Calling the Backend-Ready Provider Function!
+                          dataProvider.updateMainGoal(tempSelectedGoal, "${targetController.text} $unit");
                           
                           Navigator.pop(context);
+                          
+                          // Re-trigger the AI calculation animation so it feels like it refreshed
+                          setState(() {
+                            _isAiCalculating = true;
+                            Future.delayed(const Duration(seconds: 2), () {
+                              if (mounted) setState(() => _isAiCalculating = false);
+                            });
+                          });
                         },
-                        style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-                        child: Text(isEditing ? "Update Target" : "Save Target", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: "LexendExaNormal")),
+                        style: ElevatedButton.styleFrom(backgroundColor: themePurple, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                        child: const Text("Save Main Goal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: "LexendExaNormal")),
                       ),
                     ),
-
-                    if (isEditing) ...[
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: TextButton(
-                          onPressed: () {
-                            setState(() => _targets.removeAt(editIndex));
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text("Target Removed", style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: const Color(0xFFFF4757), behavior: SnackBarBehavior.floating));
-                          },
-                          child: const Text("Delete Target", style: TextStyle(color: Color(0xFFFF4757), fontWeight: FontWeight.bold, fontSize: 14)),
-                        ),
-                      ),
-                    ]
                   ],
                 ),
               ),

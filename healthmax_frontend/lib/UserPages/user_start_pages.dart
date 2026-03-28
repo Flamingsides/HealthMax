@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../GeneralPages/start_pages_base.dart';
 import 'registration_intro.dart';
+import 'registration_questions.dart';
+import '../GeneralPages/welcome_page.dart';
 
 class UserStartPage extends StatelessWidget {
   const UserStartPage({super.key});
@@ -27,9 +29,9 @@ class UserRegistrationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RegistrationPage(
+      role: "user", // <-- NEW: Tells the backend this is a standard User!
       loginPage: (_) => const UserLoginPage(),
-      postRegistration: (_) => const RegistrationIntro(),
-      // Note: Removed homeRoute here because RegistrationPage base class doesn't use it
+      postRegistration: (_) => const RegistrationIntro(), 
     );
   }
 }
@@ -40,8 +42,9 @@ class UserLoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LoginPage(
+      role: "user", // <-- NEW: Tells the backend this is a standard User!
       registrationPage: (_) => const UserRegistrationPage(),
-      homeRoute: '/user_homepage', // Added the required parameter here
+      homeRoute: '/user_homepage', 
     );
   }
 }

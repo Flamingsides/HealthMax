@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 
 // --- Theme & Provider ---
 import 'theme_provider.dart';
+import '../GeneralPages/auth_provider.dart';
+import 'UserPages/calorie_provider.dart';
+import 'UserPages/goal_provider.dart';
 
 // --- General & User Pages ---
 import 'GeneralPages/welcome_page.dart';
@@ -14,7 +17,6 @@ import 'UserPages/user_statistic.dart';
 import 'UserPages/user_target.dart';
 import 'UserPages/user_settings.dart';
 import 'UserPages/user_log_food.dart';
-import 'UserPages/calorie_provider.dart';
 
 // --- HP Pages ---
 import 'package:healthmax_frontend/HPPages/hp_settings.dart';
@@ -33,6 +35,8 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => CalorieProvider()), 
+        ChangeNotifierProvider(create: (context) => GoalProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
       ],
       child: const MyApp(),
     ),

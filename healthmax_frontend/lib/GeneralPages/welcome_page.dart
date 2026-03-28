@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'start_pages_base.dart'; 
 import '../UserPages/registration_intro.dart';
+import '../UserPages/registration_questions.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
@@ -23,12 +24,15 @@ class WelcomePage extends StatelessWidget {
 
   WidgetBuilder _getHPRegistrationPage(String route) {
     return (context) => RegistrationPage(
+      role: "hp", // Passes the HP role to the backend
       loginPage: (context) => LoginPage(
+        role: "hp",
         homeRoute: route,
         registrationPage: _getHPRegistrationPage(route),
         decoration: _hpDecoration,
       ),
       postRegistration: (context) => LoginPage(
+        role: "hp",
         homeRoute: route,
         registrationPage: _getHPRegistrationPage(route),
         decoration: _hpDecoration,
@@ -43,6 +47,7 @@ class WelcomePage extends StatelessWidget {
       homeRoute: "/hp_home",
       decoration: _hpDecoration, 
       loginPage: (context) => LoginPage(
+        role: "hp", // Passes the HP role to the backend
         homeRoute: "/hp_home",
         registrationPage: _getHPRegistrationPage("/hp_home"),
         decoration: _hpDecoration,
@@ -67,6 +72,21 @@ class WelcomePage extends StatelessWidget {
     ),
   );
 
+  // Helper method to break the infinite routing loop
+  WidgetBuilder _getUserRegistrationPage() {
+    return (context) => RegistrationPage(
+      role: "user", // Passes the User role to the backend
+      loginPage: (context) => LoginPage(
+        role: "user",
+        homeRoute: '/user_homepage',
+        registrationPage: _getUserRegistrationPage(),
+        decoration: _userDecoration,
+      ),
+      // After User registers credentials, route to the Gender Setup!
+      postRegistration: (context) => const RegistrationGender(), 
+    );
+  }
+
   Widget _buildUserStartPage() {
     return StartPage(
       heading1: "WELLNESS",
@@ -74,11 +94,12 @@ class WelcomePage extends StatelessWidget {
       homeRoute: "/user_homepage",
       decoration: _userDecoration, 
       loginPage: (context) => LoginPage(
+        role: "user", // Passes the User role to the backend
         homeRoute: "/user_homepage",
         decoration: _userDecoration,
-        registrationPage: (context) => const RegistrationIntro(), 
+        registrationPage: _getUserRegistrationPage(),
       ),
-      registrationPage: (context) => const RegistrationIntro(), 
+      registrationPage: _getUserRegistrationPage(),
     );
   }
 
@@ -89,7 +110,6 @@ class WelcomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color brandHighlight = const Color(0xFF00D1FF); 
     
-    // THE FIX: Restored the light, welcoming background!
     final Color gradientStart = const Color(0xFF8A98E8); 
     final Color gradientEnd = const Color(0xFF5D34EC);   
 
@@ -139,7 +159,7 @@ class WelcomePage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 55, 
                   fontWeight: FontWeight.w900,
-                  color: Colors.white, // Changed back to white so it pops on the light blue background!
+                  color: Colors.white, 
                   letterSpacing: -2.0,
                   fontFamily: "LexendExaNormal",
                   shadows: [

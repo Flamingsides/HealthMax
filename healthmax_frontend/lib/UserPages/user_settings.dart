@@ -122,7 +122,20 @@ class UserSettingsPage extends StatelessWidget {
                         
                         _buildProfileOption(Icons.watch_rounded, "Connected Devices", "Apple Watch", textPrimary, userBlue),
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.track_changes_rounded, "Health Goals", "Weight Loss", textPrimary, textSecondary),
+                        _buildProfileOption(
+                          Icons.track_changes_rounded, 
+                          "Health Goals", 
+                          "Weight Loss", // In the future, read this from your UserProvider!
+                          textPrimary, 
+                          textSecondary,
+                          // --- NEW: Routing to your goal editor! ---
+                          onTap: () {
+                            // TODO: Replace with navigation to your actual Goal Editing page when ready!
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Redirecting to Goal Editor..."), backgroundColor: Color(0xFF8E33FF), behavior: SnackBarBehavior.floating)
+                            );
+                          }
+                        ),
                         _buildDivider(dividerColor),
                         
                         // --- THE WORKING THEME TOGGLE SWITCH ---
@@ -196,9 +209,9 @@ class UserSettingsPage extends StatelessWidget {
     return Divider(height: 1, thickness: 1, color: dividerColor, indent: 20, endIndent: 20);
   }
 
-  Widget _buildProfileOption(IconData icon, String title, String value, Color textPrimary, Color valueColor) {
+ Widget _buildProfileOption(IconData icon, String title, String value, Color textPrimary, Color valueColor, {VoidCallback? onTap}) {
     return ListTile(
-      onTap: () {},
+      onTap: onTap, // <-- Now it responds to clicks!
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Icon(icon, color: textPrimary.withValues(alpha: 0.8), size: 22),
       title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
