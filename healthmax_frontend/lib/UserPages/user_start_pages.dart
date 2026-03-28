@@ -15,7 +15,11 @@ class UserStartPage extends StatelessWidget {
       registrationPage: (_) => const UserRegistrationPage(),
       onLoginSuccess: () {
         // Clears the stack and routes to the User Dashboard/Home
-        Navigator.pushNamedAndRemoveUntil(context, '/user_homepage', (route) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/user_homepage',
+          (route) => false,
+        );
       },
     );
   }

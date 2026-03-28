@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'start_pages_base.dart'; 
+import 'package:healthmax_frontend/UserPages/user_start_pages.dart';
+import 'start_pages_base.dart';
 import '../UserPages/registration_intro.dart';
 
 class WelcomePage extends StatelessWidget {
@@ -8,7 +9,7 @@ class WelcomePage extends StatelessWidget {
   // ==========================================
   // 1. HP ROUTING & THEME (BRIGHT AURORA)
   // ==========================================
-  
+
   BoxDecoration get _hpDecoration => const BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
@@ -41,7 +42,7 @@ class WelcomePage extends StatelessWidget {
       heading1: "CARE",
       heading2: "Beyond Clinic",
       homeRoute: "/hp_home",
-      decoration: _hpDecoration, 
+      decoration: _hpDecoration,
       loginPage: (context) => LoginPage(
         homeRoute: "/hp_home",
         registrationPage: _getHPRegistrationPage("/hp_home"),
@@ -72,13 +73,13 @@ class WelcomePage extends StatelessWidget {
       heading1: "WELLNESS",
       heading2: "BEGINS HERE",
       homeRoute: "/user_homepage",
-      decoration: _userDecoration, 
+      decoration: _userDecoration,
       loginPage: (context) => LoginPage(
         homeRoute: "/user_homepage",
         decoration: _userDecoration,
-        registrationPage: (context) => const RegistrationIntro(), 
+        registrationPage: (context) => const UserRegistrationPage(),
       ),
-      registrationPage: (context) => const RegistrationIntro(), 
+      registrationPage: (context) => const UserRegistrationPage(),
     );
   }
 
@@ -87,11 +88,11 @@ class WelcomePage extends StatelessWidget {
   // ==========================================
   @override
   Widget build(BuildContext context) {
-    final Color brandHighlight = const Color(0xFF00D1FF); 
-    
+    final Color brandHighlight = const Color(0xFF00D1FF);
+
     // THE FIX: Restored the light, welcoming background!
-    final Color gradientStart = const Color(0xFF8A98E8); 
-    final Color gradientEnd = const Color(0xFF5D34EC);   
+    final Color gradientStart = const Color(0xFF8A98E8);
+    final Color gradientEnd = const Color(0xFF5D34EC);
 
     return Scaffold(
       body: Container(
@@ -107,7 +108,7 @@ class WelcomePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(), 
+              const Spacer(),
 
               Container(
                 padding: const EdgeInsets.all(22),
@@ -115,10 +116,18 @@ class WelcomePage extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: brandHighlight.withValues(alpha: 0.15),
                   boxShadow: [
-                    BoxShadow(color: brandHighlight.withValues(alpha: 0.3), blurRadius: 40, spreadRadius: 10),
+                    BoxShadow(
+                      color: brandHighlight.withValues(alpha: 0.3),
+                      blurRadius: 40,
+                      spreadRadius: 10,
+                    ),
                   ],
                 ),
-                child: Icon(Icons.monitor_heart_outlined, size: 65, color: brandHighlight),
+                child: Icon(
+                  Icons.monitor_heart_outlined,
+                  size: 65,
+                  color: brandHighlight,
+                ),
               ),
               const SizedBox(height: 35),
 
@@ -133,22 +142,27 @@ class WelcomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 5),
-              
+
               Text(
                 "HealthMax.",
                 style: TextStyle(
-                  fontSize: 55, 
+                  fontSize: 55,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white, // Changed back to white so it pops on the light blue background!
+                  color: Colors
+                      .white, // Changed back to white so it pops on the light blue background!
                   letterSpacing: -2.0,
                   fontFamily: "LexendExaNormal",
                   shadows: [
-                    Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 5)),
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 15),
-              
+
               const Text(
                 "Your Virtual Health Companion",
                 style: TextStyle(
@@ -159,16 +173,16 @@ class WelcomePage extends StatelessWidget {
                 ),
               ),
 
-              const Spacer(), 
+              const Spacer(),
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40.0),
                 child: Column(
                   children: [
                     _buildRoleButton(
-                      context, 
-                      title: "User", 
-                      textColor: gradientEnd, 
+                      context,
+                      title: "User",
+                      textColor: gradientEnd,
                       targetPage: _buildUserStartPage(),
                     ),
                     // --- ELEGANT USER EXPLANATION ---
@@ -177,19 +191,19 @@ class WelcomePage extends StatelessWidget {
                       "Track your personal health, nutrition, and daily fitness goals.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12, 
-                        color: Colors.white70, 
+                        fontSize: 12,
+                        color: Colors.white70,
                         fontWeight: FontWeight.w500,
                         height: 1.3,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 30),
-                    
+
                     _buildRoleButton(
-                      context, 
-                      title: "Healthcare Provider", 
-                      textColor: const Color(0xFF0083B0), 
+                      context,
+                      title: "Healthcare Provider",
+                      textColor: const Color(0xFF0083B0),
                       targetPage: _buildHPStartPage(),
                     ),
                     // --- ELEGANT HP EXPLANATION ---
@@ -198,8 +212,8 @@ class WelcomePage extends StatelessWidget {
                       "Monitor patient data, review analytics, and provide clinical feedback.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12, 
-                        color: Colors.white70, 
+                        fontSize: 12,
+                        color: Colors.white70,
                         fontWeight: FontWeight.w500,
                         height: 1.3,
                       ),
@@ -207,7 +221,7 @@ class WelcomePage extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 60), 
+              const SizedBox(height: 60),
             ],
           ),
         ),
@@ -215,22 +229,35 @@ class WelcomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildRoleButton(BuildContext context, {required String title, required Color textColor, required Widget targetPage}) {
+  Widget _buildRoleButton(
+    BuildContext context, {
+    required String title,
+    required Color textColor,
+    required Widget targetPage,
+  }) {
     return ElevatedButton(
       onPressed: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => targetPage));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => targetPage),
+        );
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white, 
-        foregroundColor: textColor, 
-        minimumSize: const Size(double.infinity, 65), 
+        backgroundColor: Colors.white,
+        foregroundColor: textColor,
+        minimumSize: const Size(double.infinity, 65),
         elevation: 10,
         shadowColor: Colors.black.withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
       ),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.2, fontFamily: "LexendExaNormal"),
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.2,
+          fontFamily: "LexendExaNormal",
+        ),
       ),
     );
   }
