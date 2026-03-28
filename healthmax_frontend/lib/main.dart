@@ -13,6 +13,8 @@ import 'UserPages/user_calorie.dart';
 import 'UserPages/user_statistic.dart';
 import 'UserPages/user_target.dart';
 import 'UserPages/user_settings.dart';
+import 'UserPages/user_log_food.dart';
+import 'UserPages/calorie_provider.dart';
 
 // --- HP Pages ---
 import 'package:healthmax_frontend/HPPages/hp_settings.dart';
@@ -26,9 +28,12 @@ void main() async {
   await dotenv.load(fileName: '.env');
   
   runApp(
-    // 1. The Provider sits at the very top of the app
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
+    // The Provider sits at the very top of the app
+   MultiProvider( 
+      providers: [
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ChangeNotifierProvider(create: (context) => CalorieProvider()), 
+      ],
       child: const MyApp(),
     ),
   );
@@ -75,6 +80,7 @@ class _MyAppState extends State<MyApp> {
         '/user_statistic': (context) => const UserStatisticPage(),
         '/user_target': (context) => const UserTargetPage(),
         '/user_settings': (context) => const UserSettingsPage(),
+        '/user_log_food': (context) => const UserLogFoodPage(),
       },
     );
   }

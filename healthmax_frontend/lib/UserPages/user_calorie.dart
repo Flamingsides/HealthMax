@@ -4,29 +4,8 @@ import 'package:provider/provider.dart';
 import '../theme_provider.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
-
-// --- MOCK DATA CLASS ---
-class CalorieRecord {
-  final String foodName;
-  final int quantity;
-  final String protein;
-  final String carbs;
-  final String fats;
-  final int calories;
-  final IconData placeholderIcon;
-  final Color iconColor;
-
-  CalorieRecord(
-    this.foodName,
-    this.quantity,
-    this.protein,
-    this.carbs,
-    this.fats,
-    this.calories,
-    this.placeholderIcon,
-    this.iconColor,
-  );
-}
+import 'user_log_food.dart';
+import 'calorie_provider.dart';
 
 class UserCaloriePage extends StatefulWidget {
   const UserCaloriePage({super.key});
@@ -41,91 +20,11 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   late ScrollController _scrollController;
   bool _isScrolled = false;
 
-  // --- 1. MOCK DATA (EATEN) ---
-  final List<CalorieRecord> calorieHistory = [
-    CalorieRecord(
-      "Burger",
-      1,
-      "25g",
-      "40g",
-      "15g",
-      375,
-      Icons.lunch_dining,
-      Colors.orange,
-    ),
-    CalorieRecord("Salad", 1, "5g", "10g", "3g", 90, Icons.eco, Colors.green),
-    CalorieRecord(
-      "Nasi Kandar",
-      1,
-      "35g",
-      "80g",
-      "25g",
-      720,
-      Icons.rice_bowl,
-      Colors.redAccent,
-    ),
-    CalorieRecord(
-      "Apple",
-      3,
-      "1.8g",
-      "75g",
-      "0.9g",
-      145,
-      Icons.apple,
-      Colors.red,
-    ),
-    CalorieRecord(
-      "Oatmeal",
-      1,
-      "10g",
-      "45g",
-      "5g",
-      250,
-      Icons.breakfast_dining,
-      Colors.brown,
-    ),
-  ];
-
-  // --- 2. TARGETS & MOCK ACTIVITY (BURNED) ---
-  final int targetCalories = 2500;
-  final int targetCarbs = 300;
-  final int targetProtein = 120;
-  final int targetFats = 70;
-
-  // Pulling the exact step count from your UserTargetPage mock data!
-  final int currentSteps = 8843;
-  final int workoutCalories = 150; // Extra active calories
-
-  late int burnedCalories;
-  late int totalEaten;
-  late int leftCalories;
-  late double totalCarbs;
-  late double totalProtein;
-  late double totalFats;
-
   @override
   void initState() {
     super.initState();
-
-    // Calculate Burned Calories dynamically! (Roughly 0.04 kcal per step + workout)
-    burnedCalories = (currentSteps * 0.04).toInt() + workoutCalories;
-
-    // Calculate Eaten Totals
-    totalEaten = calorieHistory.fold(0, (sum, item) => sum + item.calories);
-    leftCalories = targetCalories - totalEaten + burnedCalories;
-
-    totalCarbs = calorieHistory.fold(
-      0.0,
-      (sum, item) => sum + double.parse(item.carbs.replaceAll('g', '')),
-    );
-    totalProtein = calorieHistory.fold(
-      0.0,
-      (sum, item) => sum + double.parse(item.protein.replaceAll('g', '')),
-    );
-    totalFats = calorieHistory.fold(
-      0.0,
-      (sum, item) => sum + double.parse(item.fats.replaceAll('g', '')),
-    );
+    // ALL hardcoded data and manual math has been removed.
+    // The Provider handles all of this automatically now!
 
     _scrollController = ScrollController();
     _scrollController.addListener(() {
@@ -147,6 +46,9 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+
+    // --- THIS IS THE LIVE BRAIN ---
+    final calorieData = Provider.of<CalorieProvider>(context);
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
@@ -302,10 +204,11 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                 // --- EATEN BUTTON ---
                                 _buildClickableStat(
                                   label: "Eaten",
-                                  value: totalEaten,
+                                  value: calorieData.totalEaten, // WIRED
                                   textPrimary: textPrimary,
                                   textSecondary: textSecondary,
                                   onTap: () => _showEatenBreakdown(
+                                    calorieData,
                                     isDark,
                                     surfaceColor,
                                     textPrimary,
@@ -329,10 +232,14 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                             : Colors.grey.shade100,
                                       ),
                                       TweenAnimationBuilder(
+                                        // WIRED
                                         tween: Tween<double>(
                                           begin: 0,
-                                          end: (totalEaten / targetCalories)
-                                              .clamp(0.0, 1.0),
+                                          end:
+                                              (calorieData.totalEaten /
+                                                      calorieData
+                                                          .targetCalories)
+                                                  .clamp(0.0, 1.0),
                                         ),
                                         duration: const Duration(seconds: 2),
                                         curve: Curves.easeOutCubic,
@@ -353,8 +260,9 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
+                                          // WIRED
                                           Text(
-                                            "$leftCalories",
+                                            "${calorieData.leftCalories}",
                                             style: TextStyle(
                                               fontSize: 28,
                                               fontWeight: FontWeight.w900,
@@ -380,10 +288,11 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                 // --- BURNED BUTTON ---
                                 _buildClickableStat(
                                   label: "Burned",
-                                  value: burnedCalories,
+                                  value: calorieData.burnedCalories, // WIRED
                                   textPrimary: textPrimary,
                                   textSecondary: textSecondary,
                                   onTap: () => _showBurnedBreakdown(
+                                    calorieData,
                                     isDark,
                                     surfaceColor,
                                     textPrimary,
@@ -449,9 +358,11 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                         sectionsSpace: 0,
                                         centerSpaceRadius: 30,
                                         startDegreeOffset: 270,
-                                        sections: _getMacroSections(),
+                                        sections: _getMacroSections(
+                                          calorieData,
+                                        ),
                                       ),
-                                    ),
+                                    ), // WIRED
                                   ),
                                   const SizedBox(height: 35),
                                   Align(
@@ -530,26 +441,27 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                                     ),
                                   ),
                                   const SizedBox(height: 25),
+                                  // WIRED
                                   _buildSummaryMacro(
                                     "Carbohydrates",
-                                    totalCarbs.toInt(),
-                                    targetCarbs,
+                                    calorieData.totalCarbs.toInt(),
+                                    calorieData.targetCarbs,
                                     textPrimary,
                                     textSecondary,
                                   ),
                                   const SizedBox(height: 20),
                                   _buildSummaryMacro(
                                     "Protein",
-                                    totalProtein.toInt(),
-                                    targetProtein,
+                                    calorieData.totalProtein.toInt(),
+                                    calorieData.targetProtein,
                                     textPrimary,
                                     textSecondary,
                                   ),
                                   const SizedBox(height: 20),
                                   _buildSummaryMacro(
                                     "Fats",
-                                    totalFats.toInt(),
-                                    targetFats,
+                                    calorieData.totalFats.toInt(),
+                                    calorieData.targetFats,
                                     textPrimary,
                                     textSecondary,
                                   ),
@@ -573,7 +485,12 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 10.0),
         child: FloatingActionButton.extended(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UserLogFoodPage()),
+            );
+          },
           backgroundColor: themeBlue,
           elevation: 8,
           shape: RoundedRectangleBorder(
@@ -601,7 +518,6 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   // HELPER WIDGETS
   // ==========================================
 
-  // THE NEW INTERACTIVE STAT BUTTON
   Widget _buildClickableStat({
     required String label,
     required int value,
@@ -667,6 +583,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   // --- BOTTOM SHEETS ---
 
   void _showEatenBreakdown(
+    CalorieProvider data,
     bool isDark,
     Color surfaceColor,
     Color textPrimary,
@@ -686,7 +603,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ...calorieHistory.map(
+            ...data.calorieHistory.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 15),
                 child: Row(
@@ -737,7 +654,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                   ),
                 ),
                 Text(
-                  "$totalEaten kcal",
+                  "${data.totalEaten} kcal",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -753,6 +670,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   }
 
   void _showBurnedBreakdown(
+    CalorieProvider data,
     bool isDark,
     Color surfaceColor,
     Color textPrimary,
@@ -787,7 +705,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "Walking ($currentSteps steps)",
+                        "Walking (${data.currentSteps} steps)",
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -797,7 +715,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                     ],
                   ),
                   Text(
-                    "- ${(currentSteps * 0.04).toInt()} kcal",
+                    "- ${(data.currentSteps * 0.04).toInt()} kcal",
                     style: TextStyle(
                       fontSize: 15,
                       color: textSecondary,
@@ -832,7 +750,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                     ],
                   ),
                   Text(
-                    "- $workoutCalories kcal",
+                    "- ${data.workoutCalories} kcal",
                     style: TextStyle(
                       fontSize: 15,
                       color: textSecondary,
@@ -857,7 +775,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                   ),
                 ),
                 Text(
-                  "$burnedCalories kcal",
+                  "${data.burnedCalories} kcal",
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -947,8 +865,8 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   }
 
   // --- MACRO CHARTS ---
-  List<PieChartSectionData> _getMacroSections() {
-    double totalMacros = totalCarbs + totalProtein + totalFats;
+  List<PieChartSectionData> _getMacroSections(CalorieProvider data) {
+    double totalMacros = data.totalCarbs + data.totalProtein + data.totalFats;
     if (totalMacros == 0) totalMacros = 1;
 
     const TextStyle titleStyle = TextStyle(
@@ -961,22 +879,22 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
     return [
       PieChartSectionData(
         color: const Color(0xFF2ED573),
-        value: (totalCarbs / totalMacros) * 100,
-        title: '${((totalCarbs / totalMacros) * 100).toInt()}%',
+        value: (data.totalCarbs / totalMacros) * 100,
+        title: '${((data.totalCarbs / totalMacros) * 100).toInt()}%',
         radius: 35,
         titleStyle: titleStyle,
       ),
       PieChartSectionData(
         color: const Color(0xFFFFD93D),
-        value: (totalProtein / totalMacros) * 100,
-        title: '${((totalProtein / totalMacros) * 100).toInt()}%',
+        value: (data.totalProtein / totalMacros) * 100,
+        title: '${((data.totalProtein / totalMacros) * 100).toInt()}%',
         radius: 35,
         titleStyle: titleStyle,
       ),
       PieChartSectionData(
         color: themeBlue,
-        value: (totalFats / totalMacros) * 100,
-        title: '${((totalFats / totalMacros) * 100).toInt()}%',
+        value: (data.totalFats / totalMacros) * 100,
+        title: '${((data.totalFats / totalMacros) * 100).toInt()}%',
         radius: 35,
         titleStyle: titleStyle,
       ),

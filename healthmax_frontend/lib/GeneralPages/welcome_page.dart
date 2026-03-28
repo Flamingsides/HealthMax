@@ -113,9 +113,9 @@ class WelcomePage extends StatelessWidget {
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: brandHighlight.withOpacity(0.15),
+                  color: brandHighlight.withValues(alpha: 0.15),
                   boxShadow: [
-                    BoxShadow(color: brandHighlight.withOpacity(0.3), blurRadius: 40, spreadRadius: 10),
+                    BoxShadow(color: brandHighlight.withValues(alpha: 0.3), blurRadius: 40, spreadRadius: 10),
                   ],
                 ),
                 child: Icon(Icons.monitor_heart_outlined, size: 65, color: brandHighlight),
@@ -143,7 +143,7 @@ class WelcomePage extends StatelessWidget {
                   letterSpacing: -2.0,
                   fontFamily: "LexendExaNormal",
                   shadows: [
-                    Shadow(color: Colors.black.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 5)),
+                    Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 5)),
                   ],
                 ),
               ),
@@ -171,12 +171,38 @@ class WelcomePage extends StatelessWidget {
                       textColor: gradientEnd, 
                       targetPage: _buildUserStartPage(),
                     ),
-                    const SizedBox(height: 20),
+                    // --- ELEGANT USER EXPLANATION ---
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Track your personal health, nutrition, and daily fitness goals.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12, 
+                        color: Colors.white70, 
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 30),
+                    
                     _buildRoleButton(
                       context, 
                       title: "Healthcare Provider", 
                       textColor: const Color(0xFF0083B0), 
                       targetPage: _buildHPStartPage(),
+                    ),
+                    // --- ELEGANT HP EXPLANATION ---
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Monitor patient data, review analytics, and provide clinical feedback.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12, 
+                        color: Colors.white70, 
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
+                      ),
                     ),
                   ],
                 ),
@@ -199,7 +225,7 @@ class WelcomePage extends StatelessWidget {
         foregroundColor: textColor, 
         minimumSize: const Size(double.infinity, 65), 
         elevation: 10,
-        shadowColor: Colors.black.withOpacity(0.2),
+        shadowColor: Colors.black.withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
       ),
       child: Text(
