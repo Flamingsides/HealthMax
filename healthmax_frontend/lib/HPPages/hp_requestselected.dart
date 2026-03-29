@@ -1,61 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
-import '../theme_provider.dart'; // Ensure this path is correct
+import '../theme_provider.dart'; 
 import 'usermodel.dart';
 
-class HPRequestSelected extends StatefulWidget {
+class HPRequestSelected extends StatelessWidget {
   final UserModel user;
 
   const HPRequestSelected({super.key, required this.user});
-
-  @override
-  State<HPRequestSelected> createState() => _HPRequestSelectedState();
-}
-
-class _HPRequestSelectedState extends State<HPRequestSelected> {
-  // --- STATE VARIABLES ---
-  String selectedMetric = 'Heart Rate';
-  String selectedTimeframe = 'Week';
-
-  // --- DYNAMIC GRAPH LOGIC (Unchanged) ---
-  double _getMaxX() => selectedTimeframe == "Week" ? 6 : (selectedTimeframe == "Month" ? 3 : 11);
-  double _getMinY() => selectedMetric == 'Heart Rate' ? 60 : 0;
-  double _getMaxY() {
-    switch (selectedMetric) {
-      case 'Heart Rate': return 100;
-      case 'Steps': return 15000;
-      case 'Calories': return 3500;
-      case 'Glucose Level': return 15;
-      default: return 100;
-    }
-  }
-  double _getIntervalY() {
-    switch (selectedMetric) {
-      case 'Heart Rate': return 5;
-      case 'Steps': return 5000;
-      case 'Calories': return 1000;
-      case 'Glucose Level': return 5;
-      default: return 5;
-    }
-  }
-
-  List<FlSpot> _getChartData() {
-    double m = 1.0;
-    if (selectedMetric == 'Steps') m = 100.0;
-    if (selectedMetric == 'Calories') m = 20.0;
-    if (selectedMetric == 'Glucose Level') m = 0.1;
-
-    List<FlSpot> baseData;
-    if (selectedTimeframe == "Week") {
-      baseData = const [FlSpot(0, 70), FlSpot(1, 75), FlSpot(2, 72), FlSpot(3, 85), FlSpot(4, 78), FlSpot(5, 90), FlSpot(6, 82)];
-    } else if (selectedTimeframe == "Month") {
-      baseData = const [FlSpot(0, 72), FlSpot(1, 85), FlSpot(2, 78), FlSpot(3, 88)];
-    } else {
-      baseData = const [FlSpot(0, 75), FlSpot(2, 80), FlSpot(4, 85), FlSpot(6, 78), FlSpot(8, 90), FlSpot(10, 85), FlSpot(11, 88)];
-    }
-    return baseData.map((spot) => FlSpot(spot.x, spot.y * m)).toList();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +20,7 @@ class _HPRequestSelectedState extends State<HPRequestSelected> {
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
+    final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
     final dividerColor = Theme.of(context).dividerColor;
 
     return Scaffold(
@@ -103,7 +55,7 @@ class _HPRequestSelectedState extends State<HPRequestSelected> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.user.fullName,
+                            user.fullName,
                             style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -0.5),
                           ),
                           const SizedBox(height: 12),
@@ -111,12 +63,12 @@ class _HPRequestSelectedState extends State<HPRequestSelected> {
                             children: [
                               const Icon(Icons.watch_rounded, color: Colors.white70, size: 16),
                               const SizedBox(width: 6),
-                              Text("Device: ${widget.user.device}", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                              Text("Device: ${user.device}", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            "${widget.user.gender} | ${widget.user.height.toInt()} cm | ${widget.user.weight.toInt()} kg",
+                            "${user.gender} | ${user.height.toInt()} cm | ${user.weight.toInt()} kg",
                             style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
                           ),
                         ],
@@ -140,30 +92,52 @@ class _HPRequestSelectedState extends State<HPRequestSelected> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("ANALYTICS OVERVIEW", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Colors.grey, letterSpacing: 1.2)),
+                      Text("APPLICATION DETAILS", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
+                      const SizedBox(height: 15),
+
+                      // 1. Message from Patient
+                      _buildInfoCard(
+                        "Patient Note", 
+                        "\"I would like to share my health data with your clinic to monitor my weekly progress and get feedback on my cardiovascular health.\"", 
+                        Icons.format_quote_rounded, 
+                        themePurple, surfaceColor, textPrimary, textSecondary, dividerColor, isDark
+                      ),
                       const SizedBox(height: 20),
-                      
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildDropdown(['Heart Rate', 'Steps', 'Glucose Level', 'Calories'], selectedMetric, (v) => setState(() => selectedMetric = v!), isMetric: true, isDark: isDark, surfaceColor: surfaceColor, textPrimary: textPrimary),
-                          _buildDropdown(['Week', 'Month', 'Year'], selectedTimeframe, (v) => setState(() => selectedTimeframe = v!), isMetric: false, isDark: isDark, surfaceColor: surfaceColor, textPrimary: textPrimary),
-                        ],
+
+                      // 2. Data Permission Checklist
+                      Text("DATA PERMISSIONS REQUESTED", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
+                      const SizedBox(height: 15),
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: surfaceColor,
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(color: dividerColor),
+                          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 15, offset: const Offset(0, 5))],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildPermissionTile("Heart Rate Data", "Live & Historical", Icons.favorite_rounded, Colors.redAccent, textPrimary, textSecondary),
+                            Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Divider(color: dividerColor, height: 1)),
+                            _buildPermissionTile("Step Count & Activity", "Daily Tracking", Icons.directions_walk_rounded, Colors.orangeAccent, textPrimary, textSecondary),
+                            Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Divider(color: dividerColor, height: 1)),
+                            _buildPermissionTile("Glucose Levels", "Manual Logs", Icons.bloodtype_rounded, Colors.greenAccent, textPrimary, textSecondary),
+                            Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Divider(color: dividerColor, height: 1)),
+                            _buildPermissionTile("Calorie Intake", "Meal Estimates", Icons.restaurant_rounded, Colors.amber, textPrimary, textSecondary),
+                          ],
+                        ),
                       ),
-                      
-                      const SizedBox(height: 25),
-                      _buildMainGraph(themePurple, surfaceColor, textPrimary, dividerColor, isDark),
-                      const SizedBox(height: 25),
-                      
-                      Row(
-                        children: [
-                          Expanded(child: _buildStatCard("Daily Avg", "72 bpm", isDark ? Colors.orangeAccent : Colors.orange.shade800, isDark ? Colors.orange.withValues(alpha: 0.1) : Colors.orange.shade50, textPrimary)),
-                          const SizedBox(width: 15),
-                          Expanded(child: _buildStatCard("Status", "Normal", isDark ? Colors.lightBlueAccent : Colors.blue.shade800, isDark ? Colors.blue.withValues(alpha: 0.1) : Colors.blue.shade50, textPrimary)),
-                        ],
+                      const SizedBox(height: 20),
+
+                      // 3. Device Integration Status
+                      _buildInfoCard(
+                        "Integration Status", 
+                        "Device (${user.device}) is ready to sync. Data will be transmitted securely via HealthMax API.", 
+                        Icons.cloud_sync_rounded, 
+                        Colors.blueAccent, surfaceColor, textPrimary, textSecondary, dividerColor, isDark
                       ),
-                      
-                      const SizedBox(height: 140), 
+
+                      const SizedBox(height: 160), // Room for bottom action bar
                     ],
                   ),
                 ),
@@ -172,23 +146,71 @@ class _HPRequestSelectedState extends State<HPRequestSelected> {
           ),
 
           // ==========================================
-          // 2. FLOATING DARK ACTION BAR
+          // 2. FLOATING DARK ACTION BAR (ACCEPT / REJECT)
           // ==========================================
           Positioned(
             bottom: 25, left: 20, right: 20,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E), 
-                borderRadius: BorderRadius.circular(40),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.2), blurRadius: 20, offset: const Offset(0, 10))],
+                color: isDark ? const Color(0xFF1C1C1E) : Colors.white, 
+                borderRadius: BorderRadius.circular(35),
+                border: isDark ? Border.all(color: dividerColor) : null,
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1), blurRadius: 25, offset: const Offset(0, 10))],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _actionButton(Icons.phone_in_talk, "Contact", const Color(0xFF2ED573), () {}),
-                  _actionButton(Icons.chat_bubble_outline, "Feedback", Colors.white, () {}),
-                  _actionButton(Icons.person_remove_alt_1_outlined, "Remove", const Color(0xFFFF4757), () => Navigator.pop(context)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // TODO: Add reject logic
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF4757).withValues(alpha: 0.1),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: const Color(0xFFFF4757).withValues(alpha: 0.3))),
+                          ),
+                          child: const Text("Reject", style: TextStyle(color: Color(0xFFFF4757), fontWeight: FontWeight.bold, fontSize: 15, fontFamily: "LexendExaNormal")),
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // TODO: Add accept logic
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themePurple,
+                            elevation: 4,
+                            shadowColor: themePurple.withValues(alpha: 0.4),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          child: const Text("Accept", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, fontFamily: "LexendExaNormal")),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  
+                  // Contact Action
+                  GestureDetector(
+                    onTap: () {},
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.mail_outline_rounded, size: 16, color: textSecondary),
+                        const SizedBox(width: 6),
+                        Text("Contact for more information", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold, fontSize: 12, decoration: TextDecoration.underline)),
+                      ],
+                    ),
+                  )
                 ],
               ),
             ),
@@ -202,129 +224,63 @@ class _HPRequestSelectedState extends State<HPRequestSelected> {
   // UI COMPONENT HELPERS
   // ==========================================
 
-  Widget _buildDropdown(List<String> items, String val, ValueChanged<String?> onChanged, {required bool isMetric, required bool isDark, required Color surfaceColor, required Color textPrimary}) {
-    final dropBg = isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100;
-    
+  Widget _buildInfoCard(String title, String content, IconData icon, Color iconColor, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: dropBg, borderRadius: BorderRadius.circular(15)),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: val,
-          dropdownColor: surfaceColor,
-          icon: Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Icon(isMetric ? Icons.keyboard_arrow_down_rounded : Icons.calendar_today_outlined, color: textPrimary, size: 16),
-          ),
-          selectedItemBuilder: (BuildContext context) {
-            return items.map<Widget>((String item) {
-              return Center(child: Text(item, style: TextStyle(fontWeight: FontWeight.w900, color: textPrimary, fontSize: 13, fontFamily: "LexendExaNormal")));
-            }).toList();
-          },
-          onChanged: onChanged,
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 13)))).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMainGraph(Color themePurple, Color surfaceColor, Color textPrimary, Color dividerColor, bool isDark) {
-    return Container(
-      height: 260,
-      padding: const EdgeInsets.fromLTRB(15, 25, 25, 15),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(25),
         border: Border.all(color: dividerColor),
         boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 15, offset: const Offset(0, 5))],
       ),
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: dividerColor, strokeWidth: 1.5)),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true, reservedSize: 30, interval: 1,
-                getTitlesWidget: (value, meta) {
-                  final style = TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textPrimary.withValues(alpha: 0.5));
-                  String text = '';
-                  if (selectedTimeframe == "Week") {
-                    const days = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
-                    if (value.toInt() >= 0 && value.toInt() < days.length) text = days[value.toInt()];
-                  } else if (selectedTimeframe == "Month") {
-                    text = 'Wk ${value.toInt() + 1}';
-                  } else if (selectedTimeframe == "Year") {
-                    if (value.toInt() % 3 == 0) {
-                      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                      text = months[value.toInt()];
-                    }
-                  }
-                  if (text.isEmpty) return const SizedBox.shrink();
-                  return Padding(padding: const EdgeInsets.only(top: 10.0), child: Text(text, style: style));
-                }, 
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true, interval: _getIntervalY(), reservedSize: 35,
-                getTitlesWidget: (value, meta) {
-                  if (value == _getMinY() || value == _getMaxY()) return const SizedBox.shrink();
-                  String text = selectedMetric == 'Steps' ? '${(value / 1000).toInt()}k' : (selectedMetric == 'Glucose Level' ? value.toStringAsFixed(1) : value.toInt().toString());
-                  return Text(text, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textPrimary.withValues(alpha: 0.5)));
-                },
-              ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
+                const SizedBox(height: 6),
+                Text(content, style: TextStyle(fontSize: 13, color: textSecondary, height: 1.4, fontStyle: title == "Patient Note" ? FontStyle.italic : FontStyle.normal)),
+              ],
             ),
           ),
-          borderData: FlBorderData(show: false),
-          minX: 0, maxX: _getMaxX(),
-          minY: _getMinY(), maxY: _getMaxY(),
-          lineBarsData: [
-            LineChartBarData(
-              spots: _getChartData(),
-              isCurved: true, curveSmoothness: 0.35,
-              color: themePurple, barWidth: 3.5, isStrokeCapRound: true,
-              dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 4, color: themePurple, strokeWidth: 1.5, strokeColor: surfaceColor)),
-              belowBarData: BarAreaData(show: true, color: themePurple.withValues(alpha: 0.1)), 
-            ),
-          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionTile(String title, String subtitle, IconData icon, Color color, Color textPrimary, Color textSecondary) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: color, size: 18),
         ),
-        duration: const Duration(milliseconds: 400), 
-        curve: Curves.easeOutCubic,
-      )
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, Color titleColor, Color bgColor, Color textPrimary) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: titleColor.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Text(title, style: TextStyle(color: titleColor, fontWeight: FontWeight.bold, fontSize: 12)),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: textPrimary)),
-        ],
-      ),
-    );
-  }
-
-  Widget _actionButton(IconData icon, String label, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 6),
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
-        ],
-      ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+          child: const Text("Read Only", style: TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold)),
+        )
+      ],
     );
   }
 }
