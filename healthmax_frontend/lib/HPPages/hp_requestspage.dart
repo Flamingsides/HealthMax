@@ -1,11 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme_provider.dart'; // Ensure this path is correct
+import '../theme_provider.dart'; 
 import 'hp_bottomnavbar.dart';
 import 'hp_glassy_profile.dart';
-import 'usermodel.dart';
+import 'usermodel.dart'; // Implemented MockData
 import 'hp_requestselected.dart';
+import 'hp_feedback_desk.dart';
 
 class HPRequestsPage extends StatefulWidget {
   const HPRequestsPage({super.key});
@@ -17,20 +18,10 @@ class HPRequestsPage extends StatefulWidget {
 class _HPRequestsPageState extends State<HPRequestsPage> {
   // --- STATE & DATA ---
   bool _isExpanded = false;
-
-  final List<UserModel> _newRequests = [
-    UserModel(username: "diana_p", fullName: "Diana Prince", gender: "F", height: 168, weight: 60, device: "Garmin Venu 3"),
-    UserModel(username: "ethan_h", fullName: "Ethan Hunt", gender: "M", height: 178, weight: 80, device: "Apple Watch Ultra"),
-    UserModel(username: "clark_k", fullName: "Clark Kent", gender: "M", height: 190, weight: 95, device: "Fitbit Sense 2"),
-    UserModel(username: "bruce_w", fullName: "Bruce Wayne", gender: "M", height: 188, weight: 85, device: "Oura Ring Gen3"),
-    UserModel(username: "selina_k", fullName: "Selina Kyle", gender: "F", height: 170, weight: 55, device: "Apple Watch S9"),
-  ];
+  final List<UserModel> _newRequests = MockData.pendingRequests; // Wired directly to MockData!
 
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // DYNAMIC THEME VARIABLES
-    // ==========================================
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -52,7 +43,7 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
               SliverAppBar(
                 automaticallyImplyLeading: false,
                 backgroundColor: themePurple,
-                expandedHeight: 200.0,
+                expandedHeight: 150.0, // FIX 5: Decreased height
                 toolbarHeight: 90.0,
                 pinned: true,
                 elevation: 0,
@@ -68,10 +59,10 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
                   collapseMode: CollapseMode.parallax,
                   background: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(30, 40, 30, 0),
+                      padding: const EdgeInsets.fromLTRB(30, 20, 30, 0),
                       child: const Text(
                         "Requests.",
-                        style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1),
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0),
                       ),
                     ),
                   ),
@@ -94,7 +85,46 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionLabel("PATIENT APPLICATIONS", textSecondary),
+                    // --- FIX 5: MODERN SEARCH BAR ---
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                      child: Container(
+                        height: 55,
+                        decoration: BoxDecoration(
+                          color: surfaceColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: dividerColor),
+                          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                        ),
+                        child: TextField(
+                          style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+                          decoration: InputDecoration(
+                            hintText: "Filter pending applications...",
+                            hintStyle: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                            prefixIcon: Icon(Icons.filter_list_rounded, color: textSecondary),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("PATIENT APPLICATIONS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(color: const Color(0xFFF59E0B).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                            child: Text("${_newRequests.length} Pending", style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 15),
                     
                     _buildExpandableRequestList(themePurple, surfaceColor, bgColor, textPrimary, isDark, dividerColor),
 
@@ -113,28 +143,15 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
           ),
 
           // --- BOTTOM NAVIGATION BAR ---
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: HPBottomNavBar(currentIndex: 2, activeColor: themePurple),
-          ),
-        ],
+          ],
       ),
+      bottomNavigationBar: HPBottomNavBar(currentIndex: 2, activeColor: themePurple), 
     );
   }
 
   // ==========================================
   // UI COMPONENT HELPERS
   // ==========================================
-
-  Widget _buildSectionLabel(String label, Color textSecondary) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(30, 10, 30, 15),
-      child: Text(
-        label, 
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSecondary, letterSpacing: 1.2),
-      ),
-    );
-  }
 
   Widget _buildExpandableRequestList(Color themePurple, Color surfaceColor, Color bgColor, Color textPrimary, bool isDark, Color dividerColor) {
     return AnimatedContainer(
@@ -226,9 +243,10 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
     );
   }
 
-  Widget _buildFeedbackContainer(Color surfaceColor, bool isDark, Color dividerColor) {
-    // Keep this card distinct by forcing a dark elegant look, or matching the surface in dark mode
+ Widget _buildFeedbackContainer(Color surfaceColor, bool isDark, Color dividerColor) {
     final containerColor = isDark ? surfaceColor : const Color(0xFF1A1A1A);
+    // Grab the live list!
+    final feedbackList = MockData.feedbackRequests;
 
     return Container(
       width: double.infinity,
@@ -254,25 +272,39 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
             ],
           ),
           const SizedBox(height: 25),
+          
+          // --- DYNAMIC AVATAR LIST ---
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             child: Row(
               children: [
-                _feedbackAvatar("Adam", "HP"),
-                _feedbackAvatar("Sarah", "GL"),
-                _feedbackAvatar("Mike", "HR"),
-                Container(
-                  width: 45, height: 45,
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle, border: Border.all(color: Colors.white24)),
-                  child: const Center(child: Text("+5", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
-                ),
+                if (feedbackList.isEmpty)
+                  const Text("No pending feedbacks.", style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic)),
+                
+                // Maps the first 3 requests to Avatars
+                ...feedbackList.take(3).map((req) {
+                  return _feedbackAvatar(req.user.fullName.split(" ")[0], req.label, req.color);
+                }),
+                
+                // Calculates the exact +X badge automatically
+                if (feedbackList.length > 3)
+                  Container(
+                    width: 45, height: 45,
+                    margin: const EdgeInsets.only(bottom: 22), // Align with avatars
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle, border: Border.all(color: Colors.white24)),
+                    child: Center(child: Text("+${feedbackList.length - 3}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 30),
+          
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+               // Routes flawlessly to the desk!
+               Navigator.push(context, MaterialPageRoute(builder: (context) => const HPFeedbackDeskPage()));
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
@@ -287,7 +319,7 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
     );
   }
 
-  Widget _feedbackAvatar(String name, String label) {
+  Widget _feedbackAvatar(String name, String label, Color color) {
     return Padding(
       padding: const EdgeInsets.only(right: 20),
       child: Column(
@@ -295,7 +327,7 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
           Container(
             width: 45, height: 45,
             decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle),
-            child: Center(child: Text(label, style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold))),
+            child: Center(child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold))),
           ),
           const SizedBox(height: 8),
           Text(name, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),

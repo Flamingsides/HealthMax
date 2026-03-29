@@ -26,16 +26,15 @@ class CalorieEstimatorService {
 
   // Getting AI calorie estimation from text
   Future<NutritionResult> estimateFromText(String foodDescription) async {
-    final prompt =
-        '''
+    final prompt = '''
 You are a nutrition expert. Estimate the nutritional content for a food described as: "$foodDescription"
 
 If there is missing information then assume and specify assumption in "notes" in the JSON below.
 
 Respond ONLY with this exact JSON structure:
 {
-  "label": "Concise label for this food",
-  "servings": 1,
+  "label": "Name of the food without the number (e.g., 'Fried Eggs' instead of '2 Fried Eggs')",
+  "servings": <integer representing the exact quantity requested, e.g., 2>,
   "foods": [
     {
       "name": "food name",

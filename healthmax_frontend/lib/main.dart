@@ -83,7 +83,7 @@ class _MyAppState extends State<MyApp> {
         '/hp_home': (context) => const HPHomePage(),
         '/hp_users': (context) => const HPUsersPage(),
         '/hp_requests': (context) => const HPRequestsPage(),
-        '/hp_settings': (context) => const HPProfileClicked(),
+        '/hp_settings': (context) =>  const HPSettingsPage(),
 
         // User routes
         '/user_homepage': (context) => const UserHomePage(),

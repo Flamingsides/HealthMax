@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme_provider.dart'; // Adjust this import path if needed
+import '../theme_provider.dart'; 
+import '../GeneralPages/auth_provider.dart'; 
 
 class UserSettingsPage extends StatelessWidget {
   const UserSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // 1. DYNAMIC THEME VARIABLES
-    // ==========================================
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
 
-    // We use the User Side signature blue for accents!
+    // --- GET LIVE USERNAME ---
+    final authData = Provider.of<AuthProvider>(context);
+    final String liveUsername = authData.currentUsername ?? "User"; // Fallback to "User" if null
+
     const Color userBlue = Color(0xFF5A84F1); 
     
     final Color bgColor = Theme.of(context).scaffoldBackgroundColor;
@@ -28,7 +29,7 @@ class UserSettingsPage extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         slivers: [
           // ==========================================
-          // 2. SLIVER APP BAR & PROFILE HEADER
+          // SLIVER APP BAR & PROFILE HEADER
           // ==========================================
           SliverAppBar(
             backgroundColor: bgColor,
@@ -52,7 +53,6 @@ class UserSettingsPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 20),
-                    // User Avatar with Blue Glow
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -70,7 +70,7 @@ class UserSettingsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 15),
                     Text(
-                      "Tengku Adam",
+                      liveUsername, 
                       style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -0.5),
                     ),
                     const SizedBox(height: 4),
@@ -85,7 +85,7 @@ class UserSettingsPage extends StatelessWidget {
           ),
 
           // ==========================================
-          // 3. MAIN SETTINGS CONTENT
+          // MAIN SETTINGS CONTENT
           // ==========================================
           SliverToBoxAdapter(
             child: Container(
@@ -99,7 +99,6 @@ class UserSettingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- PREFERENCES SECTION ---
                   Text("PREFERENCES", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
                   
@@ -113,24 +112,19 @@ class UserSettingsPage extends StatelessWidget {
                       children: [
                         _buildProfileOption(Icons.account_circle_outlined, "Account Information", "", textPrimary, textSecondary),
                         _buildDivider(dividerColor),
-                        // --- NEW: Notifications ---
                         _buildProfileOption(Icons.notifications_none_rounded, "Notifications", "On", textPrimary, textSecondary),
                         _buildDivider(dividerColor),
-                        // --- NEW: Manage Healthcare Providers ---
                         _buildProfileOption(Icons.medical_services_outlined, "Manage Healthcare Providers", "1 Connected", textPrimary, userBlue),
                         _buildDivider(dividerColor),
-                        
                         _buildProfileOption(Icons.watch_rounded, "Connected Devices", "Apple Watch", textPrimary, userBlue),
                         _buildDivider(dividerColor),
                         _buildProfileOption(
                           Icons.track_changes_rounded, 
                           "Health Goals", 
-                          "Weight Loss", // In the future, read this from your UserProvider!
+                          "Weight Loss", 
                           textPrimary, 
                           textSecondary,
-                          // --- NEW: Routing to your goal editor! ---
                           onTap: () {
-                            // TODO: Replace with navigation to your actual Goal Editing page when ready!
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Redirecting to Goal Editor..."), backgroundColor: Color(0xFF8E33FF), behavior: SnackBarBehavior.floating)
                             );
@@ -138,7 +132,6 @@ class UserSettingsPage extends StatelessWidget {
                         ),
                         _buildDivider(dividerColor),
                         
-                        // --- THE WORKING THEME TOGGLE SWITCH ---
                         SwitchListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                           secondary: Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: textPrimary.withValues(alpha: 0.8), size: 22),
@@ -160,19 +153,15 @@ class UserSettingsPage extends StatelessWidget {
                   
                   const SizedBox(height: 35),
                   
-                  // --- ACTIONS SECTION ---
                   Text("ACTIONS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
 
-                  // --- NEW: VERIFY EMAIL BUTTON ---
                   _buildActionButton(
                     label: "VERIFY EMAIL", 
                     icon: Icons.mark_email_read_rounded, 
-                    bgColor: const Color(0xFFF59E0B).withValues(alpha: 0.1), // Golden/Yellow tint
+                    bgColor: const Color(0xFFF59E0B).withValues(alpha: 0.1),
                     textColor: const Color(0xFFF59E0B), 
-                    onTap: () {
-                      // TODO: Add verification logic
-                    }
+                    onTap: () {}
                   ),
                   const SizedBox(height: 12),
 
@@ -211,7 +200,7 @@ class UserSettingsPage extends StatelessWidget {
 
  Widget _buildProfileOption(IconData icon, String title, String value, Color textPrimary, Color valueColor, {VoidCallback? onTap}) {
     return ListTile(
-      onTap: onTap, // <-- Now it responds to clicks!
+      onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Icon(icon, color: textPrimary.withValues(alpha: 0.8), size: 22),
       title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),

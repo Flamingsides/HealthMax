@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme_provider.dart'; 
-import 'calorie_provider.dart'; // NEW: Syncing the live calorie data!
-import 'user_statistic.dart'; // NEW: For routing directly to the smart tabs
+import 'calorie_provider.dart'; 
+import '../GeneralPages/auth_provider.dart'; 
+import 'user_statistic.dart'; 
 import 'user_bottomnavbar.dart'; 
 import 'user_glassy_profile.dart'; 
 
@@ -10,7 +11,7 @@ import 'user_glassy_profile.dart';
 // MOCK DATA MODEL (PLACEHOLDER FOR SQL DB)
 // ==========================================
 class UserHealthData {
-  final String username;
+  
   final int heartRate;
   final String heartRateStatus;
   final int bloodGlucose;
@@ -22,7 +23,6 @@ class UserHealthData {
   final String lastUpdated;
 
   UserHealthData({
-    required this.username,
     required this.heartRate,
     required this.heartRateStatus,
     required this.bloodGlucose,
@@ -56,7 +56,6 @@ class _UserHomePageState extends State<UserHomePage> {
     
     // INITIALIZE MOCK DATA
     myData = UserHealthData(
-      username: "Tengku Adam", 
       heartRate: 90,
       heartRateStatus: "Normal",
       bloodGlucose: 90,
@@ -84,8 +83,6 @@ class _UserHomePageState extends State<UserHomePage> {
     super.dispose();
   }
 
-  // --- CUSTOM ROUTING FUNCTION ---
-  // Uses Duration.zero to mimic the instant snap of a Bottom Navigation Bar
   void _routeToStatistic(String metric) {
     Navigator.pushReplacement(
       context,
@@ -101,8 +98,10 @@ class _UserHomePageState extends State<UserHomePage> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     
-    // Grab live calorie data!
+    // --- LIVE PROVIDERS ---
     final calorieData = Provider.of<CalorieProvider>(context);
+    final authData = Provider.of<AuthProvider>(context); // Get live Auth Data!
+    final String liveUsername = authData.currentUsername ?? "User"; // Fallback if null
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
@@ -141,7 +140,7 @@ class _UserHomePageState extends State<UserHomePage> {
                   },
                   blendMode: BlendMode.dstIn,
                   child: Text(
-                    "Hi, ${myData.username}!",
+                    "Hi, $liveUsername!", // Dynamic Username!
                     maxLines: 1, softWrap: false, overflow: TextOverflow.clip, 
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal"),
                   ),
@@ -166,7 +165,7 @@ class _UserHomePageState extends State<UserHomePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text("Hi,", style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, fontFamily: "LexendExaNormal")),
-                          Text("${myData.username}!", style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: "LexendExaNormal")),
+                          Text("$liveUsername!", style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: "LexendExaNormal")), // Dynamic Username!
                         ],
                       ),
                     ],
@@ -210,33 +209,31 @@ class _UserHomePageState extends State<UserHomePage> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // --- WIRED METRICS ---
                                   _buildMetric(
                                     icon: Icons.monitor_heart, color: const Color(0xFFFF6B6B),
                                     value: myData.heartRate.toString(), unit: "bpm", status: myData.heartRateStatus, title: "Heart Rate",
                                     textPrimary: textPrimary, textSecondary: textSecondary,
-                                    onTap: () => _routeToStatistic("Heart Rate"), // Routes to HR Tab
+                                    onTap: () => _routeToStatistic("Heart Rate"), 
                                   ),
                                   const SizedBox(height: 15),
                                   _buildMetric(
                                     icon: Icons.bloodtype, color: const Color(0xFF4ECDC4),
                                     value: myData.bloodGlucose.toString(), unit: "mg / dL", status: myData.bloodGlucoseStatus, title: "Blood Glucose",
                                     textPrimary: textPrimary, textSecondary: textSecondary,
-                                    onTap: () => _routeToStatistic("Blood Glucose"), // Routes to Glucose Tab
+                                    onTap: () => _routeToStatistic("Blood Glucose"), 
                                   ),
                                   const SizedBox(height: 15),
                                   _buildMetric(
                                     icon: Icons.hearing, color: const Color(0xFF45B7D1),
                                     value: myData.envNoise.toString(), unit: "dB", status: myData.envNoiseStatus, title: "Env. Noise",
                                     textPrimary: textPrimary, textSecondary: textSecondary,
-                                    onTap: () => _routeToStatistic("Env. Noise"), // Routes to Noise Tab
+                                    onTap: () => _routeToStatistic("Env. Noise"), 
                                   ),
                                 ],
                               ),
                               
-                              // --- WIRED STEPS CIRCLE ---
                               GestureDetector(
-                                onTap: () => _routeToStatistic("Steps"), // Routes to Steps Tab!
+                                onTap: () => _routeToStatistic("Steps"), 
                                 child: SizedBox(
                                   width: 140, height: 140,
                                   child: Stack(
@@ -294,14 +291,13 @@ class _UserHomePageState extends State<UserHomePage> {
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       children: [
-                        // --- WIRED CALORIE CARD ---
                         _buildQuickActionCard(
                           icon: Icons.local_fire_department_rounded, iconBgColor: const Color(0xFFFFD93D),
                           title: "Burned Calories",
-                          subtitle: "${calorieData.burnedCalories} kcal burned today", // Data mapped directly from Calorie page!
+                          subtitle: "${calorieData.burnedCalories} kcal burned today", 
                           isProgress: true,
                           surfaceColor: surfaceColor, textPrimary: textPrimary, textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark,
-                          onTap: () => Navigator.pushReplacementNamed(context, '/user_calorie') // Routes to Calorie page!
+                          onTap: () => Navigator.pushReplacementNamed(context, '/user_calorie')
                         ),
                         const SizedBox(width: 15),
                         _buildQuickActionCard(
@@ -347,10 +343,10 @@ class _UserHomePageState extends State<UserHomePage> {
 
   Widget _buildMetric({
     required IconData icon, required Color color, required String value, required String unit, required String status,
-    required String title, required Color textPrimary, required Color textSecondary, VoidCallback? onTap // NEW: Added onTap
+    required String title, required Color textPrimary, required Color textSecondary, VoidCallback? onTap
   }) {
     return GestureDetector(
-      onTap: onTap, // Routes straight to statistics now!
+      onTap: onTap, 
       child: Container(
         color: Colors.transparent, 
         child: Row(
@@ -388,11 +384,11 @@ class _UserHomePageState extends State<UserHomePage> {
 
   Widget _buildQuickActionCard({
     required IconData icon, required Color iconBgColor, required String title, required String subtitle, 
-    bool isProgress = false, bool isAppointment = false, VoidCallback? onTap, // NEW: Added onTap
+    bool isProgress = false, bool isAppointment = false, VoidCallback? onTap, 
     required Color surfaceColor, required Color textPrimary, required Color textSecondary, required Color dividerColor, required bool isDark
   }) {
     return GestureDetector(
-      onTap: onTap, // Makes the whole card clickable
+      onTap: onTap, 
       child: Container(
         width: 260,
         padding: const EdgeInsets.all(15),

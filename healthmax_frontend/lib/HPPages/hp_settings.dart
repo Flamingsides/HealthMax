@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme_provider.dart'; // Adjust this import path if your provider is in a different folder
+import '../theme_provider.dart'; 
+import '../GeneralPages/auth_provider.dart'; 
 
-class HPProfileClicked extends StatelessWidget {
-  const HPProfileClicked({super.key});
+class HPSettingsPage extends StatelessWidget {
+  const HPSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // 1. DYNAMIC THEME VARIABLES
-    // ==========================================
-    // We listen to the provider to know if we are in Dark Mode
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
 
-    // We pull the exact colors defined in your theme_provider.dart
-    final Color themePurple = Theme.of(context).primaryColor;
+    // --- GET LIVE HP USERNAME ---
+    final authData = Provider.of<AuthProvider>(context);
+    final String liveUsername = authData.currentUsername ?? "Doctor"; 
+
+    // --- HP SIGNATURE PURPLE THEME ---
+    const Color hpPurple = Color(0xFF8E33FF); 
+    
     final Color bgColor = Theme.of(context).scaffoldBackgroundColor;
     final Color surfaceColor = Theme.of(context).colorScheme.surface;
     final Color textPrimary = Theme.of(context).colorScheme.onSurface;
@@ -28,7 +30,7 @@ class HPProfileClicked extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         slivers: [
           // ==========================================
-          // 2. SLIVER APP BAR & PROFILE HEADER
+          // SLIVER APP BAR & PROFILE HEADER
           // ==========================================
           SliverAppBar(
             backgroundColor: bgColor,
@@ -52,30 +54,27 @@ class HPProfileClicked extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 20),
-                    // Glowing Avatar (Glows in both light and dark mode!)
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: themePurple.withValues(alpha: 0.5), width: 2),
-                        boxShadow: [
-                          BoxShadow(color: themePurple.withValues(alpha: 0.15), blurRadius: 20, spreadRadius: 5),
-                        ],
+                        border: Border.all(color: hpPurple.withValues(alpha: 0.5), width: 2),
+                        boxShadow: [BoxShadow(color: hpPurple.withValues(alpha: 0.15), blurRadius: 20, spreadRadius: 5)],
                       ),
                       child: CircleAvatar(
                         radius: 45,
                         backgroundColor: surfaceColor,
-                        child: Icon(Icons.apartment_rounded, size: 45, color: themePurple),
+                        child: const Icon(Icons.medical_services_rounded, size: 50, color: hpPurple),
                       ),
                     ),
                     const SizedBox(height: 15),
                     Text(
-                      "Hospital 1",
+                      liveUsername, 
                       style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -0.5),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Medical Portal Administrator",
+                      "Healthcare Provider", 
                       style: TextStyle(fontSize: 13, color: textSecondary, fontWeight: FontWeight.w600, letterSpacing: 0.5),
                     ),
                   ],
@@ -85,22 +84,21 @@ class HPProfileClicked extends StatelessWidget {
           ),
 
           // ==========================================
-          // 3. MAIN SETTINGS CONTENT
+          // MAIN SETTINGS CONTENT
           // ==========================================
           SliverToBoxAdapter(
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(25, 30, 25, 50),
               decoration: BoxDecoration(
-                color: surfaceColor, // Changes automatically based on theme
+                color: surfaceColor,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
                 boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, -5))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- PREFERENCES SECTION ---
-                  Text("PREFERENCES", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
+                  Text("CLINIC PREFERENCES", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
                   
                   Container(
@@ -111,50 +109,45 @@ class HPProfileClicked extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _buildProfileOption(Icons.account_circle_outlined, "Account Information", "", textPrimary, textSecondary),
+                        _buildProfileOption(Icons.local_hospital_outlined, "Clinic Information", "Verified", textPrimary, hpPurple),
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.language_rounded, "Language", "English", textPrimary, textSecondary),
+                        _buildProfileOption(Icons.notifications_none_rounded, "Alerts & Notifications", "Urgent Only", textPrimary, textSecondary),
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.format_size_rounded, "Font Size", "Medium", textPrimary, textSecondary),
+                        _buildProfileOption(Icons.people_alt_outlined, "Patient Data Access", "Manage", textPrimary, hpPurple),
                         _buildDivider(dividerColor),
                         
-                        // --- THE WORKING THEME TOGGLE SWITCH ---
                         SwitchListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                           secondary: Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: textPrimary.withValues(alpha: 0.8), size: 22),
                           title: Text("Dark Mode", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
                           value: isDark,
-                          activeColor: themePurple,
+                          activeColor: hpPurple,
                           inactiveTrackColor: Colors.grey.shade300,
                           onChanged: (value) {
-                            // This tells the provider to flip the theme for the entire app!
-                            final provider = Provider.of<ThemeProvider>(context, listen: false);
-                            provider.toggleTheme(value);
+                            Provider.of<ThemeProvider>(context, listen: false).toggleTheme(value);
                           },
                         ),
                         
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.bar_chart_rounded, "Data Presentation", "Spine Chart", textPrimary, textSecondary),
-                        _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.security_outlined, "Privacy & Access", "", textPrimary, textSecondary),
+                        _buildProfileOption(Icons.security_outlined, "Security", "", textPrimary, textSecondary),
                       ],
                     ),
                   ),
                   
                   const SizedBox(height: 35),
                   
-                  // --- ACTIONS SECTION ---
                   Text("ACTIONS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
 
                   _buildActionButton(
-                    label: "EXPORT PORTAL DATA", 
-                    icon: Icons.share_rounded, 
-                    bgColor: const Color(0xFF00D1FF).withValues(alpha: 0.1), 
-                    textColor: const Color(0xFF00B0D6), // Slightly deeper cyan for better light mode contrast
-                    onTap: () => _handleExport(context)
+                    label: "GENERATE CLINIC REPORT", 
+                    icon: Icons.analytics_outlined, 
+                    bgColor: hpPurple.withValues(alpha: 0.1), 
+                    textColor: hpPurple, 
+                    onTap: () {}
                   ),
                   const SizedBox(height: 12),
+
                   _buildActionButton(
                     label: "LOG OUT", 
                     icon: Icons.logout_rounded, 
@@ -179,9 +172,9 @@ class HPProfileClicked extends StatelessWidget {
     return Divider(height: 1, thickness: 1, color: dividerColor, indent: 20, endIndent: 20);
   }
 
-  Widget _buildProfileOption(IconData icon, String title, String value, Color textPrimary, Color valueColor) {
+ Widget _buildProfileOption(IconData icon, String title, String value, Color textPrimary, Color valueColor, {VoidCallback? onTap}) {
     return ListTile(
-      onTap: () {},
+      onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Icon(icon, color: textPrimary.withValues(alpha: 0.8), size: 22),
       title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
@@ -217,48 +210,22 @@ class HPProfileClicked extends StatelessWidget {
     );
   }
 
-  // ==========================================
-  // LOGIC & DIALOG HELPERS
-  // ==========================================
-
-  void _handleExport(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text("Preparing medical records for export...", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)), 
-        backgroundColor: const Color(0xFF00B0D6),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-    );
-  }
-
   void _showLogoutConfirmation(BuildContext context, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: surfaceColor, 
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25), 
-          side: BorderSide(color: dividerColor), // Fixed BorderSide issue!
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25), side: BorderSide(color: dividerColor)),
         title: Text("Confirm Logout", style: TextStyle(fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
-        content: Text("Are you sure you want to exit the Hospital Portal?", style: TextStyle(color: textSecondary, height: 1.5)),
+        content: Text("Are you sure you want to log out of the Provider Portal?", style: TextStyle(color: textSecondary, height: 1.5)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("CANCEL", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text("CANCEL", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context); 
               Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false); 
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF4B4B),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF4B4B), elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
             child: const Text("LOGOUT", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
