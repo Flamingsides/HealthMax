@@ -6,6 +6,7 @@ import '../GeneralPages/auth_provider.dart';
 import 'hp_bottomnavbar.dart';
 import 'hp_glassy_profile.dart';
 import 'usermodel.dart'; // Implemented MockData
+import 'hp_feedback_desk.dart'; // For Feedback Requests
 
 class HPHomePage extends StatefulWidget {
   const HPHomePage({super.key});
@@ -130,7 +131,7 @@ class _HPHomePageState extends State<HPHomePage> {
                     child: ShaderMask(
                       shaderCallback: (Rect bounds) => const LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Colors.white, Colors.white, Colors.transparent], stops: [0.0, 0.85, 1.0]).createShader(bounds),
                       blendMode: BlendMode.dstIn,
-                      child: Text("Hi, Dr. $liveUsername", maxLines: 1, softWrap: false, overflow: TextOverflow.clip, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal")),
+                      child: Text("Hi, $liveUsername", maxLines: 1, softWrap: false, overflow: TextOverflow.clip, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal")),
                     ),
                   ),
                 ),
@@ -240,14 +241,22 @@ class _HPHomePageState extends State<HPHomePage> {
         Expanded(
           child: Column(
             children: [
-              _statBtn(Icons.people_alt, "$_dbConnectedUsers Connected Users", const Color(0xFF8E33FF).withValues(alpha: 0.15), const Color(0xFF8E33FF), onTap: () => Navigator.pushNamed(context, '/hp_users')),
+              _statBtn(Icons.people_alt, "$_dbConnectedUsers Connected Users", const Color(0xFF8E33FF).withOpacity(0.15), const Color(0xFF8E33FF), onTap: () => Navigator.pushNamed(context, '/hp_users')),
               const SizedBox(height: 12),
-              _statBtn(Icons.access_time, "$_dbPendingRequests Requests", const Color(0xFFF59E0B).withValues(alpha: 0.15), const Color(0xFFF59E0B), onTap: () => Navigator.pushNamed(context, '/hp_requests')),
+              _statBtn(Icons.access_time, "$_dbPendingRequests Requests", const Color(0xFFF59E0B).withOpacity(0.15), const Color(0xFFF59E0B), onTap: () => Navigator.pushNamed(context, '/hp_requests')),
             ],
           ),
         ),
         const SizedBox(width: 15),
-        _statBtn(Icons.warning_amber_rounded, "3 NEED\nATTENTION", const Color(0xFFFF4757), Colors.white, isLarge: true),
+        _statBtn(
+          Icons.warning_amber_rounded, 
+          "${MockData.feedbackRequests.length} NEED\nATTENTION", // DYNAMIC NUMBER!
+          const Color(0xFFFF4757), 
+          Colors.white, 
+          isLarge: true,
+          // ROUTES TO THE FEEDBACK DESK!
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HPFeedbackDeskPage())),
+        ),
       ],
     );
   }

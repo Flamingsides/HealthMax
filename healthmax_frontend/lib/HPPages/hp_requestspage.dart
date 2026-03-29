@@ -6,6 +6,7 @@ import 'hp_bottomnavbar.dart';
 import 'hp_glassy_profile.dart';
 import 'usermodel.dart'; // Implemented MockData
 import 'hp_requestselected.dart';
+import 'hp_feedback_desk.dart';
 
 class HPRequestsPage extends StatefulWidget {
   const HPRequestsPage({super.key});
@@ -242,8 +243,10 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
     );
   }
 
-  Widget _buildFeedbackContainer(Color surfaceColor, bool isDark, Color dividerColor) {
+ Widget _buildFeedbackContainer(Color surfaceColor, bool isDark, Color dividerColor) {
     final containerColor = isDark ? surfaceColor : const Color(0xFF1A1A1A);
+    // Grab the live list!
+    final feedbackList = MockData.feedbackRequests;
 
     return Container(
       width: double.infinity,
@@ -269,25 +272,39 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
             ],
           ),
           const SizedBox(height: 25),
+          
+          // --- DYNAMIC AVATAR LIST ---
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             child: Row(
               children: [
-                _feedbackAvatar("Adam", "HP"),
-                _feedbackAvatar("Sarah", "GL"),
-                _feedbackAvatar("Mike", "HR"),
-                Container(
-                  width: 45, height: 45,
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle, border: Border.all(color: Colors.white24)),
-                  child: const Center(child: Text("+5", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
-                ),
+                if (feedbackList.isEmpty)
+                  const Text("No pending feedbacks.", style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic)),
+                
+                // Maps the first 3 requests to Avatars
+                ...feedbackList.take(3).map((req) {
+                  return _feedbackAvatar(req.user.fullName.split(" ")[0], req.label, req.color);
+                }),
+                
+                // Calculates the exact +X badge automatically
+                if (feedbackList.length > 3)
+                  Container(
+                    width: 45, height: 45,
+                    margin: const EdgeInsets.only(bottom: 22), // Align with avatars
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle, border: Border.all(color: Colors.white24)),
+                    child: Center(child: Text("+${feedbackList.length - 3}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 30),
+          
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+               // Routes flawlessly to the desk!
+               Navigator.push(context, MaterialPageRoute(builder: (context) => const HPFeedbackDeskPage()));
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
@@ -302,7 +319,7 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
     );
   }
 
-  Widget _feedbackAvatar(String name, String label) {
+  Widget _feedbackAvatar(String name, String label, Color color) {
     return Padding(
       padding: const EdgeInsets.only(right: 20),
       child: Column(
@@ -310,7 +327,7 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
           Container(
             width: 45, height: 45,
             decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle),
-            child: Center(child: Text(label, style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold))),
+            child: Center(child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold))),
           ),
           const SizedBox(height: 8),
           Text(name, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
