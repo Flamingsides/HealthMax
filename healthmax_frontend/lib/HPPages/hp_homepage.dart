@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../theme_provider.dart'; 
+import '../GeneralPages/auth_provider.dart'; 
 import 'hp_bottomnavbar.dart';
 import 'hp_glassy_profile.dart';
+import 'usermodel.dart'; // Implemented MockData
 
 class HPHomePage extends StatefulWidget {
   const HPHomePage({super.key});
@@ -13,22 +15,40 @@ class HPHomePage extends StatefulWidget {
 }
 
 class _HPHomePageState extends State<HPHomePage> {
-  // --- DATABASE PLACEHOLDERS ---
-  final String _dbHospitalName = "Hospital 1";
-  final int _dbConnectedUsers = 10;
-  final int _dbPendingRequests = 5;
-  final int _dbNeedsAttention = 3;
+  final Color hpPurple = const Color(0xFF8E33FF);
 
-  // --- STATE VARIABLES ---
+  // --- DYNAMIC DATABASE COUNTS ---
+  final int _dbConnectedUsers = MockData.activeUsers.length;
+  final int _dbPendingRequests = MockData.pendingRequests.length;
+
+  late ScrollController _scrollController;
+  bool _isScrolled = false;
+
   String selectedMetric = 'Heart Rate';
   String selectedTimeframe = 'Week';
 
   final Map<String, Color> metricColors = {
     'Heart Rate': Colors.redAccent,
-    'Steps': Colors.blueAccent,
-    'Calories': Colors.orangeAccent,
+    'Steps': Colors.orangeAccent,
+    'Calories': Colors.amber,
     'Glucose Level': Colors.greenAccent,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(() {
+      if (_scrollController.offset > 90 && !_isScrolled) setState(() => _isScrolled = true);
+      else if (_scrollController.offset <= 90 && _isScrolled) setState(() => _isScrolled = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   // --- DYNAMIC GRAPH LOGIC ---
   double _getMaxX() => selectedTimeframe == "Week" ? 6 : (selectedTimeframe == "Month" ? 3 : 11);
@@ -71,37 +91,49 @@ class _HPHomePageState extends State<HPHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // THE FIX: Theme variables safely inside build()
-    // ==========================================
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     
-    final themePurple = Theme.of(context).primaryColor;
+    final authData = Provider.of<AuthProvider>(context);
+    final String liveUsername = authData.currentUsername ?? "Clinic"; 
+
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
-    final textSecondary = isDark ? Colors.white54 : Colors.black54;
+    final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
     final dividerColor = Theme.of(context).dividerColor;
     
-    final currentColor = metricColors[selectedMetric] ?? themePurple;
+    final currentColor = metricColors[selectedMetric] ?? hpPurple;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
         children: [
           CustomScrollView(
+            controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
                 automaticallyImplyLeading: false,
-                backgroundColor: themePurple,
+                backgroundColor: hpPurple,
                 expandedHeight: 220.0, 
                 toolbarHeight: 90.0,
                 pinned: true,
                 elevation: 0,
                 scrolledUnderElevation: 0.0,
                 surfaceTintColor: Colors.transparent,
+                title: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 250),
+                  opacity: _isScrolled ? 1.0 : 0.0, 
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 15.0, top: 10.0),
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) => const LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Colors.white, Colors.white, Colors.transparent], stops: [0.0, 0.85, 1.0]).createShader(bounds),
+                      blendMode: BlendMode.dstIn,
+                      child: Text("Hi, Dr. $liveUsername", maxLines: 1, softWrap: false, overflow: TextOverflow.clip, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal")),
+                    ),
+                  ),
+                ),
                 actions: [
                   Padding(
                     padding: const EdgeInsets.only(right: 30.0, top: 10.0), 
@@ -112,10 +144,13 @@ class _HPHomePageState extends State<HPHomePage> {
                   collapseMode: CollapseMode.parallax,
                   background: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(30, 40, 30, 0),
-                      child: Text(
-                        "Hi,\n$_dbHospitalName.", 
-                        style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1),
+                      padding: const EdgeInsets.fromLTRB(30, 25, 30, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Hi,", style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, fontFamily: "LexendExaNormal")),
+                          Text("Dr. $liveUsername.", style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: "LexendExaNormal")), 
+                        ],
                       ),
                     ),
                   ),
@@ -135,22 +170,26 @@ class _HPHomePageState extends State<HPHomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTopStats(textPrimary),
+                      _buildTopStats(textPrimary, textSecondary),
                       const SizedBox(height: 35),
                       
-                      const Text("ANALYTICS OVERVIEW", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Colors.grey, letterSpacing: 1.2)),
-                      Text("$selectedMetric Trends", style: TextStyle(fontSize: 26, color: currentColor, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", letterSpacing: -0.5)),
+                      Text("ANALYTICS OVERVIEW", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: textSecondary, letterSpacing: 1.2)),
+                      Text("$selectedMetric Trends", style: TextStyle(fontSize: 24, color: currentColor, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", letterSpacing: -0.5)),
+                      
+                      // --- FIX 2: DYNAMIC GRAPH SUBTITLE ---
+                      const SizedBox(height: 4),
+                      Text("Based on live data from $_dbConnectedUsers connected patients.", style: TextStyle(fontSize: 12, color: textSecondary, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 20),
                       
-                      _buildGraphSection(currentColor, surfaceColor, textPrimary, dividerColor),
+                      _buildGraphSection(currentColor, surfaceColor, textPrimary, textSecondary, dividerColor, isDark),
                       
                       const SizedBox(height: 35),
                       
-                      const Text("RECENT PATIENT ALERTS", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Colors.grey, letterSpacing: 1.2)),
+                      Text("RECENT PATIENT ALERTS", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: textSecondary, letterSpacing: 1.2)),
                       const SizedBox(height: 15),
-                      _buildAlertTile("Tengku Adam", "Critical Heart Rate", "142 BPM", Colors.redAccent.withValues(alpha: 0.15), textPrimary, textSecondary),
-                      _buildAlertTile("Sarah Jenkins", "Low Glucose Level", "3.2 mmol/L", Colors.orangeAccent.withValues(alpha: 0.15), textPrimary, textSecondary),
-                      _buildAlertTile("Mike Ross", "Data Sync Interrupted", "2 hours ago", Colors.grey.withValues(alpha: isDark ? 0.2 : 0.1), textPrimary, textSecondary),
+                      _buildAlertTile("Tengku Adam", "Critical Heart Rate", "142 BPM", Colors.redAccent.withValues(alpha: 0.15), textPrimary, textSecondary, surfaceColor, dividerColor, isDark),
+                      _buildAlertTile("Sarah Jenkins", "Low Glucose Level", "3.2 mmol/L", Colors.orangeAccent.withValues(alpha: 0.15), textPrimary, textSecondary, surfaceColor, dividerColor, isDark),
+                      _buildAlertTile("Mike Ross", "Data Sync Interrupted", "2 hrs ago", Colors.grey.withValues(alpha: 0.15), textPrimary, textSecondary, surfaceColor, dividerColor, isDark),
                       const SizedBox(height: 35),
                       
                       _buildSystemHealthCard(),
@@ -163,7 +202,6 @@ class _HPHomePageState extends State<HPHomePage> {
             ],
           ),
 
-          // Fog Fade Footer (adapts to light/dark background)
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Container(
@@ -179,16 +217,16 @@ class _HPHomePageState extends State<HPHomePage> {
               alignment: Alignment.bottomCenter,
               child: Row(
                 children: [
-                  Expanded(child: _actionBtn("Compare Data", isDark ? Colors.orange.shade900 : Colors.orange.shade100, Icons.compare_arrows, textPrimary)),
+                  Expanded(child: _actionBtn("Compare Data", isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE), Icons.compare_arrows, isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E3A8A))),
                   const SizedBox(width: 15),
-                  Expanded(child: _actionBtn("Export PDF", isDark ? Colors.cyan.shade900 : Colors.cyan.shade100, Icons.download, textPrimary)),
+                  Expanded(child: _actionBtn("Export PDF", isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5), Icons.download, isDark ? const Color(0xFF34D399) : const Color(0xFF064E3B))),
                 ],
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: HPBottomNavBar(currentIndex: 0, activeColor: themePurple),
+      bottomNavigationBar: HPBottomNavBar(currentIndex: 0, activeColor: hpPurple),
     );
   }
 
@@ -196,59 +234,60 @@ class _HPHomePageState extends State<HPHomePage> {
   // HELPER WIDGETS
   // ==========================================
 
-  Widget _buildTopStats(Color textPrimary) {
+  Widget _buildTopStats(Color textPrimary, Color textSecondary) {
     return Row(
       children: [
         Expanded(
           child: Column(
             children: [
-              _statBtn(Icons.person, "$_dbConnectedUsers Connected Users", const Color.fromARGB(255, 158, 243, 202), Colors.black87, onTap: () => Navigator.pushNamed(context, '/hp_users')),
+              _statBtn(Icons.people_alt, "$_dbConnectedUsers Connected Users", const Color(0xFF8E33FF).withValues(alpha: 0.15), const Color(0xFF8E33FF), onTap: () => Navigator.pushNamed(context, '/hp_users')),
               const SizedBox(height: 12),
-              _statBtn(Icons.access_time, "$_dbPendingRequests Requests", const Color.fromARGB(255, 248, 194, 124), Colors.black87, onTap: () => Navigator.pushNamed(context, '/hp_requests')),
+              _statBtn(Icons.access_time, "$_dbPendingRequests Requests", const Color(0xFFF59E0B).withValues(alpha: 0.15), const Color(0xFFF59E0B), onTap: () => Navigator.pushNamed(context, '/hp_requests')),
             ],
           ),
         ),
         const SizedBox(width: 15),
-        _statBtn(Icons.warning_amber_rounded, "$_dbNeedsAttention NEED\nATTENTION", const Color(0xFFFF4757), Colors.white, isLarge: true),
+        _statBtn(Icons.warning_amber_rounded, "3 NEED\nATTENTION", const Color(0xFFFF4757), Colors.white, isLarge: true),
       ],
     );
   }
 
-  Widget _statBtn(IconData icon, String text, Color color, Color textColor, {bool isLarge = false, VoidCallback? onTap}) {
+  // --- FIX 1: DYNAMIC BUTTON HEIGHT & PADDING ---
+  Widget _statBtn(IconData icon, String text, Color bgColor, Color textColor, {bool isLarge = false, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: isLarge ? 116 : 52,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(25), boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]),
+        constraints: BoxConstraints(minHeight: isLarge ? 120 : 60), 
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+        decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: textColor.withValues(alpha: 0.2))),
         child: isLarge
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, color: textColor, size: 30),
-                  const SizedBox(height: 5),
-                  Text(text, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: textColor)),
+                  const SizedBox(height: 8),
+                  Text(text, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: textColor, height: 1.2)),
                 ],
               )
             : Row(
                 children: [
-                  Icon(icon, size: 20, color: textColor),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(text, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: textColor))),
+                  Icon(icon, size: 22, color: textColor),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(text, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: textColor, height: 1.2))),
                 ],
               ),
       ),
     );
   }
 
-  Widget _buildGraphSection(Color currentColor, Color surfaceColor, Color textPrimary, Color dividerColor) {
+  Widget _buildGraphSection(Color currentColor, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark) {
     return Container(
       padding: const EdgeInsets.fromLTRB(15, 20, 25, 15),
       decoration: BoxDecoration(
         color: surfaceColor, 
         borderRadius: BorderRadius.circular(30), 
         border: Border.all(color: dividerColor),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
+        boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
       ),
       child: Column(
         children: [
@@ -257,8 +296,8 @@ class _HPHomePageState extends State<HPHomePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _dropdown(['Heart Rate', 'Steps', 'Glucose Level', 'Calories'], selectedMetric, (v) => setState(() => selectedMetric = v!), surfaceColor, textPrimary, isMetric: true),
-                _dropdown(['Week', 'Month', 'Year'], selectedTimeframe, (v) => setState(() => selectedTimeframe = v!), surfaceColor, textPrimary, isMetric: false),
+                _dropdown(['Heart Rate', 'Steps', 'Glucose Level', 'Calories'], selectedMetric, (v) => setState(() => selectedMetric = v!), surfaceColor, textPrimary, isDark, isMetric: true),
+                _dropdown(['Week', 'Month', 'Year'], selectedTimeframe, (v) => setState(() => selectedTimeframe = v!), surfaceColor, textPrimary, isDark, isMetric: false),
               ],
             ),
           ),
@@ -276,7 +315,7 @@ class _HPHomePageState extends State<HPHomePage> {
                     sideTitles: SideTitles(
                       showTitles: true, reservedSize: 30, interval: 1,
                       getTitlesWidget: (value, meta) {
-                        final style = TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textPrimary);
+                        final style = TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textSecondary);
                         String text = '';
                         if (selectedTimeframe == "Week") {
                           const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -300,14 +339,10 @@ class _HPHomePageState extends State<HPHomePage> {
                       getTitlesWidget: (value, meta) {
                         if (value == _getMinY() || value == _getMaxY()) return const SizedBox.shrink();
                         String text;
-                        if (selectedMetric == 'Steps') {
-                          text = '${(value / 1000).toInt()}k';
-                        } else if (selectedMetric == 'Glucose Level') {
-                          text = value.toStringAsFixed(1);
-                        } else {
-                          text = value.toInt().toString();
-                        }
-                        return Text(text, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textPrimary));
+                        if (selectedMetric == 'Steps') text = '${(value / 1000).toInt()}k';
+                        else if (selectedMetric == 'Glucose Level') text = value.toStringAsFixed(1);
+                        else text = value.toInt().toString();
+                        return Text(text, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textSecondary));
                       },
                     ),
                   ),
@@ -337,7 +372,7 @@ class _HPHomePageState extends State<HPHomePage> {
   Widget _actionBtn(String label, Color col, IconData icon, Color textColor) {
     return Container(
       height: 55,
-      decoration: BoxDecoration(color: col, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: col.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(color: col, borderRadius: BorderRadius.circular(20), border: Border.all(color: textColor.withValues(alpha: 0.2))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -349,14 +384,14 @@ class _HPHomePageState extends State<HPHomePage> {
     );
   }
 
-  Widget _buildAlertTile(String name, String issue, String value, Color bg, Color textPrimary, Color textSecondary) {
+  Widget _buildAlertTile(String name, String issue, String value, Color iconBg, Color textPrimary, Color textSecondary, Color surfaceColor, Color dividerColor, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Row(
         children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: textPrimary, shape: BoxShape.circle), child: Icon(Icons.person, size: 18, color: bg)),
+          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle), child: Icon(Icons.warning_rounded, size: 18, color: textPrimary)),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
@@ -377,20 +412,18 @@ class _HPHomePageState extends State<HPHomePage> {
   Widget _buildSystemHealthCard() {
     return Container(
       padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(25), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 5))]),
+      decoration: BoxDecoration(color: const Color(0xFF8E33FF).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(25), border: Border.all(color: const Color(0xFF8E33FF).withValues(alpha: 0.3))),
       child: Row(
         children: [
-          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(15)), child: const Icon(Icons.cloud_done, color: Colors.greenAccent)),
+          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color(0xFF8E33FF).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(15)), child: const Icon(Icons.cloud_done, color: Color(0xFF8E33FF))),
           const SizedBox(width: 15),
-          const Expanded(child: Text("All hospital systems are operational. Device sync is at 98% efficiency.", style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4, fontWeight: FontWeight.w600))),
+          const Expanded(child: Text("All hospital systems are operational. Device sync is at 98% efficiency.", style: TextStyle(color: Color(0xFF8E33FF), fontSize: 12, height: 1.4, fontWeight: FontWeight.bold))),
         ],
       ),
     );
   }
 
-  Widget _dropdown(List<String> items, String val, ValueChanged<String?> onChanged, Color surfaceColor, Color textPrimary, {required bool isMetric}) {
-    // Determine background of dropdown based on theme
-    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+  Widget _dropdown(List<String> items, String val, ValueChanged<String?> onChanged, Color surfaceColor, Color textPrimary, bool isDark, {required bool isMetric}) {
     final dropBg = isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100;
 
     return Container(

@@ -11,11 +11,12 @@ class HPSettingsPage extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
 
-    // --- GET LIVE USERNAME ---
+    // --- GET LIVE HP USERNAME ---
     final authData = Provider.of<AuthProvider>(context);
-    final String liveUsername = authData.currentUsername ?? "Hp"; // Fallback to "User" if null
+    final String liveUsername = authData.currentUsername ?? "Doctor"; 
 
-    const Color userBlue = Color(0xFF5A84F1); 
+    // --- HP SIGNATURE PURPLE THEME ---
+    const Color hpPurple = Color(0xFF8E33FF); 
     
     final Color bgColor = Theme.of(context).scaffoldBackgroundColor;
     final Color surfaceColor = Theme.of(context).colorScheme.surface;
@@ -57,15 +58,13 @@ class HPSettingsPage extends StatelessWidget {
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: userBlue.withValues(alpha: 0.5), width: 2),
-                        boxShadow: [
-                          BoxShadow(color: userBlue.withValues(alpha: 0.15), blurRadius: 20, spreadRadius: 5),
-                        ],
+                        border: Border.all(color: hpPurple.withValues(alpha: 0.5), width: 2),
+                        boxShadow: [BoxShadow(color: hpPurple.withValues(alpha: 0.15), blurRadius: 20, spreadRadius: 5)],
                       ),
                       child: CircleAvatar(
                         radius: 45,
                         backgroundColor: surfaceColor,
-                        child: const Icon(Icons.person_rounded, size: 55, color: userBlue),
+                        child: const Icon(Icons.medical_services_rounded, size: 50, color: hpPurple),
                       ),
                     ),
                     const SizedBox(height: 15),
@@ -75,7 +74,7 @@ class HPSettingsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "HealthMax Premium Member",
+                      "Healthcare Provider", 
                       style: TextStyle(fontSize: 13, color: textSecondary, fontWeight: FontWeight.w600, letterSpacing: 0.5),
                     ),
                   ],
@@ -99,7 +98,7 @@ class HPSettingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("PREFERENCES", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
+                  Text("CLINIC PREFERENCES", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
                   
                   Container(
@@ -110,26 +109,11 @@ class HPSettingsPage extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _buildProfileOption(Icons.account_circle_outlined, "Account Information", "", textPrimary, textSecondary),
+                        _buildProfileOption(Icons.local_hospital_outlined, "Clinic Information", "Verified", textPrimary, hpPurple),
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.notifications_none_rounded, "Notifications", "On", textPrimary, textSecondary),
+                        _buildProfileOption(Icons.notifications_none_rounded, "Alerts & Notifications", "Urgent Only", textPrimary, textSecondary),
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.medical_services_outlined, "Manage Healthcare Providers", "1 Connected", textPrimary, userBlue),
-                        _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.watch_rounded, "Connected Devices", "Apple Watch", textPrimary, userBlue),
-                        _buildDivider(dividerColor),
-                        _buildProfileOption(
-                          Icons.track_changes_rounded, 
-                          "Health Goals", 
-                          "Weight Loss", 
-                          textPrimary, 
-                          textSecondary,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Redirecting to Goal Editor..."), backgroundColor: Color(0xFF8E33FF), behavior: SnackBarBehavior.floating)
-                            );
-                          }
-                        ),
+                        _buildProfileOption(Icons.people_alt_outlined, "Patient Data Access", "Manage", textPrimary, hpPurple),
                         _buildDivider(dividerColor),
                         
                         SwitchListTile(
@@ -137,16 +121,15 @@ class HPSettingsPage extends StatelessWidget {
                           secondary: Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: textPrimary.withValues(alpha: 0.8), size: 22),
                           title: Text("Dark Mode", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
                           value: isDark,
-                          activeColor: userBlue,
+                          activeColor: hpPurple,
                           inactiveTrackColor: Colors.grey.shade300,
                           onChanged: (value) {
-                            final provider = Provider.of<ThemeProvider>(context, listen: false);
-                            provider.toggleTheme(value);
+                            Provider.of<ThemeProvider>(context, listen: false).toggleTheme(value);
                           },
                         ),
                         
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.security_outlined, "Privacy & Security", "", textPrimary, textSecondary),
+                        _buildProfileOption(Icons.security_outlined, "Security", "", textPrimary, textSecondary),
                       ],
                     ),
                   ),
@@ -157,20 +140,11 @@ class HPSettingsPage extends StatelessWidget {
                   const SizedBox(height: 15),
 
                   _buildActionButton(
-                    label: "VERIFY EMAIL", 
-                    icon: Icons.mark_email_read_rounded, 
-                    bgColor: const Color(0xFFF59E0B).withValues(alpha: 0.1),
-                    textColor: const Color(0xFFF59E0B), 
+                    label: "GENERATE CLINIC REPORT", 
+                    icon: Icons.analytics_outlined, 
+                    bgColor: hpPurple.withValues(alpha: 0.1), 
+                    textColor: hpPurple, 
                     onTap: () {}
-                  ),
-                  const SizedBox(height: 12),
-
-                  _buildActionButton(
-                    label: "EXPORT HEALTH DATA", 
-                    icon: Icons.ios_share_rounded, 
-                    bgColor: userBlue.withValues(alpha: 0.1), 
-                    textColor: userBlue, 
-                    onTap: () => _handleExport(context, userBlue)
                   ),
                   const SizedBox(height: 12),
 
@@ -236,48 +210,22 @@ class HPSettingsPage extends StatelessWidget {
     );
   }
 
-  // ==========================================
-  // LOGIC & DIALOG HELPERS
-  // ==========================================
-
-  void _handleExport(BuildContext context, Color userBlue) { 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text("Preparing your health records...", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)), 
-        backgroundColor: userBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-    );
-  }
-
   void _showLogoutConfirmation(BuildContext context, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: surfaceColor, 
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25), 
-          side: BorderSide(color: dividerColor),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25), side: BorderSide(color: dividerColor)),
         title: Text("Confirm Logout", style: TextStyle(fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
-        content: Text("Are you sure you want to log out of HealthMax?", style: TextStyle(color: textSecondary, height: 1.5)),
+        content: Text("Are you sure you want to log out of the Provider Portal?", style: TextStyle(color: textSecondary, height: 1.5)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("CANCEL", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text("CANCEL", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context); 
               Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false); 
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF4B4B),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF4B4B), elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
             child: const Text("LOGOUT", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],

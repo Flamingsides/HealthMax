@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme_provider.dart'; 
 import 'hp_bottomnavbar.dart';
 import 'hp_glassy_profile.dart';
-import 'usermodel.dart';
+import 'usermodel.dart'; // Implemented MockData
 import 'hp_userselected.dart';
 
 class HPUsersPage extends StatefulWidget {
@@ -15,18 +15,10 @@ class HPUsersPage extends StatefulWidget {
 
 class _HPUsersPageState extends State<HPUsersPage> {
   // --- STATE & DATA ---
-  final List<UserModel> _activeUsers = [
-    UserModel(username: "john_d", fullName: "John Doe", gender: "M", height: 175, weight: 70, device: "Apple Watch S8"),
-    UserModel(username: "jane_s", fullName: "Jane Smith", gender: "F", height: 165, weight: 58, device: "Fitbit Charge 5"),
-    UserModel(username: "robert_k", fullName: "Robert King", gender: "M", height: 182, weight: 85, device: "Garmin Fenix 7"),
-    UserModel(username: "emily_r", fullName: "Emily Rose", gender: "F", height: 170, weight: 62, device: "Oura Ring Gen3"),
-  ];
+  final List<UserModel> _activeUsers = MockData.activeUsers; // Wired directly to MockData!
 
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // DYNAMIC THEME VARIABLES
-    // ==========================================
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -44,11 +36,11 @@ class _HPUsersPageState extends State<HPUsersPage> {
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // --- PREMIUM SLIVER APP BAR ---
+              // --- UPGRADED SLIVER APP BAR ---
               SliverAppBar(
                 automaticallyImplyLeading: false,
                 backgroundColor: themePurple,
-                expandedHeight: 200.0,
+                expandedHeight: 150.0, // FIX 5: Decreased height to bring content up!
                 toolbarHeight: 90.0,
                 pinned: true,
                 elevation: 0,
@@ -64,10 +56,10 @@ class _HPUsersPageState extends State<HPUsersPage> {
                   collapseMode: CollapseMode.parallax,
                   background: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(30, 40, 30, 0),
+                      padding: const EdgeInsets.fromLTRB(30, 20, 30, 0), // Adjusted padding
                       child: const Text(
                         "Users.",
-                        style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1),
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0),
                       ),
                     ),
                   ),
@@ -92,10 +84,39 @@ class _HPUsersPageState extends State<HPUsersPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 10),
-                      Text(
-                        "ACTIVE PATIENTS", 
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textSecondary, letterSpacing: 1.2)
+                      // --- FIX 5: MODERN SEARCH BAR ---
+                      Container(
+                        height: 55,
+                        decoration: BoxDecoration(
+                          color: surfaceColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: dividerColor),
+                          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                        ),
+                        child: TextField(
+                          style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+                          decoration: InputDecoration(
+                            hintText: "Search patients by name or ID...",
+                            hintStyle: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                            prefixIcon: Icon(Icons.search_rounded, color: textSecondary),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+
+                      // --- FIX 5: SUMMARY CHIP ---
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("ACTIVE PATIENTS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(color: themePurple.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                            child: Text("Total: ${_activeUsers.length}", style: TextStyle(color: themePurple, fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 15),
 
@@ -128,12 +149,9 @@ class _HPUsersPageState extends State<HPUsersPage> {
           ),
 
           // --- BOTTOM NAVIGATION BAR ---
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: HPBottomNavBar(currentIndex: 1, activeColor: themePurple), // Current index is 1 for Users
-          ),
-        ],
+          ],
       ),
+      bottomNavigationBar: HPBottomNavBar(currentIndex: 1, activeColor: themePurple), 
     );
   }
 
@@ -163,7 +181,6 @@ class _HPUsersPageState extends State<HPUsersPage> {
           child: Icon(Icons.arrow_forward_ios_rounded, size: 12, color: textPrimary),
         ),
         onTap: () {
-          // Navigates to the selected user's detail page
           Navigator.push(context, MaterialPageRoute(builder: (context) => HPUserSelected(user: user)));
         },
       ),

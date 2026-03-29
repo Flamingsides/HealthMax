@@ -10,8 +10,8 @@ class HPGlassyProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- HP CLINICAL TEAL THEME ---
-    const Color hpTeal = Color(0xFF00B4DB); 
+    // --- HP SIGNATURE PURPLE THEME ---
+    const Color hpPurple = Color(0xFF8E33FF); 
     
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
@@ -36,7 +36,7 @@ class HPGlassyProfile extends StatelessWidget {
                     shape: BoxShape.circle, 
                     border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                   ),
-                  child: const Icon(Icons.business_rounded, color: Colors.white, size: 30), // Changed to a medical icon!
+                  child: const Icon(Icons.medical_services_rounded, color: Colors.white, size: 26), 
                 ),
               ),
             ),
@@ -47,9 +47,9 @@ class HPGlassyProfile extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: hpTeal,
+                  color: hpPurple,
                   shape: BoxShape.circle,
-                  border: Border.all(color: isDark ? bgColor : hpTeal, width: 2.5), 
+                  border: Border.all(color: isDark ? bgColor : hpPurple, width: 2.5), 
                 ),
                 child: const Icon(Icons.settings_rounded, color: Colors.white, size: 14),
               ),
