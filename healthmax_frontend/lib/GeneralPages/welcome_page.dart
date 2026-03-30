@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:healthmax_frontend/UserPages/user_start_pages.dart';
 import 'start_pages_base.dart';
-import '../UserPages/registration_intro.dart';
 import '../UserPages/registration_questions.dart';
 
 class WelcomePage extends StatelessWidget {

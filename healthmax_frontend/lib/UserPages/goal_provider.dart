@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 // import 'package:http/http.dart' as http; // Developer will uncomment this!
 
 // --- DATA MODELS (Map directly to PostgreSQL tables) ---
@@ -8,11 +7,19 @@ class TargetItem {
   String description;
   int currentValue;
   int targetValue;
-  int duration; 
+  int duration;
   String unit;
   int rewardPoints;
 
-  TargetItem({required this.title, required this.description, required this.currentValue, required this.targetValue, required this.duration, required this.unit, required this.rewardPoints});
+  TargetItem({
+    required this.title,
+    required this.description,
+    required this.currentValue,
+    required this.targetValue,
+    required this.duration,
+    required this.unit,
+    required this.rewardPoints,
+  });
   double get progress => (currentValue / targetValue).clamp(0.0, 1.0);
   bool get isCompleted => currentValue >= targetValue;
 }
@@ -32,7 +39,12 @@ class MainGoal {
   double aiProgress; // e.g., 0.65 for 65%
   String aiInsightText;
 
-  MainGoal({required this.title, required this.targetValue, required this.aiProgress, required this.aiInsightText});
+  MainGoal({
+    required this.title,
+    required this.targetValue,
+    required this.aiProgress,
+    required this.aiInsightText,
+  });
 }
 
 // --- THE PROVIDER (API LAYER) ---
@@ -41,10 +53,20 @@ class GoalProvider extends ChangeNotifier {
 
   // 1. Data State
   int userScore = 1234;
-  MainGoal mainGoal = MainGoal(title: "N/A", targetValue: "N/A", aiProgress: 0.0, aiInsightText: "");
+  MainGoal mainGoal = MainGoal(
+    title: "N/A",
+    targetValue: "N/A",
+    aiProgress: 0.0,
+    aiInsightText: "",
+  );
   List<TargetItem> targets = [];
   List<RankingUser> topRankings = [];
-  RankingUser currentUserRank = RankingUser(42, "Tengku Adam", 1234, isCurrentUser: true);
+  RankingUser currentUserRank = RankingUser(
+    42,
+    "Tengku Adam",
+    1234,
+    isCurrentUser: true,
+  );
 
   GoalProvider() {
     fetchDashboardData(); // Automatically loads data when app starts
@@ -71,19 +93,39 @@ class GoalProvider extends ChangeNotifier {
 
       // Mock Data Population
       mainGoal = MainGoal(
-        title: "Lose Weight", 
-        targetValue: "60 kg", 
-        aiProgress: 0.65, 
-        aiInsightText: "Based on your calorie deficit over the last 7 days, you are on track to hit your goal by next month!"
+        title: "Lose Weight",
+        targetValue: "60 kg",
+        aiProgress: 0.65,
+        aiInsightText:
+            "Based on your calorie deficit over the last 7 days, you are on track to hit your goal by next month!",
       );
-      
+
       targets = [
-        TargetItem(title: "Steps", description: "Achieve 10,000 steps in 5 Days.", currentValue: 8843, targetValue: 10000, duration: 5, unit: "steps", rewardPoints: 123),
-        TargetItem(title: "Calorie Balance", description: "Maintain a Net Calorie deficit of 1,000 kcal for 10 days.", currentValue: 1000, targetValue: 1000, duration: 10, unit: "kcal", rewardPoints: 550),
+        TargetItem(
+          title: "Steps",
+          description: "Achieve 10,000 steps in 5 Days.",
+          currentValue: 8843,
+          targetValue: 10000,
+          duration: 5,
+          unit: "steps",
+          rewardPoints: 123,
+        ),
+        TargetItem(
+          title: "Calorie Balance",
+          description:
+              "Maintain a Net Calorie deficit of 1,000 kcal for 10 days.",
+          currentValue: 1000,
+          targetValue: 1000,
+          duration: 10,
+          unit: "kcal",
+          rewardPoints: 550,
+        ),
       ];
 
-      topRankings = [RankingUser(1, "Suhaib", 3450), RankingUser(2, "Abdul", 3120)];
-
+      topRankings = [
+        RankingUser(1, "Suhaib", 3450),
+        RankingUser(2, "Abdul", 3120),
+      ];
     } catch (e) {
       print("Error fetching data: $e");
     } finally {

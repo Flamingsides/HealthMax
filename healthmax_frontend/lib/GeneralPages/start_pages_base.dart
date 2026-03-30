@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' hide BackButton;
 import 'package:healthmax_frontend/GeneralPages/auth/auth_service.dart';
 import 'package:healthmax_frontend/UserPages/registration_intro.dart';
-import 'package:healthmax_frontend/UserPages/registration_questions.dart';
 import 'package:healthmax_frontend/UserPages/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
