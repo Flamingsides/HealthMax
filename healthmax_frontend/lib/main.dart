@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:healthmax_frontend/UserPages/user_provider.dart';
 import 'package:provider/provider.dart';
 
 // Supabase
@@ -47,6 +48,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => CalorieProvider()),
         ChangeNotifierProvider(create: (context) => GoalProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => UserProvider()),
       ],
       child: const MyApp(),
     ),

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart' hide BackButton;
 import 'package:healthmax_frontend/GeneralPages/auth/auth_service.dart';
 import 'package:healthmax_frontend/UserPages/registration_intro.dart';
 import 'package:healthmax_frontend/UserPages/registration_questions.dart';
+import 'package:healthmax_frontend/UserPages/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'helper_widgets.dart'; // Your custom UI widgets
 import '../GeneralPages/auth_provider.dart'; // Note: Adjust this path if your AuthProvider is saved elsewhere!
@@ -118,6 +120,7 @@ class RegistrationPage extends StatefulWidget {
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
+  final auth = AuthService();
   final _usernameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -160,18 +163,33 @@ class _RegistrationPageState extends State<RegistrationPage> {
       return;
     }
 
-    UserAnswers userAnswers = UserAnswers(
-      username: username,
-      email: email,
-      password: password,
-    );
+    try {
+      final response = await auth.register(username, email, password);
+      if (response == null || response.user == null) {
+        throw AuthException("Registration failed");
+      }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RegistrationIntro(userAnswers: userAnswers),
-      ),
-    );
+      if (mounted) {
+        // Store just in case. Although this is not needed currently.
+        context.read<UserProvider>().setUsername(username);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => RegistrationIntro()),
+        );
+      }
+    } catch (e) {
+      print("Error");
+      print(e.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Registration Failed. Try again."),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -206,53 +224,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               : CustomShortButton(
                   label: "Register",
                   width: 200,
-                  onPressed: () async {
-                    // 1. Validate fields
-                    if (_usernameCtrl.text.isEmpty ||
-                        _emailCtrl.text.isEmpty ||
-                        _passwordCtrl.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please fill all fields!"),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                      return;
-                    }
-
-                    if (_passwordCtrl.text != _confirmCtrl.text) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Passwords do not match!"),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                      return;
-                    }
-
-                    // 2. Call FastAPI Provider
-                    bool success = await auth.registerBaseAccount(
-                      _usernameCtrl.text,
-                      _emailCtrl.text,
-                      _passwordCtrl.text,
-                      widget.role,
-                    );
-
-                    // 3. Route to Next Setup Step (Gender Selection for Users)
-                    if (success && mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: widget.postRegistration),
-                      );
-                    } else if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Registration Failed. Try again."),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: register,
                 ),
           CustomQuestionLink(
             question: "Already have an account?",
@@ -378,6 +350,17 @@ class _LoginPageState extends State<LoginPage> {
                     }
 
                     // 2. Call FastAPI Provider
+                    // TODO: Enable Supabase login
+                    // AuthService auth = AuthService();
+                    // final id = Supabase.instance.client
+                    //     .from("users")
+                    //     .select("id")
+                    //     .eq("username", _usernameCtrl.text)
+                    //     .maybeSingle();
+                    // AuthResponse response = auth.loginWithUsernameAndPassword(
+                    //   _usernameCtrl.text,
+                    //   _passwordCtrl.text,
+                    // );
                     bool success = await auth.login(
                       _usernameCtrl.text,
                       _passwordCtrl.text,

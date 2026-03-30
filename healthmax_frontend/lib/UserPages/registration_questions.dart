@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:healthmax_frontend/GeneralPages/auth/auth_service.dart';
 import 'package:healthmax_frontend/GeneralPages/helper_widgets.dart';
 import 'package:riff_switch/riff_switch.dart';
 import 'package:provider/provider.dart';
@@ -96,9 +97,6 @@ class GenderCard extends StatelessWidget {
 // The following class will keep track of the user's
 // answers to each question during the registration phase
 class UserAnswers {
-  String username;
-  String email;
-  String password;
   String? gender;
   DateTime? dob;
   double? weight;
@@ -111,9 +109,6 @@ class UserAnswers {
   String? goalTargetValue;
 
   UserAnswers({
-    required this.username,
-    required this.email,
-    required this.password,
     this.gender,
     this.dob,
     this.weight,
@@ -131,15 +126,14 @@ class UserAnswers {
 }
 
 class RegistrationGender extends StatefulWidget {
-  final UserAnswers userAnswers;
-
-  const RegistrationGender({super.key, required this.userAnswers});
+  const RegistrationGender({super.key});
 
   @override
   State<RegistrationGender> createState() => _RegistrationGenderState();
 }
 
 class _RegistrationGenderState extends State<RegistrationGender> {
+  UserAnswers userAnswers = UserAnswers();
   String? selectedGender;
 
   void setSelectedGender(String gender) {
@@ -172,7 +166,7 @@ class _RegistrationGenderState extends State<RegistrationGender> {
                 icon: Icons.male,
                 color: Colors.lightBlueAccent,
                 label: "Male",
-                userAnswers: widget.userAnswers,
+                userAnswers: userAnswers,
                 selectedGender: selectedGender ?? "None",
                 setSelectedGender: setSelectedGender,
               ),
@@ -182,7 +176,7 @@ class _RegistrationGenderState extends State<RegistrationGender> {
                 icon: Icons.female,
                 label: "Female",
                 color: Colors.purpleAccent,
-                userAnswers: widget.userAnswers,
+                userAnswers: userAnswers,
                 selectedGender: selectedGender ?? "None",
                 setSelectedGender: setSelectedGender,
               ),
@@ -207,8 +201,7 @@ class _RegistrationGenderState extends State<RegistrationGender> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    RegistrationDOB(userAnswers: widget.userAnswers),
+                builder: (_) => RegistrationDOB(userAnswers: userAnswers),
               ),
             );
           },
@@ -923,6 +916,24 @@ class _RegistrationGoalState extends State<RegistrationGoal> {
       // 3. Update the Provider with their actual goal!
       goalData.updateMainGoal(selectedGoal!, finalTarget);
     }
+
+    double weight = widget.userAnswers.weight!;
+    double height = widget.userAnswers.height!;
+    if (widget.userAnswers.weightUnit == "lb") {
+      weight *= 2.20462; // Convert to pounds
+    }
+
+    if (widget.userAnswers.heightUnit == "in") {
+      height *= 0.3937007874; // Convert to inches
+    }
+
+    final auth = AuthService();
+    auth.initialiseUserDetails(
+      widget.userAnswers.gender!,
+      widget.userAnswers.dob!,
+      height,
+      weight,
+    );
 
     print("Registration Complete: ${widget.userAnswers.toString()}");
 

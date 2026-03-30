@@ -1,15 +1,20 @@
 CREATE TABLE
     Users (
-        username VARCHAR(50) PRIMARY KEY,
-        email VARCHAR(150) NOT NULL,
-        password_hash VARCHAR(260) NOT NULL,
+        id UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+        username VARCHAR(50) UNIQUE NOT NULL,
         gender VARCHAR(10),
-        age INT,
+        dob DATE,
         height_cm DECIMAL(5, 2),
         weight_kg DECIMAL(5, 2),
         total_points INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+ALTER TABLE Users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage their own profiles" ON Users FOR ALL USING (auth.uid () = = id)
+WITH
+    CHECK (auth.uid () = id);
 
 CREATE TABLE
     Hospitals (

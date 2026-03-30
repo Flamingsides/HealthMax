@@ -5,35 +5,67 @@ class AuthService {
 
   // Register new account
   Future<AuthResponse?> register(
+    String username,
     String email,
     String password,
-    String username,
+  ) async {
+    try {
+      final authResponse = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      _supabase.from("users").insert({
+        "id": authResponse.user?.id,
+        "username": username,
+      });
+
+      print("\nUser Registered: ");
+      print(authResponse.user);
+      print("\n");
+
+      return authResponse;
+    } catch (e) {
+      print(e.toString());
+      // Let caller handle this exception
+      rethrow;
+    }
+  }
+
+  Future<bool> isUserDetailsInitialised() async {
+    if (_supabase.auth.currentUser != null) {
+      final response = await _supabase
+          .from("users")
+          .select(
+            "gender",
+          ) // Gender field is only added after user details have been initialised
+          .eq("id", _supabase.auth.currentUser!.id)
+          .maybeSingle();
+
+      return response?.isNotEmpty ?? false;
+    }
+    return false;
+  }
+
+  void initialiseUserDetails(
     String gender,
     DateTime dob,
     double height_cm,
     double weight_kg,
   ) async {
-    AuthResponse authResponse = AuthResponse();
-    try {
-      authResponse = await _supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
-
-      if (authResponse.user != null) {
-        await _supabase.from("Users").insert({
-          "id": authResponse.user!.id,
-          "username": username,
-          "gender": gender,
-          "dob": dob.toIso8601String().split("T")[0],
-          "height_cm": height_cm,
-          "weight_lg": weight_kg,
-          // total_points and created_at fields handled by database
-        });
-      }
-    } catch (e) {
-      // Let caller handle this exception
-      rethrow;
+    if (_supabase.auth.currentUser != null) {
+      await _supabase
+          .from("users")
+          .update({
+            "gender": gender,
+            "dob": dob.toIso8601String().split("T")[0],
+            "height_cm": height_cm,
+            "weight_lg": weight_kg,
+            // total_points and created_at fields handled by database
+          })
+          .eq("id", _supabase.auth.currentUser!.id);
+    } else {
+      print("Cant initialise user since no current user");
     }
   }
 
