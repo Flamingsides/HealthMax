@@ -172,9 +172,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
         // Store just in case. Although this is not needed currently.
         context.read<UserProvider>().setUsername(username);
 
-        Navigator.push(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => RegistrationIntro()),
+          (_) => false,
         );
       }
     } on AuthException catch (e) {
@@ -367,6 +368,7 @@ class _LoginPageState extends State<LoginPage> {
                             );
 
                         if (response.user == null) {
+                          print(response.toString());
                           throw AuthException(
                             "Login failed! Check credentials.",
                           );
@@ -387,6 +389,7 @@ class _LoginPageState extends State<LoginPage> {
                           );
                         }
                       } on AuthException catch (e) {
+                        print(e.toString());
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(e.message),

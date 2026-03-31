@@ -16,7 +16,7 @@ class AuthService {
         data: {"display_name": username, "username": username},
       );
 
-      _supabase.from("users").insert({
+      await _supabase.from("users").insert({
         "id": authResponse.user?.id,
         "username": username,
         "email": email,
@@ -76,13 +76,13 @@ class AuthService {
     String password,
   ) async {
     final email = await _supabase
-        .from("users")
+        .from("auth.users")
         .select("email")
         .eq("username", username)
         .maybeSingle();
 
     if (email == null) {
-      throw AuthException("Login failed. Try again.");
+      throw AuthException("Username not found! Register first.");
     } else if (email.isEmpty) {
       throw AuthException("Username not found!");
     }
