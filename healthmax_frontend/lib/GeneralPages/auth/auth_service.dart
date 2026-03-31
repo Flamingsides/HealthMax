@@ -75,19 +75,21 @@ class AuthService {
     String username,
     String password,
   ) async {
-    final email = await _supabase
-        .from("users")
-        .select("email")
-        .eq("username", username)
-        .maybeSingle();
+    final email = await _supabase.rpc(
+      "get_email_from_username",
+      params: {'p_username': username},
+    );
+    // final email = await _supabase
+    //     .from("users")
+    //     .select("email")
+    //     .eq("username", username)
+    //     .maybeSingle();
 
-    if (email == null) {
+    if (email == null || email.toString().isEmpty) {
       throw AuthException("Username not found! Register first.");
-    } else if (email.isEmpty) {
-      throw AuthException("Username not found!");
     }
 
-    return await loginWithEmailAndPassword(email['email'], password);
+    return await loginWithEmailAndPassword(email.toString(), password);
   }
 
   // Sign in with email and password

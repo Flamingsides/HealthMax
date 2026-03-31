@@ -13,7 +13,7 @@ CREATE TABLE
 
 ALTER TABLE Users ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users manage their own profiles" ON Users FOR ALL USING (auth.uid () = = id)
+CREATE POLICY "Users manage their own profiles" ON Users FOR ALL USING (auth.uid () = id)
 WITH
     CHECK (auth.uid () = id);
 
@@ -35,13 +35,24 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    FoodLogs (
+    food_logs (
         log_id SERIAL PRIMARY KEY,
-        username VARCHAR(50) REFERENCES Users (username) ON DELETE CASCADE,
-        food_name VARCHAR(100),
+        user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+        food_name TEXT NOT NULL,
         calories INT,
+        fats FLOAT,
+        protein FLOAT,
+        carbohydrates FLOAT,
+        notes TEXT,
+        confidence FLOAT,
         logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+ALTER TABLE food_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage their own food logs" ON food_logs FOR ALL USING (auth.uid () = user_id)
+WITH
+    CHECK (auth.uid () = user_id);
 
 CREATE TABLE
     UserTargets (

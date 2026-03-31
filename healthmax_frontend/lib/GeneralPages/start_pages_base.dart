@@ -413,26 +413,26 @@ class _LoginPageState extends State<LoginPage> {
                         _passwordCtrl.text,
                         widget.role,
                       );
-                    }
 
-                    // 3. Route on Success
-                    if (success && mounted) {
-                      if (widget.onLoginSuccess != null) {
-                        widget.onLoginSuccess!();
-                      } else {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          widget.homeRoute,
-                          (route) => false,
+                      // 3. Route on Success
+                      if (success && mounted) {
+                        if (widget.onLoginSuccess != null) {
+                          widget.onLoginSuccess!();
+                        } else {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            widget.homeRoute,
+                            (route) => false,
+                          );
+                        }
+                      } else if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Invalid Credentials!"),
+                            backgroundColor: Colors.redAccent,
+                          ),
                         );
                       }
-                    } else if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Invalid Credentials!"),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
                     }
                   },
                 ),
