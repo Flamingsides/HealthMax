@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:healthmax_frontend/UserPages/user_provider.dart';
 import 'package:provider/provider.dart';
+
+// Supabase
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- Theme & Provider ---
 import 'theme_provider.dart';
@@ -26,17 +30,25 @@ import 'HPPages/hp_requestspage.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized before loading .env
-  WidgetsFlutterBinding.ensureInitialized(); 
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  
+
+  // Initialise supabase
+  await Supabase.initialize(
+    url: "https://rjxzxtqaiakwofgkegwl.supabase.co",
+    // Publishable key (safe to use here)
+    anonKey: "sb_publishable_503KzCdmIJFjM8rswosVPQ_qBxwvS51",
+  );
+
   runApp(
     // The Provider sits at the very top of the app
-   MultiProvider( 
+    MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
-        ChangeNotifierProvider(create: (context) => CalorieProvider()), 
+        ChangeNotifierProvider(create: (context) => CalorieProvider()),
         ChangeNotifierProvider(create: (context) => GoalProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => UserProvider()),
       ],
       child: const MyApp(),
     ),
@@ -57,25 +69,25 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     // 2. The app listens to the ThemeProvider
     final themeProvider = Provider.of<ThemeProvider>(context);
-    
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'HealthMax',
-      
+
       // 3. Magic happens here: The app switches based on the provider's state
       themeMode: themeProvider.themeMode,
       theme: ThemeProvider.lightTheme,
       darkTheme: ThemeProvider.darkTheme,
-      
+
       // Added const for performance optimization
-      home: isSignedIn ? const UserHomePage(): const WelcomePage(),
-      
+      home: isSignedIn ? const UserHomePage() : const WelcomePage(),
+
       routes: {
         // Healthcare Provider routes
         '/hp_home': (context) => const HPHomePage(),
         '/hp_users': (context) => const HPUsersPage(),
         '/hp_requests': (context) => const HPRequestsPage(),
-        '/hp_settings': (context) =>  const HPSettingsPage(),
+        '/hp_settings': (context) => const HPSettingsPage(),
 
         // User routes
         '/user_homepage': (context) => const UserHomePage(),

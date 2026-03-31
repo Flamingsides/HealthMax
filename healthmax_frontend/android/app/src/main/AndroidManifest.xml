@@ -2,6 +2,9 @@
     <!-- The following is needed for the AI Calorie detector -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!-- Required to fetch data from the internet. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="healthmax_frontend"
         android:name="${applicationName}"

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../GeneralPages/start_pages_base.dart';
 import 'registration_intro.dart';
-import 'registration_questions.dart';
-import '../GeneralPages/welcome_page.dart';
 
 class UserStartPage extends StatelessWidget {
   const UserStartPage({super.key});
@@ -35,7 +33,7 @@ class UserRegistrationPage extends StatelessWidget {
     return RegistrationPage(
       role: "user", // <-- NEW: Tells the backend this is a standard User!
       loginPage: (_) => const UserLoginPage(),
-      postRegistration: (_) => const RegistrationIntro(), 
+      postRegistration: (_) => const RegistrationIntro(),
     );
   }
 }
@@ -48,7 +46,7 @@ class UserLoginPage extends StatelessWidget {
     return LoginPage(
       role: "user", // <-- NEW: Tells the backend this is a standard User!
       registrationPage: (_) => const UserRegistrationPage(),
-      homeRoute: '/user_homepage', 
+      homeRoute: '/user_homepage',
     );
   }
 }

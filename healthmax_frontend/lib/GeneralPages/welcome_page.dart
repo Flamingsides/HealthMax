@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:healthmax_frontend/UserPages/user_start_pages.dart';
 import 'start_pages_base.dart';
-import '../UserPages/registration_intro.dart';
 import '../UserPages/registration_questions.dart';
 
 class WelcomePage extends StatelessWidget {
@@ -84,7 +82,7 @@ class WelcomePage extends StatelessWidget {
         decoration: _userDecoration,
       ),
       // After User registers credentials, route to the Gender Setup!
-      postRegistration: (context) => const RegistrationGender(), 
+      postRegistration: (context) => const RegistrationGender(),
     );
   }
 
@@ -169,7 +167,7 @@ class WelcomePage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 55,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white, 
+                  color: Colors.white,
                   letterSpacing: -2.0,
                   fontFamily: "LexendExaNormal",
                   shadows: [
