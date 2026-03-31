@@ -10,9 +10,6 @@ class HPRequestSelected extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ==========================================
-    // DYNAMIC THEME VARIABLES
-    // ==========================================
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -30,7 +27,6 @@ class HPRequestSelected extends StatelessWidget {
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // --- PREMIUM SLIVER APP BAR ---
               SliverAppBar(
                 backgroundColor: themePurple,
                 expandedHeight: 250.0,
@@ -85,7 +81,6 @@ class HPRequestSelected extends StatelessWidget {
                 ),
               ),
 
-              // --- MAIN BODY CONTENT ---
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -95,7 +90,6 @@ class HPRequestSelected extends StatelessWidget {
                       Text("APPLICATION DETAILS", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
                       const SizedBox(height: 15),
 
-                      // 1. Message from Patient
                       _buildInfoCard(
                         "Patient Note", 
                         "\"I would like to share my health data with your clinic to monitor my weekly progress and get feedback on my cardiovascular health.\"", 
@@ -104,9 +98,10 @@ class HPRequestSelected extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
 
-                      // 2. Data Permission Checklist
                       Text("DATA PERMISSIONS REQUESTED", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
                       const SizedBox(height: 15),
+                      
+                      // --- DYNAMIC DATA PERMISSION LIST ---
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -115,21 +110,25 @@ class HPRequestSelected extends StatelessWidget {
                           border: Border.all(color: dividerColor),
                           boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 15, offset: const Offset(0, 5))],
                         ),
-                        child: Column(
-                          children: [
-                            _buildPermissionTile("Heart Rate Data", "Live & Historical", Icons.favorite_rounded, Colors.redAccent, textPrimary, textSecondary),
-                            Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Divider(color: dividerColor, height: 1)),
-                            _buildPermissionTile("Step Count & Activity", "Daily Tracking", Icons.directions_walk_rounded, Colors.orangeAccent, textPrimary, textSecondary),
-                            Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Divider(color: dividerColor, height: 1)),
-                            _buildPermissionTile("Glucose Levels", "Manual Logs", Icons.bloodtype_rounded, Colors.greenAccent, textPrimary, textSecondary),
-                            Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Divider(color: dividerColor, height: 1)),
-                            _buildPermissionTile("Calorie Intake", "Meal Estimates", Icons.restaurant_rounded, Colors.amber, textPrimary, textSecondary),
-                          ],
-                        ),
+                        child: user.requestedData.isEmpty
+                            ? Center(child: Text("No specific data permissions requested.", style: TextStyle(color: textSecondary, fontStyle: FontStyle.italic)))
+                            : Column(
+                                children: user.requestedData.asMap().entries.map((entry) {
+                                  int index = entry.key;
+                                  String dataPoint = entry.value;
+                                  bool isLast = index == user.requestedData.length - 1;
+                                  
+                                  return Column(
+                                    children: [
+                                      _buildDynamicPermissionTile(dataPoint, textPrimary, textSecondary),
+                                      if (!isLast) Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Divider(color: dividerColor, height: 1)),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
                       ),
                       const SizedBox(height: 20),
 
-                      // 3. Device Integration Status
                       _buildInfoCard(
                         "Integration Status", 
                         "Device (${user.device}) is ready to sync. Data will be transmitted securely via HealthMax API.", 
@@ -137,7 +136,7 @@ class HPRequestSelected extends StatelessWidget {
                         Colors.blueAccent, surfaceColor, textPrimary, textSecondary, dividerColor, isDark
                       ),
 
-                      const SizedBox(height: 160), // Room for bottom action bar
+                      const SizedBox(height: 160), 
                     ],
                   ),
                 ),
@@ -146,7 +145,7 @@ class HPRequestSelected extends StatelessWidget {
           ),
 
           // ==========================================
-          // 2. FLOATING DARK ACTION BAR (ACCEPT / REJECT)
+          // FLOATING DARK ACTION BAR 
           // ==========================================
           Positioned(
             bottom: 25, left: 20, right: 20,
@@ -165,10 +164,7 @@ class HPRequestSelected extends StatelessWidget {
                     children: [
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            // TODO: Add reject logic
-                            Navigator.pop(context);
-                          },
+                          onPressed: () => Navigator.pop(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFF4757).withValues(alpha: 0.1),
                             elevation: 0,
@@ -181,10 +177,7 @@ class HPRequestSelected extends StatelessWidget {
                       const SizedBox(width: 15),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            // TODO: Add accept logic
-                            Navigator.pop(context);
-                          },
+                          onPressed: () => Navigator.pop(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: themePurple,
                             elevation: 4,
@@ -199,7 +192,6 @@ class HPRequestSelected extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
                   
-                  // Contact Action
                   GestureDetector(
                     onTap: () {},
                     child: Row(
@@ -257,7 +249,29 @@ class HPRequestSelected extends StatelessWidget {
     );
   }
 
-  Widget _buildPermissionTile(String title, String subtitle, IconData icon, Color color, Color textPrimary, Color textSecondary) {
+  // Parses the string array and returns the correct visual mapping
+  Widget _buildDynamicPermissionTile(String dataPoint, Color textPrimary, Color textSecondary) {
+    IconData icon = Icons.check_circle_outline;
+    Color color = Colors.blue;
+    String subtitle = "Live Sync";
+
+    switch (dataPoint) {
+      case 'Heart Rate':
+        icon = Icons.favorite_rounded; color = Colors.redAccent; subtitle = "Live & Historical"; break;
+      case 'Steps':
+        icon = Icons.directions_walk_rounded; color = Colors.orangeAccent; subtitle = "Daily Tracking"; break;
+      case 'Calories':
+        icon = Icons.restaurant_rounded; color = Colors.amber; subtitle = "Meal Estimates"; break;
+      case 'Glucose Level':
+        icon = Icons.bloodtype_rounded; color = Colors.greenAccent; subtitle = "Manual Logs"; break;
+      case 'Sleep':
+        icon = Icons.bedtime_rounded; color = Colors.indigoAccent; subtitle = "Nightly Cycles"; break;
+      case 'Blood Pressure':
+        icon = Icons.monitor_heart_rounded; color = Colors.purpleAccent; subtitle = "Periodic Readings"; break;
+      case 'Oxygen Saturation':
+        icon = Icons.air_rounded; color = Colors.cyan; subtitle = "Continuous SpO2"; break;
+    }
+
     return Row(
       children: [
         Container(
@@ -270,7 +284,7 @@ class HPRequestSelected extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
+              Text(dataPoint, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
               Text(subtitle, style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600)),
             ],
           ),

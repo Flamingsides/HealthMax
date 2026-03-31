@@ -1,42 +1,11 @@
 import 'package:flutter/material.dart';
-// import 'package:http/http.dart' as http; // Developer will uncomment this!
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// --- DATA MODELS (Map directly to PostgreSQL tables) ---
-class TargetItem {
-  String title;
-  String description;
-  int currentValue;
-  int targetValue;
-  int duration;
-  String unit;
-  int rewardPoints;
-
-  TargetItem({
-    required this.title,
-    required this.description,
-    required this.currentValue,
-    required this.targetValue,
-    required this.duration,
-    required this.unit,
-    required this.rewardPoints,
-  });
-  double get progress => (currentValue / targetValue).clamp(0.0, 1.0);
-  bool get isCompleted => currentValue >= targetValue;
-}
-
-class RankingUser {
-  final int rank;
-  final String name;
-  final int score;
-  final bool isCurrentUser;
-
-  RankingUser(this.rank, this.name, this.score, {this.isCurrentUser = false});
-}
-
+// --- DATA MODELS ---
 class MainGoal {
   String title;
   String targetValue;
-  double aiProgress; // e.g., 0.65 for 65%
+  double aiProgress;
   String aiInsightText;
 
   MainGoal({
@@ -47,109 +16,144 @@ class MainGoal {
   });
 }
 
-// --- THE PROVIDER (API LAYER) ---
-class GoalProvider extends ChangeNotifier {
-  bool isLoading = false;
+class TargetItem {
+  String title;
+  String description;
+  double progress;
+  int currentValue;
+  int targetValue;
+  String unit;
+  int rewardPoints;
+  bool isCompleted;
 
-  // 1. Data State
-  int userScore = 1234;
-  MainGoal mainGoal = MainGoal(
-    title: "N/A",
-    targetValue: "N/A",
-    aiProgress: 0.0,
-    aiInsightText: "",
-  );
+  TargetItem({
+    required this.title, required this.description, required this.progress,
+    required this.currentValue, required this.targetValue, required this.unit,
+    required this.rewardPoints, required this.isCompleted,
+  });
+}
+
+class RankingUser {
+  int rank;
+  String name;
+  int score;
+  bool isCurrentUser;
+
+  RankingUser({required this.rank, required this.name, required this.score, required this.isCurrentUser});
+}
+
+// ==========================================
+// SUPABASE-READY GOAL PROVIDER
+// ==========================================
+class GoalProvider extends ChangeNotifier {
+  bool isLoading = true;
+  
+  // Default Empty State
+  MainGoal mainGoal = MainGoal(title: "N/A", targetValue: "N/A", aiProgress: 0.0, aiInsightText: "Syncing with AI...");
+  
+  int userScore = 1250;
   List<TargetItem> targets = [];
   List<RankingUser> topRankings = [];
-  RankingUser currentUserRank = RankingUser(
-    42,
-    "Tengku Adam",
-    1234,
-    isCurrentUser: true,
-  );
+  late RankingUser currentUserRank;
+
+  final _supabase = Supabase.instance.client;
 
   GoalProvider() {
-    fetchDashboardData(); // Automatically loads data when app starts
+    _initDummyRankings();
+    fetchUserGoal(); // Automatically pull from Supabase when app starts!
   }
 
-  // ========================================================
-  // 🚀 FAST-API INTEGRATION METHODS (For the Developer)
-  // ========================================================
+  void _initDummyRankings() {
+    topRankings = [
+      RankingUser(rank: 1, name: "Sarah M.", score: 2400, isCurrentUser: false),
+      RankingUser(rank: 2, name: "David L.", score: 2150, isCurrentUser: false),
+      RankingUser(rank: 3, name: "Emma W.", score: 1900, isCurrentUser: false),
+    ];
+    currentUserRank = RankingUser(rank: 42, name: "You", score: 1250, isCurrentUser: true);
+    
+    targets = [
+      TargetItem(title: "Morning Walk", description: "Walk 5000 steps before 12 PM", progress: 0.8, currentValue: 4000, targetValue: 5000, unit: "steps", rewardPoints: 50, isCompleted: false),
+      TargetItem(title: "Hydration", description: "Drink 2L of water", progress: 1.0, currentValue: 2, targetValue: 2, unit: "L", rewardPoints: 20, isCompleted: true),
+    ];
+  }
 
-  Future<void> fetchDashboardData() async {
+  // --- FETCH FROM SUPABASE ---
+  Future<void> fetchUserGoal() async {
     isLoading = true;
     notifyListeners();
 
     try {
-      // TODO: DEVELOPER - Replace with actual FastAPI GET request
-      // final response = await http.get(Uri.parse('https://your-fastapi-url.com/api/user/target-dashboard'));
-      // if (response.statusCode == 200) {
-      //   final data = jsonDecode(response.body);
-      //   // Map JSON to variables here...
-      // }
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        // Query the public 'users' table to find this specific user's main goal
+        final response = await _supabase.from('users').select('main_goal').eq('id', user.id).maybeSingle();
+        
+        String fetchedGoal = "Lose Weight"; // Fallback if they haven't set one yet
+        
+        if (response != null && response['main_goal'] != null) {
+           fetchedGoal = response['main_goal'];
+        }
 
-      // --- MOCK DELAY (Simulating database fetch) ---
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      // Mock Data Population
-      mainGoal = MainGoal(
-        title: "Lose Weight",
-        targetValue: "60 kg",
-        aiProgress: 0.65,
-        aiInsightText:
-            "Based on your calorie deficit over the last 7 days, you are on track to hit your goal by next month!",
-      );
-
-      targets = [
-        TargetItem(
-          title: "Steps",
-          description: "Achieve 10,000 steps in 5 Days.",
-          currentValue: 8843,
-          targetValue: 10000,
-          duration: 5,
-          unit: "steps",
-          rewardPoints: 123,
-        ),
-        TargetItem(
-          title: "Calorie Balance",
-          description:
-              "Maintain a Net Calorie deficit of 1,000 kcal for 10 days.",
-          currentValue: 1000,
-          targetValue: 1000,
-          duration: 10,
-          unit: "kcal",
-          rewardPoints: 550,
-        ),
-      ];
-
-      topRankings = [
-        RankingUser(1, "Suhaib", 3450),
-        RankingUser(2, "Abdul", 3120),
-      ];
+        _setDynamicGoalData(fetchedGoal);
+      } else {
+         _setDynamicGoalData("Lose Weight"); // Fallback for guest/mock state
+      }
     } catch (e) {
-      print("Error fetching data: $e");
+      print("Supabase Fetch Error: $e");
+      _setDynamicGoalData("Lose Weight");
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> updateMainGoal(String newTitle, String newTarget) async {
-    // Optimistic UI Update (Update screen instantly)
-    mainGoal.title = newTitle;
-    mainGoal.targetValue = newTarget;
+  // --- UPDATE TO SUPABASE ---
+  Future<void> updateMainGoal(String title, String targetValue) async {
+    // 1. Update UI Immediately for a snappy experience
+    _setDynamicGoalData(title);
+    mainGoal.targetValue = targetValue; // Override with user's specific typed value
     notifyListeners();
 
+    // 2. Save silently to backend
     try {
-      // TODO: DEVELOPER - Replace with FastAPI POST/PUT request
-      // await http.post(
-      //   Uri.parse('https://your-fastapi-url.com/api/user/main-goal'),
-      //   body: jsonEncode({'title': newTitle, 'target': newTarget}),
-      //   headers: {'Content-Type': 'application/json'},
-      // );
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        await _supabase.from('users').update({'main_goal': title}).eq('id', user.id);
+      }
     } catch (e) {
-      print("Failed to update PostgreSQL: $e");
-      // If API fails, you could revert the UI change here
+      print("Failed to update goal in Supabase: $e");
     }
+  }
+
+  // --- DYNAMIC AI INSIGHT LOGIC ---
+  void _setDynamicGoalData(String goalTitle) {
+    String targetVal = "10,000 steps";
+    double prog = 0.5;
+    String insight = "Analyzing your habits...";
+
+    if (goalTitle == "Lose Weight") {
+       targetVal = "5 kg";
+       prog = 0.42;
+       insight = "Caloric deficit is consistent. AI predicts you will hit your milestone in 3 weeks if you maintain this pace.";
+    } else if (goalTitle == "More Steps") {
+       targetVal = "10,000 steps/day";
+       prog = 0.85;
+       insight = "Great pacing! You are averaging 8.5k steps this week. A quick 15-minute evening walk will secure your daily goal.";
+    } else if (goalTitle == "Less Sugar") {
+       targetVal = "Under 25g/day";
+       prog = 0.90;
+       insight = "Excellent! You have cut sugar spikes by 40% this week. Keep avoiding those late-night processed snacks.";
+    } else if (goalTitle == "Build Muscle") {
+       targetVal = "Gain 2 kg";
+       prog = 0.30;
+       insight = "Protein intake is optimal, but sleep quality dropped. AI suggests 8 hours of sleep for better muscle recovery.";
+    }
+
+    mainGoal = MainGoal(
+      title: goalTitle,
+      targetValue: targetVal,
+      aiProgress: prog,
+      aiInsightText: insight,
+    );
   }
 }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme_provider.dart'; 
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
-import 'goal_provider.dart'; // Import the new provider!
+import 'goal_provider.dart'; 
 
 class UserTargetPage extends StatefulWidget {
   const UserTargetPage({super.key});
@@ -19,14 +19,11 @@ class _UserTargetPageState extends State<UserTargetPage> {
   late ScrollController _scrollController;
   bool _isScrolled = false;
   
-  // Controls the "Live" AI thinking animation
   bool _isAiCalculating = true; 
 
   @override
   void initState() {
     super.initState();
-    
-    // Trigger the AI "calculation" effect for 2 seconds when page opens
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _isAiCalculating = false);
     });
@@ -48,8 +45,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
-    
-    // --- THIS IS THE API BRAIN ---
     final goalData = Provider.of<GoalProvider>(context);
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
@@ -63,7 +58,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
     return Scaffold(
       backgroundColor: bgColor,
       body: goalData.isLoading 
-        ? Center(child: CircularProgressIndicator(color: themeBlue)) // Show loading while fetching from API
+        ? Center(child: CircularProgressIndicator(color: themeBlue)) 
         : CustomScrollView(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
@@ -93,7 +88,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                 ),
               ),
             ),
-            actions: const [Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile()))],
+            actions: [Padding(padding: const EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile(onTap: () => Navigator.pushNamed(context, '/user_settings'))))],
             
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax, 
@@ -120,18 +115,18 @@ class _UserTargetPageState extends State<UserTargetPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   
-                  // --- UPGRADED: MAIN GOAL CARD WITH LIVE AI PROGRESS ---
+                  // --- MAIN GOAL CARD WITH LIVE AI PROGRESS ---
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: isDark ? [themePurple.withValues(alpha: 0.2), surfaceColor] : [themePurple.withValues(alpha: 0.1), Colors.white],
+                        colors: isDark ? [themePurple.withValues(alpha:0.2), surfaceColor] : [themePurple.withValues(alpha:0.1), Colors.white],
                         begin: Alignment.topLeft, end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: themePurple.withValues(alpha: 0.5), width: 1.5),
-                      boxShadow: isDark ? [] : [BoxShadow(color: themePurple.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, 10))],
+                      border: Border.all(color: themePurple.withValues(alpha:0.5), width: 1.5),
+                      boxShadow: isDark ? [] : [BoxShadow(color: themePurple.withValues(alpha:0.15), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +138,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(color: themePurple.withValues(alpha: 0.2), shape: BoxShape.circle),
+                                  decoration: BoxDecoration(color: themePurple.withValues(alpha:0.2), shape: BoxShape.circle),
                                   child: Icon(Icons.flag_circle_rounded, color: themePurple, size: 20),
                                 ),
                                 const SizedBox(width: 10),
@@ -154,7 +149,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                               onTap: () => _showMainGoalEditorSheet(goalData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+                                decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha:0.05), borderRadius: BorderRadius.circular(12)),
                                 child: Text("Edit", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textPrimary)),
                               ),
                             ),
@@ -179,7 +174,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
                                   Text("Target: ${goalData.mainGoal.targetValue}", style: TextStyle(color: textSecondary, fontSize: 14, fontWeight: FontWeight.w600)),
                                 ],
                               ),
-                              // Live Animation Percentage
                               Text(
                                 _isAiCalculating ? "--%" : "${(goalData.mainGoal.aiProgress * 100).toInt()}%", 
                                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: _isAiCalculating ? textSecondary : themePurple, fontFamily: "LexendExaNormal")
@@ -188,7 +182,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
                           ),
                           const SizedBox(height: 20),
                           
-                          // The Animated Progress Bar
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: TweenAnimationBuilder<double>(
@@ -205,7 +198,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
                           ),
                           const SizedBox(height: 20),
                           
-                          // Live AI Insight Box
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: _isAiCalculating 
@@ -213,9 +205,9 @@ class _UserTargetPageState extends State<UserTargetPage> {
                               : Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: themePurple.withValues(alpha: 0.1),
+                                    color: themePurple.withValues(alpha:0.1),
                                     borderRadius: BorderRadius.circular(15),
-                                    border: Border.all(color: themePurple.withValues(alpha: 0.3)),
+                                    border: Border.all(color: themePurple.withValues(alpha:0.3)),
                                   ),
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +239,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                       color: surfaceColor, 
                       borderRadius: BorderRadius.circular(30), 
                       border: isDark ? Border.all(color: dividerColor) : null,
-                      boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
+                      boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.04), blurRadius: 15, offset: const Offset(0, 8))]
                     ),
                     child: Column(
                       children: [
@@ -258,19 +250,23 @@ class _UserTargetPageState extends State<UserTargetPage> {
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(color: isDark ? bgColor : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: themeBlue, width: 2.5)),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text("$completedTargets/${goalData.targets.length} Achieved!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue, fontFamily: "LexendExaNormal")),
+                              Text("$completedTargets/${goalData.targets.length} Achieved!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue, fontFamily: "LexendExaNormal"), textAlign: TextAlign.center),
                               const SizedBox(height: 4),
                               Text(
                                 goalData.targets.length == completedTargets ? "All targets completed! Great job!" : "Complete ${goalData.targets.length - completedTargets} more to get extra points!", 
                                 style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600), textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 25),
+                              const SizedBox(height: 35),
+                              
+                              Text("DAILY GOALS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
+                              const SizedBox(height: 15),
                               
                               if (goalData.targets.isEmpty)
                                 Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: Text("No targets set. Tap the button below to start!", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)))
                               else
-                                ...goalData.targets.asMap().entries.map((entry) => _buildTargetProgress(entry.value, entry.key, textPrimary, textSecondary, isDark)),
+                                ...goalData.targets.asMap().entries.map((entry) => _buildTargetProgress(entry.value, entry.key, goalData, textPrimary, textSecondary, dividerColor, isDark, surfaceColor)),
                             ],
                           ),
                         ),
@@ -289,7 +285,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                     padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(
                       color: surfaceColor, borderRadius: BorderRadius.circular(30), 
-                      border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))]
+                      border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.04), blurRadius: 15, offset: const Offset(0, 8))]
                     ),
                     child: Column(
                       children: [
@@ -320,7 +316,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 10.0),
         child: FloatingActionButton.extended(
-          onPressed: () {}, // Leave sub-target addition logic for later
+          onPressed: () {}, 
           backgroundColor: themeBlue, elevation: 8,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           label: const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text("Set New Target", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: "LexendExaNormal"))),
@@ -335,7 +331,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
   Widget _buildAiLoadingState(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(15)),
+      decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha:0.05), borderRadius: BorderRadius.circular(15)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -347,7 +343,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
     );
   }
 
-  Widget _buildTargetProgress(TargetItem target, int index, Color textPrimary, Color textSecondary, bool isDark) {
+  Widget _buildTargetProgress(TargetItem target, int index, GoalProvider goalData, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, Color surfaceColor) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 25.0),
       child: Column(
@@ -367,7 +363,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                 ),
               ),
               GestureDetector(
-                onTap: () {}, 
+                onTap: () => _showEditSubTargetSheet(target, index, surfaceColor, textPrimary, textSecondary, dividerColor, isDark), 
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
@@ -421,6 +417,102 @@ class _UserTargetPageState extends State<UserTargetPage> {
   }
 
   // ==========================================
+  // EDIT SUB-TARGET MODAL (SMART LOGIC)
+  // ==========================================
+  void _showEditSubTargetSheet(TargetItem target, int index, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark) {
+    // Determine if this is a device-tracked metric (e.g., steps, kcal) or a manual one (e.g., water/L)
+    bool isAutomatic = target.unit.toLowerCase() == 'steps' || target.unit.toLowerCase() == 'kcal';
+
+    // If automatic, user edits the TARGET. If manual, user edits the CURRENT progress.
+    TextEditingController inputCtrl = TextEditingController(
+      text: isAutomatic ? target.targetValue.toString() : target.currentValue.toString()
+    );
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true, 
+      builder: (context) {
+        final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+        return Container(
+          decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
+          padding: EdgeInsets.fromLTRB(30, 10, 30, 40 + bottomPadding), 
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 30), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10)))),
+                
+                // --- DYNAMIC TITLES ---
+                Text(isAutomatic ? "Edit Daily Target" : "Log Progress", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
+                const SizedBox(height: 5),
+                Text(isAutomatic ? "Set a new daily goal for: ${target.title}" : "Update your progress for: ${target.title}", style: TextStyle(color: textSecondary, fontSize: 13)),
+                
+                if (isAutomatic) ...[
+                  const SizedBox(height: 15),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: themeBlue.withValues(alpha:0.1), borderRadius: BorderRadius.circular(10)),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 16, color: themeBlue),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text("Current progress is tracked automatically via your connected devices.", style: TextStyle(fontSize: 11, color: themeBlue, fontWeight: FontWeight.w600))),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 30),
+
+                // --- DYNAMIC LABEL ---
+                Text(isAutomatic ? "New Target Value (${target.unit})" : "Current Value (${target.unit})", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: inputCtrl,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: textPrimary),
+                  decoration: InputDecoration(
+                    filled: true, fillColor: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  ),
+                ),
+                const SizedBox(height: 40),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      int newValue = int.tryParse(inputCtrl.text) ?? (isAutomatic ? target.targetValue : target.currentValue);
+                      
+                      setState(() {
+                        if (isAutomatic) {
+                          target.targetValue = newValue; // Update the Goal
+                        } else {
+                          target.currentValue = newValue; // Update the Progress
+                        }
+                        
+                        // Recalculate progress logic
+                        target.progress = (target.currentValue / target.targetValue).clamp(0.0, 1.0);
+                        target.isCompleted = target.currentValue >= target.targetValue;
+                      });
+                      
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                    child: Text(isAutomatic ? "Save Target" : "Save Progress", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: "LexendExaNormal")),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ==========================================
   // MAIN GOAL EDITOR MODAL
   // ==========================================
   void _showMainGoalEditorSheet(GoalProvider dataProvider, bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
@@ -452,7 +544,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                     
                     Text("Edit Main Goal", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
                     const SizedBox(height: 5),
-                    Text("Update your primary health objective. The backend will recalculate this.", style: TextStyle(color: textSecondary, fontSize: 13)),
+                    Text("Update your primary health objective.", style: TextStyle(color: textSecondary, fontSize: 13)),
                     const SizedBox(height: 30),
 
                     Wrap(
@@ -501,12 +593,9 @@ class _UserTargetPageState extends State<UserTargetPage> {
                           else if (tempSelectedGoal == "More Steps") unit = "steps";
                           else if (tempSelectedGoal == "Less Sugar") unit = "g";
 
-                          // Calling the Backend-Ready Provider Function!
                           dataProvider.updateMainGoal(tempSelectedGoal, "${targetController.text} $unit");
-                          
                           Navigator.pop(context);
                           
-                          // Re-trigger the AI calculation animation so it feels like it refreshed
                           setState(() {
                             _isAiCalculating = true;
                             Future.delayed(const Duration(seconds: 2), () {

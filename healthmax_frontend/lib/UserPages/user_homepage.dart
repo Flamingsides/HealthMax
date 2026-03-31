@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:healthmax_frontend/UserPages/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -9,9 +11,7 @@ import 'user_statistic.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
 
-// ==========================================
-// MOCK DATA MODEL (PLACEHOLDER FOR SQL DB)
-// ==========================================
+// --- DATA MODEL ---
 class UserHealthData {
   final int heartRate;
   final String heartRateStatus;
@@ -24,15 +24,9 @@ class UserHealthData {
   final String lastUpdated;
 
   UserHealthData({
-    required this.heartRate,
-    required this.heartRateStatus,
-    required this.bloodGlucose,
-    required this.bloodGlucoseStatus,
-    required this.envNoise,
-    required this.envNoiseStatus,
-    required this.currentSteps,
-    required this.targetSteps,
-    required this.lastUpdated,
+    required this.heartRate, required this.heartRateStatus, required this.bloodGlucose,
+    required this.bloodGlucoseStatus, required this.envNoise, required this.envNoiseStatus,
+    required this.currentSteps, required this.targetSteps, required this.lastUpdated,
   });
 }
 
@@ -45,67 +39,73 @@ class UserHomePage extends StatefulWidget {
 
 class _UserHomePageState extends State<UserHomePage> {
   final Color userBlue = const Color(0xFF5A84F1);
-
   late ScrollController _scrollController;
   bool _isScrolled = false;
 
   late UserHealthData myData;
+  
+  // --- PHASE 2: LIVE DATA ENGINE ---
+  Timer? _liveDataTimer;
+  final Random _random = Random();
 
   @override
   void initState() {
     super.initState();
-
-    // INITIALIZE MOCK DATA
-    myData = UserHealthData(
-      heartRate: 90,
-      heartRateStatus: "Normal",
-      bloodGlucose: 90,
-      bloodGlucoseStatus: "Normal",
-      envNoise: 65,
-      envNoiseStatus: "Normal",
-      currentSteps: 6789,
-      targetSteps: 10000,
-      lastUpdated: "1 minute ago",
-    );
-
     _scrollController = ScrollController();
     _scrollController.addListener(() {
-      if (_scrollController.offset > 90 && !_isScrolled) {
-        setState(() => _isScrolled = true);
-      } else if (_scrollController.offset <= 90 && _isScrolled) {
-        setState(() => _isScrolled = false);
-      }
+      if (_scrollController.offset > 90 && !_isScrolled) setState(() => _isScrolled = true);
+      else if (_scrollController.offset <= 90 && _isScrolled) setState(() => _isScrolled = false);
+    });
+
+    // 1. Set Initial Baseline
+    myData = UserHealthData(heartRate: 82, heartRateStatus: "Normal", bloodGlucose: 90, bloodGlucoseStatus: "Normal", envNoise: 45, envNoiseStatus: "Quiet", currentSteps: 6789, targetSteps: 10000, lastUpdated: "Just now");
+
+    // 2. Start the Live Simulation
+    _startLiveDataEngine();
+  }
+
+  void _startLiveDataEngine() {
+    // Simulates a wearable sending data every 3 seconds
+    _liveDataTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!mounted) return;
+      
+      setState(() {
+        myData = UserHealthData(
+          // Vitals fluctuate naturally up and down
+          heartRate: 75 + _random.nextInt(15), 
+          heartRateStatus: "Normal",
+          bloodGlucose: myData.bloodGlucose, // Glucose changes slowly, keeping static for now
+          bloodGlucoseStatus: "Normal",
+          envNoise: 40 + _random.nextInt(25), 
+          envNoiseStatus: "Normal",
+          
+          // STEPS ONLY GO UP! (Cumulative Logic)
+          currentSteps: myData.currentSteps + _random.nextInt(8), 
+          targetSteps: myData.targetSteps,
+          lastUpdated: "Live Syncing...",
+        );
+      });
     });
   }
 
   @override
   void dispose() {
+    _liveDataTimer?.cancel(); // ALWAYS cancel timers to prevent memory leaks!
     _scrollController.dispose();
     super.dispose();
   }
 
   void _routeToStatistic(String metric) {
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation1, animation2) =>
-            UserStatisticPage(initialMetric: metric),
-        transitionDuration: Duration.zero,
-      ),
-    );
+    Navigator.pushReplacement(context, PageRouteBuilder(pageBuilder: (context, a1, a2) => UserStatisticPage(initialMetric: metric), transitionDuration: Duration.zero));
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-
-    // --- LIVE PROVIDERS ---
+    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final calorieData = Provider.of<CalorieProvider>(context);
-    final supabase = Supabase.instance.client;
-    final String liveUsername =
-        supabase.auth.currentUser?.userMetadata?['username'] ??
-        "User"; // Fallback if null
+    
+    // Safety check for Supabase initialization during UI building
+    final String liveUsername = Supabase.instance.client.auth.currentUser?.userMetadata?['username'] ?? "User";
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
@@ -120,109 +120,29 @@ class _UserHomePageState extends State<UserHomePage> {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverAppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: userBlue,
-            expandedHeight: 220.0,
-            toolbarHeight: 90.0,
-            pinned: true,
-            elevation: 0,
-            scrolledUnderElevation: 0.0,
-            surfaceTintColor: Colors.transparent,
-
+            automaticallyImplyLeading: false, backgroundColor: userBlue, expandedHeight: 220.0, toolbarHeight: 90.0, pinned: true, elevation: 0, scrolledUnderElevation: 0.0, surfaceTintColor: Colors.transparent,
             title: AnimatedOpacity(
-              duration: const Duration(milliseconds: 250),
-              opacity: _isScrolled ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 250), opacity: _isScrolled ? 1.0 : 0.0,
               child: Padding(
                 padding: const EdgeInsets.only(left: 15.0, top: 10.0),
                 child: ShaderMask(
-                  shaderCallback: (Rect bounds) {
-                    return const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [Colors.white, Colors.white, Colors.transparent],
-                      stops: [0.0, 0.85, 1.0],
-                    ).createShader(bounds);
-                  },
+                  shaderCallback: (Rect bounds) => const LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Colors.white, Colors.white, Colors.transparent], stops: [0.0, 0.85, 1.0]).createShader(bounds),
                   blendMode: BlendMode.dstIn,
-                  child: Text(
-                    "Hi, $liveUsername!", // Dynamic Username!
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.clip,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      fontFamily: "LexendExaNormal",
-                    ),
-                  ),
+                  child: Text("Hi, $liveUsername!", maxLines: 1, softWrap: false, overflow: TextOverflow.clip, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal")),
                 ),
               ),
             ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 30.0, top: 10.0),
-                child: Center(
-                  child: UserGlassyProfile(
-                    onTap: () => Navigator.pushNamed(context, '/user_settings'),
-                  ),
-                ),
-              ),
-            ],
+            actions: [Padding(padding: const EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile(onTap: () => Navigator.pushNamed(context, '/user_settings'))))],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               background: SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(30, 25, 30, 0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Hi,",
-                            style: TextStyle(
-                              fontSize: 45,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              height: 1.1,
-                              fontFamily: "LexendExaNormal",
-                            ),
-                          ),
-                          Text(
-                            "$liveUsername!",
-                            style: const TextStyle(
-                              fontSize: 35,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontFamily: "LexendExaNormal",
-                            ),
-                          ), // Dynamic Username!
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text("Hi,", style: TextStyle(fontSize: 45, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, fontFamily: "LexendExaNormal")), Text("$liveUsername!", style: const TextStyle(fontSize: 35, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: "LexendExaNormal"))]),
                 ),
               ),
             ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(30),
-              child: Transform.translate(
-                offset: const Offset(0, 1),
-                child: Container(
-                  height: 31,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            bottom: PreferredSize(preferredSize: const Size.fromHeight(30), child: Transform.translate(offset: const Offset(0, 1), child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))))),
           ),
 
           SliverToBoxAdapter(
@@ -235,20 +155,7 @@ class _UserHomePageState extends State<UserHomePage> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Container(
                       padding: const EdgeInsets.all(25),
-                      decoration: BoxDecoration(
-                        color: surfaceColor,
-                        borderRadius: BorderRadius.circular(35),
-                        border: isDark ? Border.all(color: dividerColor) : null,
-                        boxShadow: isDark
-                            ? []
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                      ),
+                      decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(35), border: isDark ? Border.all(color: dividerColor) : null, boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, 8))]),
                       child: Column(
                         children: [
                           Row(
@@ -257,107 +164,32 @@ class _UserHomePageState extends State<UserHomePage> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildMetric(
-                                    icon: Icons.monitor_heart,
-                                    color: const Color(0xFFFF6B6B),
-                                    value: myData.heartRate.toString(),
-                                    unit: "bpm",
-                                    status: myData.heartRateStatus,
-                                    title: "Heart Rate",
-                                    textPrimary: textPrimary,
-                                    textSecondary: textSecondary,
-                                    onTap: () =>
-                                        _routeToStatistic("Heart Rate"),
-                                  ),
+                                  _buildMetric(icon: Icons.monitor_heart, color: const Color(0xFFFF6B6B), value: myData.heartRate.toString(), unit: "bpm", status: myData.heartRateStatus, textPrimary: textPrimary, textSecondary: textSecondary, onTap: () => _routeToStatistic("Heart Rate")),
                                   const SizedBox(height: 15),
-                                  _buildMetric(
-                                    icon: Icons.bloodtype,
-                                    color: const Color(0xFF4ECDC4),
-                                    value: myData.bloodGlucose.toString(),
-                                    unit: "mg / dL",
-                                    status: myData.bloodGlucoseStatus,
-                                    title: "Blood Glucose",
-                                    textPrimary: textPrimary,
-                                    textSecondary: textSecondary,
-                                    onTap: () =>
-                                        _routeToStatistic("Blood Glucose"),
-                                  ),
+                                  _buildMetric(icon: Icons.bloodtype, color: const Color(0xFF4ECDC4), value: myData.bloodGlucose.toString(), unit: "mg/dL", status: myData.bloodGlucoseStatus, textPrimary: textPrimary, textSecondary: textSecondary, onTap: () => _routeToStatistic("Blood Glucose")),
                                   const SizedBox(height: 15),
-                                  _buildMetric(
-                                    icon: Icons.hearing,
-                                    color: const Color(0xFF45B7D1),
-                                    value: myData.envNoise.toString(),
-                                    unit: "dB",
-                                    status: myData.envNoiseStatus,
-                                    title: "Env. Noise",
-                                    textPrimary: textPrimary,
-                                    textSecondary: textSecondary,
-                                    onTap: () =>
-                                        _routeToStatistic("Env. Noise"),
-                                  ),
+                                  _buildMetric(icon: Icons.hearing, color: const Color(0xFF45B7D1), value: myData.envNoise.toString(), unit: "dB", status: myData.envNoiseStatus, textPrimary: textPrimary, textSecondary: textSecondary, onTap: () => _routeToStatistic("Env. Noise")),
                                 ],
                               ),
-
                               GestureDetector(
                                 onTap: () => _routeToStatistic("Steps"),
                                 child: SizedBox(
-                                  width: 140,
-                                  height: 140,
+                                  width: 140, height: 140,
                                   child: Stack(
                                     fit: StackFit.expand,
                                     children: [
-                                      CircularProgressIndicator(
-                                        value: 1.0,
-                                        strokeWidth: 10,
-                                        color: isDark
-                                            ? Colors.white10
-                                            : Colors.grey.shade100,
-                                      ),
+                                      CircularProgressIndicator(value: 1.0, strokeWidth: 10, color: isDark ? Colors.white10 : Colors.grey.shade100),
                                       TweenAnimationBuilder(
-                                        tween: Tween<double>(
-                                          begin: 0,
-                                          end:
-                                              (myData.currentSteps /
-                                                      myData.targetSteps)
-                                                  .clamp(0.0, 1.0),
-                                        ),
-                                        duration: const Duration(seconds: 2),
+                                        tween: Tween<double>(begin: 0, end: (myData.currentSteps / myData.targetSteps).clamp(0.0, 1.0)),
+                                        duration: const Duration(seconds: 1),
                                         curve: Curves.easeOutCubic,
-                                        builder: (context, value, child) {
-                                          return CircularProgressIndicator(
-                                            value: value,
-                                            strokeWidth: 10,
-                                            backgroundColor: Colors.transparent,
-                                            valueColor:
-                                                const AlwaysStoppedAnimation<
-                                                  Color
-                                                >(Color(0xFFFF9F43)),
-                                            strokeCap: StrokeCap.round,
-                                          );
-                                        },
+                                        builder: (context, value, child) => CircularProgressIndicator(value: value, strokeWidth: 10, backgroundColor: Colors.transparent, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF9F43)), strokeCap: StrokeCap.round),
                                       ),
                                       Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Text(
-                                            "Steps:",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                              color: textSecondary,
-                                            ),
-                                          ),
-                                          Text(
-                                            myData.currentSteps.toString(),
-                                            style: TextStyle(
-                                              fontSize: 32,
-                                              fontWeight: FontWeight.w900,
-                                              color: textPrimary,
-                                              fontFamily: "LexendExaNormal",
-                                              letterSpacing: -1,
-                                            ),
-                                          ),
+                                          Text("Steps:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textSecondary)),
+                                          Text(myData.currentSteps.toString(), style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
                                         ],
                                       ),
                                     ],
@@ -366,130 +198,48 @@ class _UserHomePageState extends State<UserHomePage> {
                               ),
                             ],
                           ),
-
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            child: Divider(color: dividerColor, height: 1),
-                          ),
-
+                          Padding(padding: const EdgeInsets.symmetric(vertical: 15), child: Divider(color: dividerColor, height: 1)),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                "Last Updated : ${myData.lastUpdated}",
-                                style: TextStyle(
-                                  color: textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
+                              Text("Last Updated : ${myData.lastUpdated}", style: TextStyle(color: textSecondary, fontSize: 12)),
                               const SizedBox(width: 8),
-                              Icon(Icons.sync, size: 16, color: textSecondary),
+                              AnimatedRotation(
+                                turns: myData.currentSteps % 2 == 0 ? 0.5 : 0.0, // Creates a tiny spin effect when data updates!
+                                duration: const Duration(milliseconds: 500),
+                                child: Icon(Icons.sync, size: 16, color: userBlue),
+                              )
                             ],
                           ),
                         ],
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 35),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25),
-                    child: Text(
-                      "Quick Action",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: textPrimary,
-                        fontFamily: "LexendExaNormal",
-                      ),
-                    ),
-                  ),
+                  
+                  // Quick Actions & Feedback remain unchanged below...
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 25), child: Text("Quick Action", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal"))),
                   const SizedBox(height: 15),
-
                   SizedBox(
                     height: 160,
                     child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal, physics: const BouncingScrollPhysics(), padding: const EdgeInsets.symmetric(horizontal: 20),
                       children: [
-                        _buildQuickActionCard(
-                          icon: Icons.local_fire_department_rounded,
-                          iconBgColor: const Color(0xFFFFD93D),
-                          title: "Burned Calories",
-                          subtitle:
-                              "${calorieData.burnedCalories} kcal burned today",
-                          isProgress: true,
-                          surfaceColor: surfaceColor,
-                          textPrimary: textPrimary,
-                          textSecondary: textSecondary,
-                          dividerColor: dividerColor,
-                          isDark: isDark,
-                          onTap: () => Navigator.pushReplacementNamed(
-                            context,
-                            '/user_calorie',
-                          ),
-                        ),
+                        _buildQuickActionCard(icon: Icons.local_fire_department_rounded, iconBgColor: const Color(0xFFFFD93D), title: "Burned Calories", subtitle: "${calorieData.burnedCalories} kcal burned today", isProgress: true, surfaceColor: surfaceColor, textPrimary: textPrimary, textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark, onTap: () => Navigator.pushReplacementNamed(context, '/user_calorie')),
                         const SizedBox(width: 15),
-                        _buildQuickActionCard(
-                          icon: Icons.calendar_month_rounded,
-                          iconBgColor: const Color(0xFF00D1FF),
-                          title: "17 December 2026",
-                          subtitle: "Heart Appointment\nHospital 1",
-                          isAppointment: true,
-                          surfaceColor: surfaceColor,
-                          textPrimary: textPrimary,
-                          textSecondary: textSecondary,
-                          dividerColor: dividerColor,
-                          isDark: isDark,
-                        ),
+                        _buildQuickActionCard(icon: Icons.calendar_month_rounded, iconBgColor: const Color(0xFF00D1FF), title: "17 December 2026", subtitle: "Heart Appointment\nHospital 1", isAppointment: true, surfaceColor: surfaceColor, textPrimary: textPrimary, textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 35),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25),
-                    child: Text(
-                      "Feedback",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: textPrimary,
-                        fontFamily: "LexendExaNormal",
-                      ),
-                    ),
-                  ),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 25), child: Text("Feedback", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal"))),
                   const SizedBox(height: 15),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
-                        _buildFeedbackCard(
-                          "Dr. Ahmad Syafiq",
-                          "Heart Rate consistency is looking excellent this week. Keep up the light cardio.",
-                          "10:30 AM",
-                          surfaceColor,
-                          textPrimary,
-                          textSecondary,
-                          dividerColor,
-                          userBlue,
-                          isDark,
-                        ),
-                        _buildFeedbackCard(
-                          "Nutritionist Sarah",
-                          "Your glucose levels have stabilized perfectly after we adjusted your dinner macros.",
-                          "Yesterday",
-                          surfaceColor,
-                          textPrimary,
-                          textSecondary,
-                          dividerColor,
-                          userBlue,
-                          isDark,
-                        ),
+                        _buildFeedbackCard("Dr. Ahmad Syafiq", "Heart Rate consistency is looking excellent this week. Keep up the light cardio.", "10:30 AM", surfaceColor, textPrimary, textSecondary, dividerColor, userBlue, isDark),
+                        _buildFeedbackCard("Nutritionist Sarah", "Your glucose levels have stabilized perfectly after we adjusted your dinner macros.", "Yesterday", surfaceColor, textPrimary, textSecondary, dividerColor, userBlue, isDark),
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -504,88 +254,21 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  // ==========================================
-  // HELPER WIDGETS
-  // ==========================================
-
-  Widget _buildMetric({
-    required IconData icon,
-    required Color color,
-    required String value,
-    required String unit,
-    required String status,
-    required String title,
-    required Color textPrimary,
-    required Color textSecondary,
-    VoidCallback? onTap,
-  }) {
+  // --- HELPER WIDGETS ---
+  Widget _buildMetric({required IconData icon, required Color color, required String value, required String unit, required String status, required Color textPrimary, required Color textSecondary, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         color: Colors.transparent,
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(icon, color: Colors.white, size: 28),
-            ),
+            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4))]), child: Icon(icon, color: Colors.white, size: 28)),
             const SizedBox(width: 15),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: textPrimary,
-                        fontFamily: "LexendExaNormal",
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      unit,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.greenAccent.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    status,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ),
+                Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [Text(value, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")), const SizedBox(width: 4), Text(unit, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textSecondary))]),
+                Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2), decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)), child: Text(status, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green))),
               ],
             ),
           ],
@@ -594,110 +277,25 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required Color iconBgColor,
-    required String title,
-    required String subtitle,
-    bool isProgress = false,
-    bool isAppointment = false,
-    VoidCallback? onTap,
-    required Color surfaceColor,
-    required Color textPrimary,
-    required Color textSecondary,
-    required Color dividerColor,
-    required bool isDark,
-  }) {
+  Widget _buildQuickActionCard({required IconData icon, required Color iconBgColor, required String title, required String subtitle, bool isProgress = false, bool isAppointment = false, VoidCallback? onTap, required Color surfaceColor, required Color textPrimary, required Color textSecondary, required Color dividerColor, required bool isDark}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 260,
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: dividerColor),
-          boxShadow: isDark
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-        ),
+        width: 260, padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 5))]),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(icon, color: Colors.black87, size: 35),
-            ),
+            Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(15)), child: Icon(icon, color: Colors.black87, size: 35)),
             const SizedBox(width: 15),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: textPrimary,
-                    ),
-                  ),
+                  Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textPrimary)),
                   const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: textSecondary,
-                      height: 1.2,
-                    ),
-                  ),
-                  if (isProgress) ...[
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: 0.6,
-                      backgroundColor: isDark
-                          ? Colors.white10
-                          : Colors.grey.shade200,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFFFFD93D),
-                      ),
-                      borderRadius: BorderRadius.circular(5),
-                      minHeight: 5,
-                    ),
-                  ],
-                  if (isAppointment) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(
-                          "Cancel",
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.red.shade400,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Text(
-                          "Reschedule",
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: textSecondary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  Text(subtitle, style: TextStyle(fontSize: 10, color: textSecondary, height: 1.2)),
+                  if (isProgress) ...[const SizedBox(height: 8), LinearProgressIndicator(value: 0.6, backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD93D)), borderRadius: BorderRadius.circular(5), minHeight: 5)],
+                  if (isAppointment) ...[const SizedBox(height: 8), Row(children: [Text("Cancel", style: TextStyle(fontSize: 11, color: Colors.red.shade400, fontWeight: FontWeight.bold)), const SizedBox(width: 15), Text("Reschedule", style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.bold))])],
                 ],
               ),
             ),
@@ -707,76 +305,22 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  Widget _buildFeedbackCard(
-    String doctor,
-    String message,
-    String time,
-    Color surfaceColor,
-    Color textPrimary,
-    Color textSecondary,
-    Color dividerColor,
-    Color userBlue,
-    bool isDark,
-  ) {
+  Widget _buildFeedbackCard(String doctor, String message, String time, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, Color userBlue, bool isDark) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: dividerColor),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-      ),
+      margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(20), border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 5))]),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            backgroundColor: userBlue.withValues(alpha: 0.1),
-            child: Icon(
-              Icons.medical_services_rounded,
-              color: userBlue,
-              size: 20,
-            ),
-          ),
+          CircleAvatar(backgroundColor: userBlue.withValues(alpha: 0.1), child: Icon(Icons.medical_services_rounded, color: userBlue, size: 20)),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      doctor,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: textPrimary,
-                      ),
-                    ),
-                    Text(
-                      time,
-                      style: TextStyle(color: textSecondary, fontSize: 11),
-                    ),
-                  ],
-                ),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(doctor, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary)), Text(time, style: TextStyle(color: textSecondary, fontSize: 11))]),
                 const SizedBox(height: 5),
-                Text(
-                  message,
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
+                Text(message, style: TextStyle(color: textSecondary, fontSize: 12, height: 1.4)),
               ],
             ),
           ),
