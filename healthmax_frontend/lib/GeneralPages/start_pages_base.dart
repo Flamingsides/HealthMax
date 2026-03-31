@@ -134,7 +134,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     super.dispose();
   }
 
-  void register() async {
+void register() async {
     final username = _usernameCtrl.text;
     final email = _emailCtrl.text;
     final password = _passwordCtrl.text;
@@ -163,9 +163,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
     }
 
     try {
-      final response = await auth.register(username, email, password);
+      // --- THE FIX: Added a default 4th argument for the mainGoal ---
+      final response = await auth.register(username, email, password, "Lose Weight");
+      
       if (response == null || response.user == null) {
-        throw AuthException("Registration failed");
+        throw const AuthException("Registration failed");
       }
 
       if (mounted) {
@@ -174,7 +176,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => RegistrationIntro()),
+          MaterialPageRoute(builder: (_) => const RegistrationIntro()),
           (_) => false,
         );
       }
