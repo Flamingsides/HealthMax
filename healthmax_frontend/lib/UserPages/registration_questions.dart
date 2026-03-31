@@ -363,6 +363,17 @@ class RegistrationDOB extends StatelessWidget {
                 ),
               );
               return;
+            } else if (userAnswers.dob!.isAfter(DateTime.parse("20180101"))) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    "You must be at least 18 years old to continue!",
+                  ),
+                  backgroundColor: Colors.redAccent,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              return;
             }
             Navigator.push(
               context,

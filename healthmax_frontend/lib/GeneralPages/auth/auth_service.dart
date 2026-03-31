@@ -76,7 +76,7 @@ class AuthService {
     String password,
   ) async {
     final email = await _supabase
-        .from("auth.users")
+        .from("users")
         .select("email")
         .eq("username", username)
         .maybeSingle();
