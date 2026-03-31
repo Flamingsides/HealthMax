@@ -8,7 +8,7 @@ class TargetItem {
   String description;
   int currentValue;
   int targetValue;
-  int duration; 
+  int duration;   
   String unit;
   int rewardPoints;
 
