@@ -8,6 +8,7 @@ class AuthService {
     String username,
     String email,
     String password,
+    String mainGoal,
   ) async {
     try {
       final authResponse = await _supabase.auth.signUp(
@@ -20,6 +21,7 @@ class AuthService {
         "id": authResponse.user?.id,
         "username": username,
         "email": email,
+        "main_goal": mainGoal,
       });
 
       print("\nUser Registered: ");
