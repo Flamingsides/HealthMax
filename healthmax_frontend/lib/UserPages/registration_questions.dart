@@ -3,6 +3,7 @@ import 'package:healthmax_frontend/GeneralPages/auth/auth_service.dart';
 import 'package:healthmax_frontend/GeneralPages/helper_widgets.dart';
 import 'package:riff_switch/riff_switch.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'goal_provider.dart';
 
 class RegistrationQuestions extends StatelessWidget {
@@ -928,12 +929,30 @@ class _RegistrationGoalState extends State<RegistrationGoal> {
     }
 
     final auth = AuthService();
-    auth.initialiseUserDetails(
-      widget.userAnswers.gender!,
-      widget.userAnswers.dob!,
-      height,
-      weight,
-    );
+    try {
+      auth.initialiseUserDetails(
+        widget.userAnswers.gender!,
+        widget.userAnswers.dob!,
+        height,
+        weight,
+      );
+    } on PostgrestException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.message}. Try again later."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     print("Registration Complete: ${widget.userAnswers.toString()}");
 

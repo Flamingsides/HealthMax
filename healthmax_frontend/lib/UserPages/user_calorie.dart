@@ -198,7 +198,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                               ),
                             ),
                             const SizedBox(height: 25),
-                            
+
                             // RESPONSIVE ROW FIX FOR MOBILE
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -535,7 +535,10 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
         splashColor: themeBlue.withValues(alpha: 0.1),
         highlightColor: themeBlue.withValues(alpha: 0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5), // Reduced padding for mobile
+          padding: const EdgeInsets.symmetric(
+            vertical: 10,
+            horizontal: 5,
+          ), // Reduced padding for mobile
           child: Column(
             children: [
               Row(
@@ -713,7 +716,7 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "Walking (${data.currentSteps} steps)",
+                        "Walk (${data.currentSteps} steps)",
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,

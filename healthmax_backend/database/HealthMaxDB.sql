@@ -2,6 +2,7 @@ CREATE TABLE
     Users (
         id UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
         username VARCHAR(50) UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
         gender VARCHAR(10),
         dob DATE,
         height_cm DECIMAL(5, 2),

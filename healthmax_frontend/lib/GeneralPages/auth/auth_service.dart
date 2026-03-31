@@ -13,11 +13,13 @@ class AuthService {
       final authResponse = await _supabase.auth.signUp(
         email: email,
         password: password,
+        data: {"display_name": username, "username": username},
       );
 
       _supabase.from("users").insert({
         "id": authResponse.user?.id,
         "username": username,
+        "email": email,
       });
 
       print("\nUser Registered: ");
@@ -60,13 +62,32 @@ class AuthService {
             "gender": gender,
             "dob": dob.toIso8601String().split("T")[0],
             "height_cm": height_cm,
-            "weight_lg": weight_kg,
+            "weight_kg": weight_kg,
             // total_points and created_at fields handled by database
           })
           .eq("id", _supabase.auth.currentUser!.id);
     } else {
       print("Cant initialise user since no current user");
     }
+  }
+
+  Future<AuthResponse> loginWithUsernameAndPassword(
+    String username,
+    String password,
+  ) async {
+    final email = await _supabase
+        .from("users")
+        .select("email")
+        .eq("username", username)
+        .maybeSingle();
+
+    if (email == null) {
+      throw AuthException("Login failed. Try again.");
+    } else if (email.isEmpty) {
+      throw AuthException("Username not found!");
+    }
+
+    return await loginWithEmailAndPassword(email['email'], password);
   }
 
   // Sign in with email and password

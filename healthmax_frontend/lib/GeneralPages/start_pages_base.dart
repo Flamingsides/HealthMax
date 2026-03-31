@@ -177,13 +177,20 @@ class _RegistrationPageState extends State<RegistrationPage> {
           MaterialPageRoute(builder: (_) => RegistrationIntro()),
         );
       }
-    } catch (e) {
-      print("Error");
-      print(e.toString());
+    } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Registration Failed. Try again."),
+          SnackBar(
+            content: Text("Registration Failed: ${e.message}"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Registration Failed: ${e.toString()}"),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -348,23 +355,62 @@ class _LoginPageState extends State<LoginPage> {
                       return;
                     }
 
-                    // 2. Call FastAPI Provider
-                    // TODO: Enable Supabase login
-                    // AuthService auth = AuthService();
-                    // final id = Supabase.instance.client
-                    //     .from("users")
-                    //     .select("id")
-                    //     .eq("username", _usernameCtrl.text)
-                    //     .maybeSingle();
-                    // AuthResponse response = auth.loginWithUsernameAndPassword(
-                    //   _usernameCtrl.text,
-                    //   _passwordCtrl.text,
-                    // );
-                    bool success = await auth.login(
-                      _usernameCtrl.text,
-                      _passwordCtrl.text,
-                      widget.role,
-                    );
+                    bool success = false;
+                    if (widget.role == "user") {
+                      // TODO: Enable Supabase login
+                      AuthService auth = AuthService();
+                      try {
+                        AuthResponse response = await auth
+                            .loginWithUsernameAndPassword(
+                              _usernameCtrl.text,
+                              _passwordCtrl.text,
+                            );
+
+                        if (response.user == null) {
+                          throw AuthException(
+                            "Login failed! Check credentials.",
+                          );
+                        }
+
+                        if (await auth.isUserDetailsInitialised()) {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            widget.homeRoute,
+                            (route) => false,
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => RegistrationIntro(),
+                            ),
+                          );
+                        }
+                      } on AuthException catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(e.message),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                        return;
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString()),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                        return;
+                      }
+                    } else {
+                      // 2. Call FastAPI Provider
+                      success = await auth.login(
+                        _usernameCtrl.text,
+                        _passwordCtrl.text,
+                        widget.role,
+                      );
+                    }
 
                     // 3. Route on Success
                     if (success && mounted) {
