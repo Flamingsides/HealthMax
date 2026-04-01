@@ -334,12 +334,26 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
                               Icons.auto_awesome,
                               themeBlue,
                               DateTime.now(),
+                              confidence: _result!.confidence,
                             );
 
-                            Provider.of<CalorieProvider>(
-                              context,
-                              listen: false,
-                            ).addFoodRecord(newRecord);
+                            try {
+                              Provider.of<CalorieProvider>(
+                                context,
+                                listen: false,
+                              ).addFoodRecord(newRecord);
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Failed to add food. Try again!",
+                                  ),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                              return;
+                            }
+
                             Navigator.pop(context);
                           } else {
                             if (_manualNameCtrl.text.trim().isEmpty) {
@@ -377,10 +391,22 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
                               DateTime.now(),
                             );
 
-                            Provider.of<CalorieProvider>(
-                              context,
-                              listen: false,
-                            ).addFoodRecord(newRecord);
+                            try {
+                              Provider.of<CalorieProvider>(
+                                context,
+                                listen: false,
+                              ).addFoodRecord(newRecord);
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Failed to add food. Try again!",
+                                  ),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                              return;
+                            }
                             Navigator.pop(context);
                           }
                         },

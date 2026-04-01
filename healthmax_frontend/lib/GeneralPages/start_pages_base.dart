@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide BackButton;
 import 'package:healthmax_frontend/GeneralPages/auth/auth_service.dart';
+import 'package:healthmax_frontend/UserPages/calorie_provider.dart';
 import 'package:healthmax_frontend/UserPages/registration_intro.dart';
 import 'package:healthmax_frontend/UserPages/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -136,6 +137,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
     super.dispose();
   }
 
+  Future<void> _fetchNutrientData() async {
+    final supabase = Supabase.instance.client;
+    // final nutrientData = await supabase
+    //     .from("user_food_stats")
+    //     .select(
+    //       "total_calories, total_protein, total_fats, total_carbohydrates",
+    //     )
+    //     .eq("user_id", supabase.auth.currentUser!.id)
+    //     .maybeSingle();
+
+    final foodLogs = await supabase
+        .from("food_logs")
+        .select("food_name, calories, fats, protein, carbohydrates, logged_at")
+        .eq("user_id", supabase.auth.currentUser!.id);
+
+    if (!mounted) return;
+
+    if (foodLogs.isNotEmpty) {
+      final calorieData = Provider.of<CalorieProvider>(context, listen: false);
+      for (final log in foodLogs) {
+        calorieData.addFoodRecord(CalorieRecord.fromMap(log));
+      }
+    }
+  }
+
   void register() async {
     final username = _usernameCtrl.text;
     final email = _emailCtrl.text;
@@ -169,18 +195,23 @@ class _RegistrationPageState extends State<RegistrationPage> {
       // 1. USER REGISTRATION (SUPABASE)
       // ==========================================
       setState(() => _isSupabaseLoading = true);
-      
+
       try {
         final authService = AuthService();
-        final response = await authService.register(username, email, password, "Lose Weight");
-        
+        final response = await authService.register(
+          username,
+          email,
+          password,
+          "Lose Weight",
+        );
+
         if (response == null || response.user == null) {
           throw const AuthException("Registration failed");
         }
 
         if (mounted) {
           context.read<UserProvider>().setUsername(username);
-
+          // await _fetchNutrientData();
           // THE FIX: Use widget.postRegistration instead of hardcoding the User intro page!
           Navigator.pushAndRemoveUntil(
             context,
@@ -190,23 +221,37 @@ class _RegistrationPageState extends State<RegistrationPage> {
         }
       } on AuthException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Registration Failed: ${e.message}"), backgroundColor: Colors.redAccent));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Registration Failed: ${e.message}"),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Registration Failed: ${e.toString()}"), backgroundColor: Colors.redAccent));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Registration Failed: ${e.toString()}"),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
         }
       } finally {
         if (mounted) setState(() => _isSupabaseLoading = false);
       }
-      
     } else {
       // ==========================================
       // 2. HP REGISTRATION (FASTAPI / PROVIDER)
       // ==========================================
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
-      bool success = await authProvider.registerBaseAccount(username, email, password, widget.role);
+
+      bool success = await authProvider.registerBaseAccount(
+        username,
+        email,
+        password,
+        widget.role,
+      );
 
       if (success && mounted) {
         // THE FIX: Route to the HP specific post-registration page
@@ -217,7 +262,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("HP Registration Failed!"), backgroundColor: Colors.redAccent),
+          const SnackBar(
+            content: Text("HP Registration Failed!"),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     }
@@ -228,7 +276,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Screen(
-      bgDecoration: bgGradientHP, // Replace with dynamic widget.decoration if needed
+      bgDecoration:
+          bgGradientHP, // Replace with dynamic widget.decoration if needed
       child: ListView(
         children: [
           BackButton(),
@@ -338,6 +387,31 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  Future<void> _fetchNutrientData() async {
+    final supabase = Supabase.instance.client;
+    // final nutrientData = await supabase
+    //     .from("user_food_stats")
+    //     .select(
+    //       "total_calories, total_protein, total_fats, total_carbohydrates",
+    //     )
+    //     .eq("user_id", supabase.auth.currentUser!.id)
+    //     .maybeSingle();
+
+    final foodLogs = await supabase
+        .from("food_logs")
+        .select("food_name, calories, fats, protein, carbohydrates, logged_at")
+        .eq("user_id", supabase.auth.currentUser!.id);
+
+    if (!mounted) return;
+
+    if (foodLogs.isNotEmpty) {
+      final calorieData = Provider.of<CalorieProvider>(context, listen: false);
+      for (final log in foodLogs) {
+        calorieData.addFoodRecordWithoutDBUpdate(CalorieRecord.fromMap(log));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -398,6 +472,7 @@ class _LoginPageState extends State<LoginPage> {
                         }
 
                         if (await auth.isUserDetailsInitialised()) {
+                          await _fetchNutrientData();
                           Navigator.pushNamedAndRemoveUntil(
                             context,
                             widget.homeRoute,

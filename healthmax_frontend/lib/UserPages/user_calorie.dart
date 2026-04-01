@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme_provider.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
@@ -16,6 +17,8 @@ class UserCaloriePage extends StatefulWidget {
 
 class _UserCaloriePageState extends State<UserCaloriePage> {
   final Color themeBlue = const Color(0xFF5A84F1);
+  // Map<String, dynamic>? _nutrientData;
+  bool _loading = false;
 
   late ScrollController _scrollController;
   bool _isScrolled = false;
@@ -34,12 +37,44 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
         setState(() => _isScrolled = false);
       }
     });
+
+    // _fetchNutrientData();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchNutrientData() async {
+    final supabase = Supabase.instance.client;
+    // final nutrientData = await supabase
+    //     .from("user_food_stats")
+    //     .select(
+    //       "total_calories, total_protein, total_fats, total_carbohydrates",
+    //     )
+    //     .eq("user_id", supabase.auth.currentUser!.id)
+    //     .maybeSingle();
+
+    final foodLogs = await supabase
+        .from("food_logs")
+        .select("food_name, calories, fats, protein, carbohydrates, logged_at")
+        .eq("user_id", supabase.auth.currentUser!.id);
+
+    if (!mounted) return;
+
+    if (foodLogs.isNotEmpty) {
+      final calorieData = Provider.of<CalorieProvider>(context, listen: false);
+      for (final log in foodLogs) {
+        calorieData.addFoodRecord(CalorieRecord.fromMap(log));
+      }
+    }
+
+    setState(() {
+      //   _nutrientData = nutrientData;
+      _loading = false;
+    });
   }
 
   @override
@@ -162,165 +197,15 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25.0),
                   child: Column(
-                    children: [
-                      // --- TOP CARD: TODAY'S OVERVIEW ---
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 30,
-                          horizontal: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: surfaceColor,
-                          borderRadius: BorderRadius.circular(30),
-                          border: isDark
-                              ? Border.all(color: dividerColor)
-                              : null,
-                          boxShadow: isDark
-                              ? []
-                              : [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              "Today",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: textPrimary,
-                                fontFamily: "LexendExaNormal",
-                              ),
-                            ),
-                            const SizedBox(height: 25),
-
-                            // RESPONSIVE ROW FIX FOR MOBILE
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                // --- EATEN BUTTON ---
-                                _buildClickableStat(
-                                  label: "Eaten",
-                                  value: calorieData.totalEaten, // WIRED
-                                  textPrimary: textPrimary,
-                                  textSecondary: textSecondary,
-                                  onTap: () => _showEatenBreakdown(
-                                    calorieData,
-                                    isDark,
-                                    surfaceColor,
-                                    textPrimary,
-                                    textSecondary,
-                                    dividerColor,
-                                  ),
-                                ),
-
-                                // --- CIRCULAR GAUGE ---
-                                SizedBox(
-                                  width: 140,
-                                  height: 140,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      CircularProgressIndicator(
-                                        value: 1.0,
-                                        strokeWidth: 12,
-                                        color: isDark
-                                            ? Colors.white10
-                                            : Colors.grey.shade100,
-                                      ),
-                                      TweenAnimationBuilder(
-                                        // WIRED
-                                        tween: Tween<double>(
-                                          begin: 0,
-                                          end:
-                                              (calorieData.totalEaten /
-                                                      calorieData
-                                                          .targetCalories)
-                                                  .clamp(0.0, 1.0),
-                                        ),
-                                        duration: const Duration(seconds: 2),
-                                        curve: Curves.easeOutCubic,
-                                        builder: (context, value, child) =>
-                                            CircularProgressIndicator(
-                                              value: value,
-                                              strokeWidth: 12,
-                                              backgroundColor:
-                                                  Colors.transparent,
-                                              valueColor:
-                                                  const AlwaysStoppedAnimation<
-                                                    Color
-                                                  >(Color(0xFFFF7A00)),
-                                              strokeCap: StrokeCap.round,
-                                            ),
-                                      ),
-                                      Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          // WIRED
-                                          Text(
-                                            "${calorieData.leftCalories}",
-                                            style: TextStyle(
-                                              fontSize: 28,
-                                              fontWeight: FontWeight.w900,
-                                              color: textPrimary,
-                                              fontFamily: "LexendExaNormal",
-                                              letterSpacing: -1,
-                                            ),
-                                          ),
-                                          Text(
-                                            "kcal left.",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                              color: textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // --- BURNED BUTTON ---
-                                _buildClickableStat(
-                                  label: "Burned",
-                                  value: calorieData.burnedCalories, // WIRED
-                                  textPrimary: textPrimary,
-                                  textSecondary: textSecondary,
-                                  onTap: () => _showBurnedBreakdown(
-                                    calorieData,
-                                    isDark,
-                                    surfaceColor,
-                                    textPrimary,
-                                    textSecondary,
-                                    dividerColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // --- BOTTOM ROW: BREAKDOWN & SUMMARY ---
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // LEFT CARD: INTAKE BREAKDOWN
-                          Expanded(
-                            flex: 5,
-                            child: Container(
+                    children: _loading
+                        ? [CircularProgressIndicator()]
+                        : [
+                            // --- TOP CARD: TODAY'S OVERVIEW ---
+                            Container(
+                              width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                vertical: 25,
-                                horizontal: 15,
+                                vertical: 30,
+                                horizontal: 10,
                               ),
                               decoration: BoxDecoration(
                                 color: surfaceColor,
@@ -343,138 +228,298 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                               child: Column(
                                 children: [
                                   Text(
-                                    "Intake Breakdown",
+                                    "Today",
                                     style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w900,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                       color: textPrimary,
                                       fontFamily: "LexendExaNormal",
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 25),
-                                  SizedBox(
-                                    height: 140,
-                                    child: PieChart(
-                                      PieChartData(
-                                        sectionsSpace: 0,
-                                        centerSpaceRadius: 30,
-                                        startDegreeOffset: 270,
-                                        sections: _getMacroSections(
+
+                                  // RESPONSIVE ROW FIX FOR MOBILE
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      // --- EATEN BUTTON ---
+                                      _buildClickableStat(
+                                        label: "Eaten",
+                                        value: calorieData.totalEaten, // WIRED
+                                        textPrimary: textPrimary,
+                                        textSecondary: textSecondary,
+                                        onTap: () => _showEatenBreakdown(
                                           calorieData,
+                                          isDark,
+                                          surfaceColor,
+                                          textPrimary,
+                                          textSecondary,
+                                          dividerColor,
                                         ),
                                       ),
-                                    ), // WIRED
-                                  ),
-                                  const SizedBox(height: 35),
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                        left: 10.0,
+
+                                      // --- CIRCULAR GAUGE ---
+                                      SizedBox(
+                                        width: 140,
+                                        height: 140,
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            CircularProgressIndicator(
+                                              value: 1.0,
+                                              strokeWidth: 12,
+                                              color: isDark
+                                                  ? Colors.white10
+                                                  : Colors.grey.shade100,
+                                            ),
+                                            TweenAnimationBuilder(
+                                              // WIRED
+                                              tween: Tween<double>(
+                                                begin: 0,
+                                                end:
+                                                    (calorieData.totalEaten /
+                                                            calorieData
+                                                                .targetCalories)
+                                                        .clamp(0.0, 1.0),
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
+                                              curve: Curves.easeOutCubic,
+                                              builder: (context, value, child) =>
+                                                  CircularProgressIndicator(
+                                                    value: value,
+                                                    strokeWidth: 12,
+                                                    backgroundColor:
+                                                        Colors.transparent,
+                                                    valueColor:
+                                                        const AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(Color(0xFFFF7A00)),
+                                                    strokeCap: StrokeCap.round,
+                                                  ),
+                                            ),
+                                            Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                // WIRED
+                                                Text(
+                                                  "${calorieData.leftCalories}",
+                                                  style: TextStyle(
+                                                    fontSize: 28,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: textPrimary,
+                                                    fontFamily:
+                                                        "LexendExaNormal",
+                                                    letterSpacing: -1,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  "kcal left.",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                    color: textSecondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _buildLegendItem(
-                                            carbColor,
-                                            "Carbohydrates",
-                                            textPrimary,
-                                          ),
-                                          _buildLegendItem(
-                                            proteinColor,
-                                            "Protein",
-                                            textPrimary,
-                                          ),
-                                          _buildLegendItem(
-                                            fatColor,
-                                            "Fats",
-                                            textPrimary,
-                                          ),
-                                        ],
+
+                                      // --- BURNED BUTTON ---
+                                      _buildClickableStat(
+                                        label: "Burned",
+                                        value:
+                                            calorieData.burnedCalories, // WIRED
+                                        textPrimary: textPrimary,
+                                        textSecondary: textSecondary,
+                                        onTap: () => _showBurnedBreakdown(
+                                          calorieData,
+                                          isDark,
+                                          surfaceColor,
+                                          textPrimary,
+                                          textSecondary,
+                                          dividerColor,
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 15),
 
-                          // RIGHT CARD: SUMMARY TEXTS
-                          Expanded(
-                            flex: 4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 25,
-                                horizontal: 15,
-                              ),
-                              decoration: BoxDecoration(
-                                color: surfaceColor,
-                                borderRadius: BorderRadius.circular(30),
-                                border: isDark
-                                    ? Border.all(color: dividerColor)
-                                    : null,
-                                boxShadow: isDark
-                                    ? []
-                                    : [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.04,
+                            const SizedBox(height: 20),
+
+                            // --- BOTTOM ROW: BREAKDOWN & SUMMARY ---
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // LEFT CARD: INTAKE BREAKDOWN
+                                Expanded(
+                                  flex: 5,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 25,
+                                      horizontal: 15,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: surfaceColor,
+                                      borderRadius: BorderRadius.circular(30),
+                                      border: isDark
+                                          ? Border.all(color: dividerColor)
+                                          : null,
+                                      boxShadow: isDark
+                                          ? []
+                                          : [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.04,
+                                                ),
+                                                blurRadius: 15,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ],
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          "Intake Breakdown",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w900,
+                                            color: textPrimary,
+                                            fontFamily: "LexendExaNormal",
                                           ),
-                                          blurRadius: 15,
-                                          offset: const Offset(0, 8),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 25),
+                                        SizedBox(
+                                          height: 140,
+                                          child: PieChart(
+                                            PieChartData(
+                                              sectionsSpace: 0,
+                                              centerSpaceRadius: 30,
+                                              startDegreeOffset: 270,
+                                              sections: _getMacroSections(
+                                                calorieData,
+                                              ),
+                                            ),
+                                          ), // WIRED
+                                        ),
+                                        const SizedBox(height: 35),
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 10.0,
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                _buildLegendItem(
+                                                  carbColor,
+                                                  "Carbohydrates",
+                                                  textPrimary,
+                                                ),
+                                                _buildLegendItem(
+                                                  proteinColor,
+                                                  "Protein",
+                                                  textPrimary,
+                                                ),
+                                                _buildLegendItem(
+                                                  fatColor,
+                                                  "Fats",
+                                                  textPrimary,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
                                       ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Center(
-                                    child: Text(
-                                      "Summary",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w900,
-                                        color: textPrimary,
-                                        fontFamily: "LexendExaNormal",
-                                      ),
                                     ),
                                   ),
-                                  const SizedBox(height: 25),
-                                  // WIRED
-                                  _buildSummaryMacro(
-                                    "Carbohydrates",
-                                    calorieData.totalCarbs.toInt(),
-                                    calorieData.targetCarbs,
-                                    textPrimary,
-                                    textSecondary,
+                                ),
+                                const SizedBox(width: 15),
+
+                                // RIGHT CARD: SUMMARY TEXTS
+                                Expanded(
+                                  flex: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 25,
+                                      horizontal: 15,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: surfaceColor,
+                                      borderRadius: BorderRadius.circular(30),
+                                      border: isDark
+                                          ? Border.all(color: dividerColor)
+                                          : null,
+                                      boxShadow: isDark
+                                          ? []
+                                          : [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.04,
+                                                ),
+                                                blurRadius: 15,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Center(
+                                          child: Text(
+                                            "Summary",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w900,
+                                              color: textPrimary,
+                                              fontFamily: "LexendExaNormal",
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 25),
+                                        // WIRED
+                                        _buildSummaryMacro(
+                                          "Carbohydrates",
+                                          calorieData.totalCarbs.toInt(),
+                                          calorieData.targetCarbs,
+                                          textPrimary,
+                                          textSecondary,
+                                        ),
+                                        const SizedBox(height: 20),
+                                        _buildSummaryMacro(
+                                          "Protein",
+                                          calorieData.totalProtein.toInt(),
+                                          calorieData.targetProtein,
+                                          textPrimary,
+                                          textSecondary,
+                                        ),
+                                        const SizedBox(height: 20),
+                                        _buildSummaryMacro(
+                                          "Fats",
+                                          calorieData.totalFats.toInt(),
+                                          calorieData.targetFats,
+                                          textPrimary,
+                                          textSecondary,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 20),
-                                  _buildSummaryMacro(
-                                    "Protein",
-                                    calorieData.totalProtein.toInt(),
-                                    calorieData.targetProtein,
-                                    textPrimary,
-                                    textSecondary,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _buildSummaryMacro(
-                                    "Fats",
-                                    calorieData.totalFats.toInt(),
-                                    calorieData.targetFats,
-                                    textPrimary,
-                                    textSecondary,
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 120),
-                    ],
+                            const SizedBox(height: 120),
+                          ],
                   ),
                 ),
               ),
@@ -620,23 +665,26 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          item.placeholderIcon,
-                          color: item.iconColor,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          foodLabel,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: textPrimary,
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          Icon(
+                            item.placeholderIcon,
+                            color: item.iconColor,
+                            size: 18,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 10),
+                          Text(
+                            foodLabel,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Text(
                       "+ ${item.calories} kcal",
