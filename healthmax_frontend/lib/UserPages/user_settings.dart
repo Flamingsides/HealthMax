@@ -166,8 +166,6 @@ class UserSettingsPage extends StatelessWidget {
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageDevicesPage()))
                         ),
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.track_changes_rounded, themeProvider.translate('health_goals'), "", textPrimary, textSecondary),
-                        _buildDivider(dividerColor),
 
                         SwitchListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
