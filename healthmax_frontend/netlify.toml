@@ -6,6 +6,10 @@
     git clone https://github.com/flutter/flutter.git --depth 1 -b stable
   fi
 
+  cat > .env <<EOF
+API_URL="${GEMINI_API_KEY}"
+EOF
+
   export PATH="$PATH:$(pwd)/flutter/bin"
   flutter pub get
   flutter build web --release
