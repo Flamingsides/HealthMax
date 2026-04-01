@@ -1,38 +1,13 @@
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme_provider.dart';
 import 'calorie_provider.dart';
+import '../GeneralPages/health_providers.dart'; 
 import 'user_statistic.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
-
-// --- DATA MODEL ---
-class UserHealthData {
-  final int heartRate;
-  final String heartRateStatusKey; 
-  final int bloodGlucose;
-  final String bloodGlucoseStatusKey;
-  final int envNoise;
-  final String envNoiseStatusKey;
-  final int currentSteps;
-  final int targetSteps;
-  final String lastUpdatedKey;
-
-  UserHealthData({
-    required this.heartRate,
-    required this.heartRateStatusKey,
-    required this.bloodGlucose,
-    required this.bloodGlucoseStatusKey,
-    required this.envNoise,
-    required this.envNoiseStatusKey,
-    required this.currentSteps,
-    required this.targetSteps,
-    required this.lastUpdatedKey,
-  });
-}
+import 'AI_Features/ai_translator_service.dart';
 
 class UserHomePage extends StatefulWidget {
   const UserHomePage({super.key});
@@ -46,13 +21,6 @@ class _UserHomePageState extends State<UserHomePage> {
   late ScrollController _scrollController;
   bool _isScrolled = false;
 
-  late UserHealthData myData;
-
-  Timer? _liveDataTimer;
-  Timer? _stepsTimer; // Separate timer for steps to control its update frequency
-  final Random _random = Random();
-  int _tickCount = 0; // Added a tick counter to control the steps separately
-
   @override
   void initState() {
     super.initState();
@@ -64,68 +32,10 @@ class _UserHomePageState extends State<UserHomePage> {
         setState(() => _isScrolled = false);
       }
     });
-
-    // 1. Set Initial Baseline using Dictionary Keys
-    myData = UserHealthData(
-      heartRate: 82,
-      heartRateStatusKey: "status_normal",
-      bloodGlucose: 90,
-      bloodGlucoseStatusKey: "status_normal",
-      envNoise: 45,
-      envNoiseStatusKey: "status_quiet",
-      currentSteps: 6789,
-      targetSteps: 10000,
-      lastUpdatedKey: "live_syncing",
-    );
-
-    _startLiveDataEngine();
-  }
-
-void _startLiveDataEngine() {
-    // FAST TIMER: Updates Heart Rate & Noise every 3 seconds
-    _liveDataTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (!mounted) return;
-      setState(() {
-        myData = UserHealthData(
-          heartRate: 75 + _random.nextInt(15),
-          heartRateStatusKey: "status_normal",
-          bloodGlucose: myData.bloodGlucose, 
-          bloodGlucoseStatusKey: "status_normal",
-          envNoise: 40 + _random.nextInt(25),
-          envNoiseStatusKey: "status_normal",
-          currentSteps: myData.currentSteps, // Keep current steps constant here
-          targetSteps: myData.targetSteps,
-          lastUpdatedKey: "live_syncing",
-        );
-      });
-    });
-
-    // SLOW TIMER: Increases steps every 8 seconds
-    _stepsTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
-      if (!mounted) return;
-      setState(() {
-        // Increase steps by a very small amount (0-2) every 8 seconds
-        int incrementalSteps = _random.nextInt(3);
-        
-        myData = UserHealthData(
-          heartRate: myData.heartRate, 
-          heartRateStatusKey: myData.heartRateStatusKey,
-          bloodGlucose: myData.bloodGlucose, 
-          bloodGlucoseStatusKey: myData.bloodGlucoseStatusKey,
-          envNoise: myData.envNoise,
-          envNoiseStatusKey: myData.envNoiseStatusKey,
-          currentSteps: myData.currentSteps + incrementalSteps,
-          targetSteps: myData.targetSteps,
-          lastUpdatedKey: myData.lastUpdatedKey,
-        );
-      });
-    });
   }
 
   @override
   void dispose() {
-    _liveDataTimer?.cancel(); 
-    _stepsTimer?.cancel(); // Clean up the steps timer
     _scrollController.dispose();
     super.dispose();
   }
@@ -144,7 +54,10 @@ void _startLiveDataEngine() {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    
+    // --- CONNECTED TO GLOBAL PROVIDERS ---
     final calorieData = Provider.of<CalorieProvider>(context);
+    final healthData = Provider.of<HealthProvider>(context);
 
     final String liveUsername = Supabase.instance.client.auth.currentUser?.userMetadata?['username'] ?? "User";
 
@@ -259,26 +172,26 @@ void _startLiveDataEngine() {
                                   children: [
                                     _buildMetric(
                                       icon: Icons.monitor_heart, color: const Color(0xFFFF6B6B),
-                                      value: myData.heartRate.toString(), unit: "bpm",
-                                      status: themeProvider.translate(myData.heartRateStatusKey),
+                                      value: healthData.heartRate.toString(), unit: "bpm",
+                                      status: themeProvider.translate(healthData.heartRateStatusKey),
                                       textPrimary: textPrimary, textSecondary: textSecondary,
                                       onTap: () => _routeToStatistic("Heart Rate"),
                                     ),
                                     const SizedBox(height: 15),
                                     _buildMetric(
                                       icon: Icons.bloodtype, color: const Color(0xFF4ECDC4),
-                                      value: myData.bloodGlucose.toString(), unit: "mg/dL",
-                                      status: themeProvider.translate(myData.bloodGlucoseStatusKey),
+                                      value: healthData.bloodGlucose.toString(), unit: "mg/dL",
+                                      status: themeProvider.translate(healthData.bloodGlucoseStatusKey),
                                       textPrimary: textPrimary, textSecondary: textSecondary,
-                                      onTap: () => _routeToStatistic("BloodGlucose"),
+                                      onTap: () => _routeToStatistic("Blood Glucose"),
                                     ),
                                     const SizedBox(height: 15),
                                     _buildMetric(
                                       icon: Icons.hearing, color: const Color(0xFF45B7D1),
-                                      value: myData.envNoise.toString(), unit: "dB",
-                                      status: themeProvider.translate(myData.envNoiseStatusKey),
+                                      value: healthData.envNoise.toString(), unit: "dB",
+                                      status: themeProvider.translate(healthData.envNoiseStatusKey),
                                       textPrimary: textPrimary, textSecondary: textSecondary,
-                                      onTap: () => _routeToStatistic("Env.Noise"),
+                                      onTap: () => _routeToStatistic("Env. Noise"),
                                     ),
                                   ],
                                 ),
@@ -297,7 +210,7 @@ void _startLiveDataEngine() {
                                       children: [
                                         CircularProgressIndicator(value: 1.0, strokeWidth: 10, color: isDark ? Colors.white10 : Colors.grey.shade100),
                                         TweenAnimationBuilder(
-                                          tween: Tween<double>(begin: 0, end: (myData.currentSteps / myData.targetSteps).clamp(0.0, 1.0)),
+                                          tween: Tween<double>(begin: 0, end: (healthData.currentSteps / healthData.targetSteps).clamp(0.0, 1.0)),
                                           duration: const Duration(seconds: 1), curve: Curves.easeOutCubic,
                                           builder: (context, value, child) => CircularProgressIndicator(value: value, strokeWidth: 10, backgroundColor: Colors.transparent, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF9F43)), strokeCap: StrokeCap.round),
                                         ),
@@ -310,7 +223,7 @@ void _startLiveDataEngine() {
                                             ),
                                             FittedBox(
                                               fit: BoxFit.scaleDown,
-                                              child: Text(myData.currentSteps.toString(), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
+                                              child: Text(healthData.currentSteps.toString(), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
                                             ),
                                           ],
                                         ),
@@ -325,13 +238,10 @@ void _startLiveDataEngine() {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text("${themeProvider.translate('last_updated')} ${themeProvider.translate(myData.lastUpdatedKey)}", style: TextStyle(color: textSecondary, fontSize: 12)),
-                              ),
+                              Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text("${themeProvider.translate('last_updated')} ${themeProvider.translate(healthData.lastUpdatedKey)}", style: TextStyle(color: textSecondary, fontSize: 12)))),
                               const SizedBox(width: 8),
                               AnimatedRotation(
-                                turns: myData.currentSteps % 2 == 0 ? 0.5 : 0.0,
+                                turns: healthData.currentSteps % 2 == 0 ? 0.5 : 0.0,
                                 duration: const Duration(milliseconds: 500),
                                 child: Icon(Icons.sync, size: 16, color: userBlue),
                               ),
@@ -398,11 +308,7 @@ void _startLiveDataEngine() {
     );
   }
 
-  // --- HELPER WIDGETS ---
-  Widget _buildMetric({
-    required IconData icon, required Color color, required String value, required String unit,
-    required String status, required Color textPrimary, required Color textSecondary, VoidCallback? onTap,
-  }) {
+  Widget _buildMetric({required IconData icon, required Color color, required String value, required String unit, required String status, required Color textPrimary, required Color textSecondary, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -422,12 +328,7 @@ void _startLiveDataEngine() {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
                     children: [
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(value, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
-                        ),
-                      ),
+                      Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")))),
                       const SizedBox(width: 4),
                       Text(unit, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textSecondary)),
                     ],
@@ -435,10 +336,7 @@ void _startLiveDataEngine() {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                     decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(status, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green))
-                    ),
+                    child: FittedBox(fit: BoxFit.scaleDown, child: Text(status, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green))),
                   ),
                 ],
               ),
@@ -449,11 +347,7 @@ void _startLiveDataEngine() {
     );
   }
 
-  Widget _buildQuickActionCard({
-    required IconData icon, required Color iconBgColor, required String title, required String subtitle,
-    bool isProgress = false, bool isAppointment = false, VoidCallback? onTap, required Color surfaceColor,
-    required Color textPrimary, required Color textSecondary, required Color dividerColor, required bool isDark, required ThemeProvider themeProvider,
-  }) {
+  Widget _buildQuickActionCard({required IconData icon, required Color iconBgColor, required String title, required String subtitle, bool isProgress = false, bool isAppointment = false, VoidCallback? onTap, required Color surfaceColor, required Color textPrimary, required Color textSecondary, required Color dividerColor, required bool isDark, required ThemeProvider themeProvider}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -470,20 +364,7 @@ void _startLiveDataEngine() {
                   FittedBox(fit: BoxFit.scaleDown, child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textPrimary))),
                   const SizedBox(height: 4),
                   FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle, style: TextStyle(fontSize: 10, color: textSecondary, height: 1.2))),
-                  if (isProgress) ...[
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(value: 0.6, backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD93D)), borderRadius: BorderRadius.circular(5), minHeight: 5),
-                  ],
-                  if (isAppointment) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(themeProvider.translate('cancel'), style: TextStyle(fontSize: 11, color: Colors.red.shade400, fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 15),
-                        Text(themeProvider.translate('reschedule'), style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ],
+                  if (isProgress) ...[const SizedBox(height: 8), LinearProgressIndicator(value: 0.6, backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200, valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD93D)), borderRadius: BorderRadius.circular(5), minHeight: 5)],
                 ],
               ),
             ),
@@ -515,7 +396,7 @@ void _startLiveDataEngine() {
                   ],
                 ),
                 const SizedBox(height: 5),
-                Text(message, style: TextStyle(color: textSecondary, fontSize: 12, height: 1.4)),
+                AiTranslatedText(message, style: TextStyle(color: textSecondary, fontSize: 12, height: 1.4)),
               ],
             ),
           ),

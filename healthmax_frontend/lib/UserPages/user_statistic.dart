@@ -1,5 +1,3 @@
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +5,8 @@ import '../theme_provider.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart'; 
 import '../GeneralPages/supabase_health_service.dart';
+import 'calorie_provider.dart';
+import '../GeneralPages/health_providers.dart'; 
 
 class UserStatisticPage extends StatefulWidget {
   final String initialMetric;
@@ -25,10 +25,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   String selectedTimeframe = 'Day'; 
   bool _isSyncing = false;
   List<double>? _liveHourlyData; 
-  String _liveAverageDisplay = "";
-  Timer? _liveDataTimer;
-  final Random _random = Random();
-  double _liveJitter = 0.0;
 
   final Map<String, Color> metricColors = {
     'Heart Rate': const Color(0xFFFF6B6B), 'Steps': const Color(0xFFFF9F43),
@@ -44,7 +40,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
       if (_scrollController.offset > 90 && !_isScrolled) setState(() => _isScrolled = true);
       else if (_scrollController.offset <= 90 && _isScrolled) setState(() => _isScrolled = false);
     });
-    _startLiveTimer();
     _loadDataFromCloud(selectedMetric);
   }
 
@@ -55,18 +50,9 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     List<double>? cloudData = await cloudService.fetchDataFromCloud(metric);
     
     if (cloudData != null && mounted) {
-      double aggregate = 0;
-      for (var val in cloudData) aggregate += val;
-      if (metric != 'Steps' && metric != 'Calories') aggregate = aggregate / 24; 
-      
       setState(() {
         _liveHourlyData = cloudData;
         selectedTimeframe = 'Day'; 
-        if (metric == 'Steps') _liveAverageDisplay = "${aggregate.toInt()}";
-        else if (metric == 'Heart Rate') _liveAverageDisplay = "${aggregate.toInt()} bpm";
-        else if (metric == 'Calories') _liveAverageDisplay = "${aggregate.toInt()} kcal";
-        else if (metric == 'Blood Glucose') _liveAverageDisplay = "${aggregate.toInt()} mg/dL";
-        else _liveAverageDisplay = "${aggregate.toInt()} dB";
       });
     } else {
       setState(() => _liveHourlyData = null);
@@ -74,20 +60,12 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     if (mounted) setState(() => _isSyncing = false);
   }
 
-  void _startLiveTimer() {
-    _liveDataTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (selectedTimeframe == 'Day' && mounted) setState(() => _liveJitter = (_random.nextDouble() * 4) - 2);
-    });
-  }
-
   @override
   void dispose() {
     _scrollController.dispose();
-    _liveDataTimer?.cancel();
     super.dispose();
   }
 
-  // Graph data logic remains identical...
   String _getGraphType() => (selectedMetric == 'Steps' || selectedMetric == 'Calories') ? 'Bar' : 'Spline';
   double _getMaxX() => {'Day': 23.0, 'Week': 6.0, 'Month': 3.0, 'Year': 11.0}[selectedTimeframe] ?? 6.0;
   double _getIntervalX() => selectedTimeframe == 'Day' ? 6 : (selectedTimeframe == 'Year' ? 3 : 1);
@@ -95,24 +73,60 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   double _getMaxY() => {'Heart Rate': 150.0, 'Steps': 15000.0, 'Calories': 3500.0, 'Blood Glucose': 150.0, 'Env. Noise': 100.0}[selectedMetric] ?? 150.0;
   double _getIntervalY() => {'Heart Rate': 25.0, 'Steps': 5000.0, 'Calories': 1000.0, 'Blood Glucose': 50.0, 'Env. Noise': 25.0}[selectedMetric] ?? 25.0;
 
-  List<double> _getRawData() {
-    if (selectedTimeframe == 'Day' && _liveHourlyData != null) return _liveHourlyData!;
+  // --- CONNECTS GRAPH TO THE LIVE HOMEPAGE METRICS ---
+  List<double> _getRawData(HealthProvider hp, CalorieProvider cp) {
+    if (selectedTimeframe == 'Day' && _liveHourlyData != null) {
+      List<double> updatedCloud = List.from(_liveHourlyData!);
+      // Inject the live real-time value into the current hour so the graph jumps synchronously!
+      int currentHour = DateTime.now().hour;
+      if (selectedMetric == 'Heart Rate') updatedCloud[currentHour] = hp.heartRate.toDouble();
+      else if (selectedMetric == 'Steps') updatedCloud[currentHour] = hp.currentSteps.toDouble();
+      else if (selectedMetric == 'Calories') updatedCloud[currentHour] = cp.burnedCalories.toDouble();
+      else if (selectedMetric == 'Blood Glucose') updatedCloud[currentHour] = hp.bloodGlucose.toDouble();
+      else if (selectedMetric == 'Env. Noise') updatedCloud[currentHour] = hp.envNoise.toDouble();
+      return updatedCloud;
+    }
+    
     List<double> baseData = [];
     if (selectedMetric == 'Heart Rate') baseData = [72, 75, 78, 80, 85, 90, 88, 92, 85, 82, 78, 75, 76, 79, 81, 88, 95, 90, 85, 80, 77, 74, 72, 75];
     else if (selectedMetric == 'Steps') baseData = [0, 0, 0, 0, 0, 500, 2500, 5000, 6500, 8000, 9500, 11000, 12500, 14000, 14000, 14000, 14500, 15000, 15000, 15000, 15000, 15000, 15000, 15000]; 
     else if (selectedMetric == 'Calories') baseData = [80, 80, 80, 80, 80, 150, 400, 600, 850, 1100, 1400, 1800, 2100, 2300, 2400, 2450, 2700, 2800, 2800, 2800, 2800, 2800, 2800, 2800];
     else if (selectedMetric == 'Blood Glucose') baseData = [90, 92, 89, 88, 85, 95, 110, 105, 98, 95, 92, 108, 120, 115, 100, 95, 92, 110, 105, 98, 95, 92, 90, 88];
     else if (selectedMetric == 'Env. Noise') baseData = [35, 35, 35, 35, 40, 55, 70, 75, 80, 85, 80, 75, 70, 65, 60, 75, 80, 85, 75, 60, 50, 45, 40, 35];
+    
     int requiredLength = (_getMaxX() + 1).toInt();
     List<double> finalData = baseData.sublist(0, requiredLength);
-    if (selectedTimeframe == 'Day' && selectedMetric != 'Steps' && selectedMetric != 'Calories' && _liveHourlyData == null) finalData[finalData.length - 1] += _liveJitter;
+    
+    // Inject the real live number directly into the end of the chart for the fallback view!
+    if (selectedTimeframe == 'Day' && _liveHourlyData == null) {
+      if (selectedMetric == 'Heart Rate') finalData[finalData.length - 1] = hp.heartRate.toDouble();
+      else if (selectedMetric == 'Steps') finalData[finalData.length - 1] = hp.currentSteps.toDouble();
+      else if (selectedMetric == 'Calories') finalData[finalData.length - 1] = cp.burnedCalories.toDouble();
+      else if (selectedMetric == 'Blood Glucose') finalData[finalData.length - 1] = hp.bloodGlucose.toDouble();
+      else if (selectedMetric == 'Env. Noise') finalData[finalData.length - 1] = hp.envNoise.toDouble();
+    }
     return finalData;
+  }
+
+  // --- CONNECTS TEXT TO THE LIVE HOMEPAGE METRICS ---
+  String _getAverageValue(HealthProvider hp, CalorieProvider cp) {
+    if (selectedMetric == 'Heart Rate') return "${hp.heartRate} bpm";
+    if (selectedMetric == 'Steps') return "${hp.currentSteps}";
+    if (selectedMetric == 'Calories') return "${cp.burnedCalories} kcal";
+    if (selectedMetric == 'Blood Glucose') return "${hp.bloodGlucose} mg/dL";
+    if (selectedMetric == 'Env. Noise') return "${hp.envNoise} dB";
+    return "";
   }
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    
+    // --- CONSUME GLOBAL PROVIDERS ---
+    final healthData = Provider.of<HealthProvider>(context);
+    final calorieData = Provider.of<CalorieProvider>(context);
+
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
@@ -194,7 +208,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                               ],
                             ),
                             const SizedBox(height: 30),
-                            SizedBox(height: 220, child: _getGraphType() == 'Spline' ? _buildSplineChart(currentColor, textSecondary, dividerColor) : _buildBarChart(currentColor, textSecondary, dividerColor)),
+                            SizedBox(height: 220, child: _getGraphType() == 'Spline' ? _buildSplineChart(currentColor, textSecondary, dividerColor, healthData, calorieData) : _buildBarChart(currentColor, textSecondary, dividerColor, healthData, calorieData)),
                           ],
                         ),
                       ),
@@ -234,7 +248,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                       const SizedBox(height: 15),
                       Row(
                         children: [
-                          Expanded(child: _buildStatCard(_liveHourlyData != null ? themeProvider.translate('todays_record') : themeProvider.translate('daily_avg'), _liveHourlyData != null ? _liveAverageDisplay : _getAverageValue(), isDark ? currentColor : currentColor.withValues(alpha:0.8), isDark ? currentColor.withValues(alpha:0.1) : currentColor.withValues(alpha:0.05), textPrimary)),
+                          Expanded(child: _buildStatCard(selectedTimeframe == 'Day' ? themeProvider.translate('todays_record') : themeProvider.translate('daily_avg'), _getAverageValue(healthData, calorieData), isDark ? currentColor : currentColor.withValues(alpha:0.8), isDark ? currentColor.withValues(alpha:0.1) : currentColor.withValues(alpha:0.05), textPrimary)),
                           const SizedBox(width: 15),
                           Expanded(child: _buildStatCard(themeProvider.translate('status'), _liveHourlyData != null ? "Supabase" : "Mock", isDark ? Colors.lightBlueAccent : Colors.blue.shade800, isDark ? Colors.blue.withValues(alpha:0.1) : Colors.blue.shade50, textPrimary)),
                         ],
@@ -255,9 +269,9 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Expanded(child: _actionBtn(themeProvider.translate('compare_data'), isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE), Icons.compare_arrows_rounded, isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E3A8A), onTap: () => _showCompareDataSheet(isDark, surfaceColor, textPrimary, textSecondary, dividerColor))),
+                  Expanded(child: _actionBtn(themeProvider.translate('compare_data'), isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE), Icons.compare_arrows_rounded, isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E3A8A), onTap: () {})),
                   const SizedBox(width: 15),
-                  Expanded(child: _actionBtn(themeProvider.translate('request_feedback'), isDark ? Color.lerp(currentColor, Colors.black, 0.7)! : Color.lerp(currentColor, Colors.white, 0.85)!, Icons.chat_bubble_rounded, currentColor, onTap: () => _showRequestFeedbackSheet(surfaceColor, textPrimary, textSecondary, dividerColor, isDark, currentColor, themeProvider))),
+                  Expanded(child: _actionBtn(themeProvider.translate('request_feedback'), isDark ? Color.lerp(currentColor, Colors.black, 0.7)! : Color.lerp(currentColor, Colors.white, 0.85)!, Icons.chat_bubble_rounded, currentColor, onTap: () {})),
                 ],
               ),
             ),
@@ -268,13 +282,13 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     );
   }
 
-  Widget _buildSplineChart(Color currentColor, Color textSecondary, Color dividerColor) {
-    List<double> rawData = _getRawData();
+  Widget _buildSplineChart(Color currentColor, Color textSecondary, Color dividerColor, HealthProvider hp, CalorieProvider cp) {
+    List<double> rawData = _getRawData(hp, cp);
     return ClipRect(child: LineChart(LineChartData(gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: dividerColor, strokeWidth: 1)), titlesData: _buildTitlesData(textSecondary), borderData: FlBorderData(show: false), minX: 0, maxX: _getMaxX(), minY: _getMinY(), maxY: _getMaxY(), lineBarsData: [LineChartBarData(spots: List.generate(rawData.length, (index) => FlSpot(index.toDouble(), rawData[index])), isCurved: true, curveSmoothness: 0.35, color: currentColor, barWidth: 3.5, isStrokeCapRound: true, dotData: FlDotData(show: selectedTimeframe != 'Day', getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 4, color: currentColor, strokeWidth: 1.5, strokeColor: Theme.of(context).colorScheme.surface)), belowBarData: BarAreaData(show: true, color: currentColor.withValues(alpha:0.1)))]), duration: const Duration(milliseconds: 500), curve: Curves.easeOutCubic));
   }
 
-  Widget _buildBarChart(Color currentColor, Color textSecondary, Color dividerColor) {
-    List<double> rawData = _getRawData();
+  Widget _buildBarChart(Color currentColor, Color textSecondary, Color dividerColor, HealthProvider hp, CalorieProvider cp) {
+    List<double> rawData = _getRawData(hp, cp);
     return ClipRect(child: BarChart(BarChartData(gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: dividerColor, strokeWidth: 1)), titlesData: _buildTitlesData(textSecondary), borderData: FlBorderData(show: false), maxY: _getMaxY(), barGroups: List.generate(rawData.length, (index) => BarChartGroupData(x: index, barRods: [BarChartRodData(toY: rawData[index], color: currentColor, width: selectedTimeframe == 'Day' ? 6 : 16, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)), backDrawRodData: BackgroundBarChartRodData(show: true, toY: _getMaxY(), color: currentColor.withValues(alpha:0.1)))],))), duration: const Duration(milliseconds: 500), curve: Curves.easeOutCubic));
   }
 
@@ -335,24 +349,5 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     if (metric == 'Blood Glucose') return Icons.bloodtype_rounded;
     if (metric == 'Env. Noise') return Icons.hearing_rounded;
     return Icons.favorite_rounded;
-  }
-
-  String _getAverageValue() {
-    if (selectedMetric == 'Heart Rate') return "80 bpm";
-    if (selectedMetric == 'Steps') return "8,200";
-    if (selectedMetric == 'Calories') return "2,100 kcal";
-    if (selectedMetric == 'Blood Glucose') return "95 mg/dL";
-    if (selectedMetric == 'Env. Noise') return "55 dB";
-    return "";
-  }
-
-  void _showCompareDataSheet(bool isDark, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
-    // Bottom sheet omitted to save length - identical to previous but wrap titles in FittedBox!
-  }
-  void _showRequestFeedbackSheet(Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, Color currentColor, ThemeProvider theme) {
-    // Bottom sheet omitted to save length - identical to previous but wrap titles in FittedBox!
-  }
-  List<FlSpot> _getPeriodMockData(String metric, String period) {
-    return [];
   }
 }
