@@ -17,6 +17,51 @@ CREATE POLICY "Users manage their own profiles" ON Users FOR ALL USING (auth.uid
 WITH
     CHECK (auth.uid () = id);
 
+CREATE OR REPLACE FUNCTION get_email_from_username(p_username TEXT)
+RETURNS TEXT
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT email FROM users WHERE username = p_username LIMIT 1;
+$$;
+
+/* Food Logs and Calorie Tracking */
+
+CREATE TABLE
+    food_logs (
+        log_id SERIAL PRIMARY KEY ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+        food_name TEXT NOT NULL,
+        calories INT,
+        fats FLOAT,
+        protein FLOAT,
+        carbohydrates FLOAT,
+        notes TEXT,
+        confidence FLOAT,
+        logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+ALTER TABLE food_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage their own food logs" ON food_logs FOR ALL USING (auth.uid () = user_id)
+WITH
+    CHECK (auth.uid () = user_id);
+
+CREATE TABLE
+    user_food_stats(
+        user_id UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+        total_calories INT DEFAULT 0,
+        total_protein FLOAT DEFAULT 0,
+        total_fats FLOAT DEFAULT 0,
+        total_carbohydrates FLOAT DEFAULT 0
+    );
+
+ALTER TABLE user_food_stats ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage their own food stats" ON user_food_stats FOR ALL USING (auth.uid () = user_id)
+WITH
+    CHECK (auth.uid() = user_id);
+
 CREATE TABLE
     Hospitals (
         hospital_id SERIAL PRIMARY KEY,
@@ -34,25 +79,6 @@ CREATE TABLE
         recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-CREATE TABLE
-    food_logs (
-        log_id SERIAL PRIMARY KEY,
-        user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
-        food_name TEXT NOT NULL,
-        calories INT,
-        fats FLOAT,
-        protein FLOAT,
-        carbohydrates FLOAT,
-        notes TEXT,
-        confidence FLOAT,
-        logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-ALTER TABLE food_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users manage their own food logs" ON food_logs FOR ALL USING (auth.uid () = user_id)
-WITH
-    CHECK (auth.uid () = user_id);
 
 CREATE TABLE
     UserTargets (

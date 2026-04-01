@@ -1,0 +1,21 @@
+[build]
+  base = "healthmax_frontend"
+  publish = "build/web"
+  command = """
+  if [ ! -d "flutter" ]; then
+    git clone https://github.com/flutter/flutter.git --depth 1 -b stable
+  fi
+
+  cat > .env <<EOF
+API_URL="${GEMINI_API_KEY}"
+EOF
+
+  export PATH="$PATH:$(pwd)/flutter/bin"
+  flutter pub get
+  flutter build web --release
+  """
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
