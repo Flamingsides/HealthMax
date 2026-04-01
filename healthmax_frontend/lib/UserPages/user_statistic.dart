@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../theme_provider.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart'; 
+import '../GeneralPages/supabase_health_service.dart'; 
 
 class UserStatisticPage extends StatefulWidget {
   final String initialMetric;
@@ -22,7 +23,12 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   bool _isScrolled = false;
 
   late String selectedMetric;
-  String selectedTimeframe = 'Week'; // Day, Week, Month, Year
+  String selectedTimeframe = 'Day'; // Default to Day so live sync is obvious
+
+  // --- NEW LIVE DATA STATES ---
+  bool _isSyncing = false;
+  List<double>? _liveHourlyData; 
+  String _liveAverageDisplay = "";
 
   Timer? _liveDataTimer;
   final Random _random = Random();
@@ -51,7 +57,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
 
   void _startLiveTimer() {
     _liveDataTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (selectedTimeframe == 'Day' && mounted) {
+      if (selectedTimeframe == 'Day' && _liveHourlyData == null && mounted) {
         setState(() {
           _liveJitter = (_random.nextDouble() * 4) - 2; 
         });
@@ -112,6 +118,12 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   }
 
   List<double> _getRawData() {
+    // 1. IF WE HAVE REAL SYNCED DATA, USE IT!
+    if (selectedTimeframe == 'Day' && _liveHourlyData != null) {
+      return _liveHourlyData!;
+    }
+
+    // 2. OTHERWISE, USE MOCK DATA
     List<double> baseData = [];
     if (selectedMetric == 'Heart Rate') baseData = [72, 75, 78, 80, 85, 90, 88, 92, 85, 82, 78, 75, 76, 79, 81, 88, 95, 90, 85, 80, 77, 74, 72, 75];
     else if (selectedMetric == 'Steps') baseData = [0, 0, 0, 0, 0, 500, 2500, 5000, 6500, 8000, 9500, 11000, 12500, 14000, 14000, 14000, 14500, 15000, 15000, 15000, 15000, 15000, 15000, 15000]; 
@@ -151,7 +163,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
-                automaticallyImplyLeading: false, // Changed from implyActions
+                automaticallyImplyLeading: false, 
                 backgroundColor: currentColor,
                 expandedHeight: 220.0, 
                 toolbarHeight: 90.0,
@@ -228,6 +240,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                       ),
                       const SizedBox(height: 30),
 
+                      // --- GRAPH CONTAINER ---
                       Container(
                         padding: const EdgeInsets.fromLTRB(15, 20, 20, 15),
                         decoration: BoxDecoration(
@@ -241,9 +254,10 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Expanded(child: _buildDropdown(['Heart Rate', 'Steps', 'Calories', 'Blood Glucose', 'Env. Noise'], selectedMetric, (v) => setState(() => selectedMetric = v!), surfaceColor, textPrimary, isDark)),
+                                // Reset live data to null when dropdowns change!
+                                Expanded(child: _buildDropdown(['Heart Rate', 'Steps', 'Calories', 'Blood Glucose', 'Env. Noise'], selectedMetric, (v) => setState(() { selectedMetric = v!; _liveHourlyData = null; }), surfaceColor, textPrimary, isDark)),
                                 const SizedBox(width: 10),
-                                Expanded(child: _buildDropdown(['Day', 'Week', 'Month', 'Year'], selectedTimeframe, (v) => setState(() => selectedTimeframe = v!), surfaceColor, textPrimary, isDark)),
+                                Expanded(child: _buildDropdown(['Day', 'Week', 'Month', 'Year'], selectedTimeframe, (v) => setState(() { selectedTimeframe = v!; _liveHourlyData = null; }), surfaceColor, textPrimary, isDark)),
                               ],
                             ),
                             const SizedBox(height: 30),
@@ -258,15 +272,94 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                         ),
                       ),
                       
-                      const SizedBox(height: 35),
+                      const SizedBox(height: 12),
+
+                      // ==========================================
+                      // THE SMART DEVICE SYNC BUTTON
+                      // ==========================================
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: InkWell(
+                          onTap: _isSyncing ? null : () async {
+  setState(() => _isSyncing = true);
+  
+  final cloudService = SupabaseHealthService();
+  
+  // 1. Generate realistic data and push it to Supabase
+  bool success = await cloudService.generateAndPushData(selectedMetric);
+  
+  if (success) {
+    // 2. Pull that exact data back down from Supabase
+    List<double>? cloudData = await cloudService.fetchDataFromCloud(selectedMetric);
+    
+    if (cloudData != null && mounted) {
+      // Calculate total/average for the display card
+      double aggregate = 0;
+      for (var val in cloudData) aggregate += val;
+      if (selectedMetric != 'Steps' && selectedMetric != 'Calories') {
+        aggregate = aggregate / 24; // Average for Heart Rate/Glucose
+      }
+      
+      setState(() {
+        _liveHourlyData = cloudData; 
+        selectedTimeframe = 'Day';    
+        _isSyncing = false;
+        
+        if (selectedMetric == 'Steps') _liveAverageDisplay = "${aggregate.toInt()}";
+        else if (selectedMetric == 'Heart Rate') _liveAverageDisplay = "${aggregate.toInt()} bpm";
+        else if (selectedMetric == 'Calories') _liveAverageDisplay = "${aggregate.toInt()} kcal";
+        else if (selectedMetric == 'Blood Glucose') _liveAverageDisplay = "${aggregate.toInt()} mg/dL";
+        else _liveAverageDisplay = "${aggregate.toInt()}";
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Cloud Sync Complete!", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          backgroundColor: currentColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        ),
+      );
+    }
+  } else {
+    setState(() => _isSyncing = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Failed to connect to Supabase."), backgroundColor: Colors.red),
+    );
+  }
+},
+                          borderRadius: BorderRadius.circular(20),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: currentColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: currentColor.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _isSyncing 
+                                  ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: currentColor, strokeWidth: 2))
+                                  : Icon(Icons.sync_rounded, size: 16, color: currentColor),
+                                const SizedBox(width: 8),
+                                Text(_isSyncing ? "Syncing..." : "Sync Device", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: currentColor)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 25),
                       Text("DATA BREAKDOWN", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
                       const SizedBox(height: 15),
                       
                       Row(
                         children: [
-                          Expanded(child: _buildStatCard("Daily Avg", _getAverageValue(), isDark ? currentColor : currentColor.withValues(alpha:0.8), isDark ? currentColor.withValues(alpha:0.1) : currentColor.withValues(alpha:0.05), textPrimary)),
+                          Expanded(child: _buildStatCard(_liveHourlyData != null ? "Today's Record" : "Daily Avg", _liveHourlyData != null ? _liveAverageDisplay : _getAverageValue(), isDark ? currentColor : currentColor.withValues(alpha:0.8), isDark ? currentColor.withValues(alpha:0.1) : currentColor.withValues(alpha:0.05), textPrimary)),
                           const SizedBox(width: 15),
-                          Expanded(child: _buildStatCard("Status", "Normal", isDark ? Colors.lightBlueAccent : Colors.blue.shade800, isDark ? Colors.blue.withValues(alpha:0.1) : Colors.blue.shade50, textPrimary)),
+                          Expanded(child: _buildStatCard("Status", _liveHourlyData != null ? "Live" : "Mock", isDark ? Colors.lightBlueAccent : Colors.blue.shade800, isDark ? Colors.blue.withValues(alpha:0.1) : Colors.blue.shade50, textPrimary)),
                         ],
                       ),
                       
@@ -356,7 +449,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
             ),
           ],
         ),
-        duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic,
+        duration: const Duration(milliseconds: 500), curve: Curves.easeOutCubic,
       ),
     );
   }
@@ -384,7 +477,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
             );
           }),
         ),
-        duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic,
+        duration: const Duration(milliseconds: 500), curve: Curves.easeOutCubic,
       ),
     );
   }
@@ -586,7 +679,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                                   child: LineChart(
                                     LineChartData(
                                       gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (v) => FlLine(color: dividerColor, strokeWidth: 1)),
-                                      // --- THE FIX: We inherit the exact titles logic from the main graph! ---
                                       titlesData: _buildTitlesData(textSecondary),
                                       borderData: FlBorderData(show: true, border: Border(left: BorderSide(color: dividerColor), bottom: BorderSide(color: dividerColor), top: BorderSide.none, right: BorderSide.none)),
                                       minX: 0, maxX: _getMaxX(), 
@@ -707,12 +799,8 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     );
   }
 
-  // --- THE FIX: Generate Data Dynamically based on the selected period length ---
   List<FlSpot> _getPeriodMockData(String metric, String period) {
-    // 1. Get the base data perfectly cropped for the current timeframe (Day=24, Week=7, etc.)
     List<double> rawValues = _getRawData(); 
-
-    // 2. Apply a realistic fluctuation modifier based on the period text
     double modifier = 1.0;
     if (period.contains('Yesterday') || period.contains('Last')) modifier = 0.85;
     else if (period.contains('2')) modifier = 0.70;
@@ -720,7 +808,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
 
     return List.generate(rawValues.length, (i) {
       double value = rawValues[i] * modifier;
-      value = value.clamp(_getMinY(), _getMaxY()); // Prevents UI overflow beyond chart limits
+      value = value.clamp(_getMinY(), _getMaxY()); 
       return FlSpot(i.toDouble(), value);
     });
   }
