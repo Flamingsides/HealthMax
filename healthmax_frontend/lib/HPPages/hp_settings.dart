@@ -98,7 +98,7 @@ class HPSettingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("CLINIC PREFERENCES", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
+                  Text(themeProvider.translate('clinic_preferences'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
                   
                   Container(
@@ -109,17 +109,73 @@ class HPSettingsPage extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _buildProfileOption(Icons.local_hospital_outlined, "Clinic Information", "Verified", textPrimary, hpPurple),
+                        // --- MISSING LANGUAGE SELECTION ADDED HERE ---
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                          leading: Icon(Icons.language_rounded, color: textPrimary.withValues(alpha: 0.8), size: 22),
+                          title: Text(themeProvider.translate('language'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
+                          trailing: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: themeProvider.currentLanguage,
+                              dropdownColor: surfaceColor,
+                              icon: Icon(Icons.keyboard_arrow_down_rounded, color: textSecondary, size: 18),
+                              style: TextStyle(color: hpPurple, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: "LexendExaNormal"),
+                              items: const [
+                                DropdownMenuItem(value: 'en', child: Text("English")),
+                                DropdownMenuItem(value: 'ms', child: Text("Bahasa Melayu")),
+                                DropdownMenuItem(value: 'zh', child: Text("中文")),
+                                DropdownMenuItem(value: 'ta', child: Text("தமிழ்")),
+                              ],
+                              onChanged: (String? newValue) {
+                                if (newValue != null) themeProvider.changeLanguage(newValue);
+                              },
+                            ),
+                          ),
+                        ),
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.notifications_none_rounded, "Alerts & Notifications", "Urgent Only", textPrimary, textSecondary),
+                        
+                        // --- MISSING FONT SIZE SLIDER ADDED HERE ---
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.format_size_rounded, color: textPrimary.withValues(alpha: 0.8), size: 22),
+                                    const SizedBox(width: 15),
+                                    Text(themeProvider.translate('font_size'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
+                                  ],
+                                ),
+                              ),
+                              Slider(
+                                value: themeProvider.fontScale,
+                                min: 0.8, 
+                                max: 1.5, 
+                                divisions: 7,
+                                activeColor: hpPurple,
+                                inactiveColor: hpPurple.withValues(alpha: 0.2),
+                                label: "${(themeProvider.fontScale * 100).toInt()}%",
+                                onChanged: (value) => themeProvider.updateFontScale(value),
+                              ),
+                            ],
+                          ),
+                        ),
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.people_alt_outlined, "Patient Data Access", "Manage", textPrimary, hpPurple),
+
+                        _buildProfileOption(Icons.local_hospital_outlined, themeProvider.translate('clinic_info'), themeProvider.translate('verified'), textPrimary, hpPurple),
+                        _buildDivider(dividerColor),
+                        _buildProfileOption(Icons.notifications_none_rounded, themeProvider.translate('alerts_notifications'), themeProvider.translate('urgent_only'), textPrimary, textSecondary),
+                        _buildDivider(dividerColor),
+                        _buildProfileOption(Icons.people_alt_outlined, themeProvider.translate('patient_data_access'), themeProvider.translate('manage'), textPrimary, hpPurple),
                         _buildDivider(dividerColor),
                         
                         SwitchListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                           secondary: Icon(isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: textPrimary.withValues(alpha: 0.8), size: 22),
-                          title: Text("Dark Mode", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
+                          title: Text(themeProvider.translate('dark_mode'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
                           value: isDark,
                           activeColor: hpPurple,
                           inactiveTrackColor: Colors.grey.shade300,
@@ -129,18 +185,18 @@ class HPSettingsPage extends StatelessWidget {
                         ),
                         
                         _buildDivider(dividerColor),
-                        _buildProfileOption(Icons.security_outlined, "Security", "", textPrimary, textSecondary),
+                        _buildProfileOption(Icons.security_outlined, themeProvider.translate('security'), "", textPrimary, textSecondary),
                       ],
                     ),
                   ),
                   
                   const SizedBox(height: 35),
                   
-                  Text("ACTIONS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
+                  Text(themeProvider.translate('actions'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                   const SizedBox(height: 15),
 
                   _buildActionButton(
-                    label: "GENERATE CLINIC REPORT", 
+                    label: themeProvider.translate('generate_clinic_report'), 
                     icon: Icons.analytics_outlined, 
                     bgColor: hpPurple.withValues(alpha: 0.1), 
                     textColor: hpPurple, 
@@ -149,11 +205,11 @@ class HPSettingsPage extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   _buildActionButton(
-                    label: "LOG OUT", 
+                    label: themeProvider.translate('log_out'), 
                     icon: Icons.logout_rounded, 
                     bgColor: const Color(0xFFFF4B4B).withValues(alpha: 0.1), 
                     textColor: const Color(0xFFFF4B4B),
-                    onTap: () => _showLogoutConfirmation(context, surfaceColor, textPrimary, textSecondary, dividerColor)
+                    onTap: () => _showLogoutConfirmation(context, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider)
                   ),
                 ],
               ),
@@ -172,16 +228,16 @@ class HPSettingsPage extends StatelessWidget {
     return Divider(height: 1, thickness: 1, color: dividerColor, indent: 20, endIndent: 20);
   }
 
- Widget _buildProfileOption(IconData icon, String title, String value, Color textPrimary, Color valueColor, {VoidCallback? onTap}) {
+  Widget _buildProfileOption(IconData icon, String title, String value, Color textPrimary, Color valueColor, {VoidCallback? onTap}) {
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Icon(icon, color: textPrimary.withValues(alpha: 0.8), size: 22),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary)),
-      trailing: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textPrimary, height: 1.3), maxLines: 2, overflow: TextOverflow.visible),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: TextStyle(color: valueColor, fontSize: 13, fontWeight: FontWeight.bold)),
+          if (value.isNotEmpty) Text(value, style: TextStyle(color: valueColor, fontSize: 13, fontWeight: FontWeight.bold)),
           const SizedBox(width: 8),
           Icon(Icons.arrow_forward_ios, color: textPrimary.withValues(alpha: 0.2), size: 14),
         ],
@@ -202,7 +258,14 @@ class HPSettingsPage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: TextStyle(color: textColor, fontWeight: FontWeight.w900, fontSize: 13, fontFamily: "LexendExaNormal")),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(label, style: TextStyle(color: textColor, fontWeight: FontWeight.w900, fontSize: 13, fontFamily: "LexendExaNormal")),
+              ),
+            ),
+            const SizedBox(width: 10),
             Icon(icon, color: textColor, size: 20),
           ],
         ),
@@ -210,13 +273,13 @@ class HPSettingsPage extends StatelessWidget {
     );
   }
 
-  void _showLogoutConfirmation(BuildContext context, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor) {
+  void _showLogoutConfirmation(BuildContext context, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, ThemeProvider theme) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: surfaceColor, 
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25), side: BorderSide(color: dividerColor)),
-        title: Text("Confirm Logout", style: TextStyle(fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+        title: Text(theme.translate('log_out'), style: TextStyle(fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
         content: Text("Are you sure you want to log out of the Provider Portal?", style: TextStyle(color: textSecondary, height: 1.5)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text("CANCEL", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold))),

@@ -208,8 +208,9 @@ class UserSettingsPage extends StatelessWidget {
                                 ),
                               ],
                               onChanged: (String? newValue) {
-                                if (newValue != null)
+                                if (newValue != null) {
                                   themeProvider.changeLanguage(newValue);
+                                }
                               },
                             ),
                           ),
@@ -289,28 +290,6 @@ class UserSettingsPage extends StatelessWidget {
                               builder: (context) => const ManageHPPage(),
                             ),
                           ),
-                        ),
-                        _buildDivider(dividerColor),
-                        _buildProfileOption(
-                          Icons.watch_rounded,
-                          themeProvider.translate('connected_devices'),
-                          themeProvider.translate('manage'),
-                          textPrimary,
-                          userBlue,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ManageDevicesPage(),
-                            ),
-                          ),
-                        ),
-                        _buildDivider(dividerColor),
-                        _buildProfileOption(
-                          Icons.track_changes_rounded,
-                          themeProvider.translate('health_goals'),
-                          "",
-                          textPrimary,
-                          textSecondary,
                         ),
                         _buildDivider(dividerColor),
 
