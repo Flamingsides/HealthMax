@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 class NutritionResult {
   final String label;
@@ -23,15 +24,12 @@ class NutritionResult {
     required this.notes,
   });
 
-  factory NutritionResult.fromJson(String jsonStr) {
+  static NutritionResult _parseJsonInBackground(String jsonStr) {
     final map = jsonDecode(jsonStr);
-
     return NutritionResult(
       label: map["label"],
       servings: map["servings"],
-      foods: (map["foods"] as List)
-          .map((food) => FoodItem.fromMap(food))
-          .toList(),
+      foods: (map["foods"] as List).map((food) => FoodItem.fromMap(food)).toList(),
       totalCalories: (map["total_calories_kcal"] ?? 0).toInt(),
       totalProtein: (map["total_protein_g"] ?? 0).toDouble(),
       totalCarbs: (map["total_carbs_g"] ?? 0).toDouble(),
@@ -39,6 +37,11 @@ class NutritionResult {
       confidence: (map["confidence"] ?? "00.0%"),
       notes: map["notes"] ?? "None",
     );
+  }
+
+  // 2. Use compute() to run it on a background thread!
+  static Future<NutritionResult> fromJsonAsync(String jsonStr) async {
+    return await compute(_parseJsonInBackground, jsonStr);
   }
 }
 

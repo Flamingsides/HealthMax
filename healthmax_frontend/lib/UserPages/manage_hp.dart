@@ -198,17 +198,19 @@ class _ManageHPPageState extends State<ManageHPPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: hp.isConnected 
                       ? [
-                          // Contact button with pop shadow
                           _buildSmallBtn(theme.translate('contact'), Icons.phone_rounded, actionGreen, Colors.black87, () {}, hasShadow: true),
                           const SizedBox(height: 8),
-                          // Remove button stays flat (no shadow)
-                          _buildSmallBtn(theme.translate('remove'), Icons.delete_rounded, actionRed.withValues(alpha:0.1), actionRed, () { 
-                            hpProvider.revokeAccess(hp); 
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${hp.name} access revoked."), backgroundColor: actionRed)); 
+                          // --- AWAIT THE REVOKE CALL ---
+                          _buildSmallBtn(theme.translate('remove'), Icons.delete_rounded, actionRed.withValues(alpha:0.1), actionRed, () async { 
+                            try {
+                              await hpProvider.revokeAccess(hp); 
+                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${hp.name} access revoked."), backgroundColor: actionRed)); 
+                            } catch (e) {
+                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to revoke access."), backgroundColor: Colors.redAccent)); 
+                            }
                           }),
                         ]
                       : [
-                          // NEW: HIGH-VISIBILITY "REQUEST TO CONNECT" BUTTON
                           _buildSmallBtn(theme.translate('request_to_connect'), Icons.add_circle_rounded, userBlue, Colors.white, () => _showConnectSheet(hp, hpProvider, surfaceColor, textPrimary, textSecondary, dividerColor, isDark, theme), hasShadow: true),
                         ],
                   ),
@@ -221,17 +223,14 @@ class _ManageHPPageState extends State<ManageHPPage> {
     );
   }
 
-  // --- UPGRADED BUTTON WIDGET ---
   Widget _buildSmallBtn(String label, IconData icon, Color bgColor, Color textColor, VoidCallback onTap, {bool hasShadow = false}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        // Increased vertical padding to make it look thicker and more "clickable"
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
         decoration: BoxDecoration(
           color: bgColor, 
           borderRadius: BorderRadius.circular(12),
-          // Adds a glowing drop shadow to the primary action buttons!
           boxShadow: hasShadow ? [BoxShadow(color: bgColor.withValues(alpha:0.4), blurRadius: 8, offset: const Offset(0, 4))] : [],
         ),
         child: Row(
@@ -290,7 +289,7 @@ class _ManageHPPageState extends State<ManageHPPage> {
   }
 
   void _showConnectSheet(HPModel hp, HPProvider hpProvider, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, ThemeProvider theme) {
-    final List<String> availableData = ["Hearing Data", "Heart Rate", "Steps", "Glucose Level", "Calories"];
+    final List<String> availableData = ["Hearing Data", "Heart Rate", "Steps", "Blood Glucose", "Calories"];
     final List<String> selectedData = [];
     
     final List<String> amounts = List.generate(30, (i) => (i + 1).toString());
@@ -298,6 +297,7 @@ class _ManageHPPageState extends State<ManageHPPage> {
     
     int selectedAmountIndex = 1; 
     int selectedTypeIndex = 0;   
+    bool isSaving = false; // Add loading state
 
     String calculateExpiry() {
       DateTime now = DateTime.now();
@@ -391,21 +391,34 @@ class _ManageHPPageState extends State<ManageHPPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
+                      // --- AWAIT THE DATABASE SAVE ---
+                      onPressed: isSaving ? null : () async {
                         if (selectedData.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select at least one data type."), backgroundColor: Colors.redAccent)); return; }
                         
-                        hpProvider.grantAccess(
-                          hp, 
-                          selectedData, 
-                          "${amounts[selectedAmountIndex]} ${types[selectedTypeIndex]}", 
-                          "Valid Until: ${expiryText.split('until ')[1]}"
-                        );
-                        
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Successfully connected to ${hp.name}!"), backgroundColor: actionGreen, behavior: SnackBarBehavior.floating));
+                        setModalState(() => isSaving = true);
+                        try {
+                          await hpProvider.grantAccess(
+                            hp, 
+                            selectedData, 
+                            "${amounts[selectedAmountIndex]} ${types[selectedTypeIndex]}", 
+                            "Valid Until: ${expiryText.split('until ')[1]}"
+                          );
+                          
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Successfully connected to ${hp.name}!"), backgroundColor: actionGreen, behavior: SnackBarBehavior.floating));
+                          }
+                        } catch (e) {
+                          setModalState(() => isSaving = false);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to connect to provider."), backgroundColor: Colors.redAccent));
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: actionGreen, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-                      child: Text(theme.translate('connect'), style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+                      child: isSaving 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2))
+                        : Text(theme.translate('connect'), style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
                     ),
                   )
                 ],

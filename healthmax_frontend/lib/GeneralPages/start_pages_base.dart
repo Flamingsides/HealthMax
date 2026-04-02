@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart' hide BackButton;
-import 'package:healthmax_frontend/GeneralPages/auth/auth_service.dart';
-import 'package:healthmax_frontend/UserPages/registration_intro.dart';
-import 'package:healthmax_frontend/UserPages/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:healthmax_frontend/GeneralPages/auth/auth_service.dart';
+import 'package:healthmax_frontend/UserPages/registration_intro.dart'; // <-- Intro Page Imported
+import 'package:healthmax_frontend/UserPages/user_provider.dart';
 
 import 'helper_widgets.dart'; 
 import '../GeneralPages/auth_provider.dart'; 
 import '../theme_provider.dart'; 
 
-// --- IMPORT ALL PROVIDERS FOR THE DATA BRIDGE ---
 import 'package:healthmax_frontend/UserPages/calorie_provider.dart';
 import 'package:healthmax_frontend/UserPages/goal_provider.dart';
 import 'package:healthmax_frontend/GeneralPages/health_providers.dart';
@@ -47,7 +47,7 @@ class StartPage extends StatelessWidget {
       bgDecoration: decoration,
       child: ListView(
         children: [
-          BackButton(),
+          const BackButton(),
           const SizedBox(height: 100),
           Text(
             theme.translate(heading1), 
@@ -132,12 +132,21 @@ class _RegistrationPageState extends State<RegistrationPage> {
       setState(() => _isSupabaseLoading = true);
       try {
         final authService = AuthService();
-        final response = await authService.register(username, email, password, "Lose Weight");
+        final response = await authService.register(username, email, password, "N/A");
 
         if (response == null || response.user == null) throw const AuthException("Registration failed");
+        
         if (mounted) {
           context.read<UserProvider>().setUsername(username);
-          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: widget.postRegistration), (_) => false);
+          
+          // ==========================================
+          // THE FIX: Route directly to the Intro Page
+          // ==========================================
+          Navigator.pushAndRemoveUntil(
+            context, 
+            MaterialPageRoute(builder: (_) => const RegistrationIntro()), 
+            (_) => false
+          );
         }
       } on AuthException catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Registration Failed: ${e.message}"), backgroundColor: Colors.redAccent));
@@ -163,7 +172,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       bgDecoration: bgGradientHP, 
       child: ListView(
         children: [
-          BackButton(),
+          const BackButton(),
           const SizedBox(height: 50),
           CustomHeading1(text: theme.translate("Hello!")),
           const SizedBox(height: 3),
@@ -238,7 +247,7 @@ class _LoginPageState extends State<LoginPage> {
       bgDecoration: widget.decoration,
       child: ListView(
         children: [
-          BackButton(),
+          const BackButton(),
           const SizedBox(height: 50),
           CustomHeading1(text: theme.translate("Welcome")),
           CustomHeading1(text: theme.translate("back!")),
@@ -273,14 +282,10 @@ class _LoginPageState extends State<LoginPage> {
                         if (response.user == null) throw const AuthException("Login failed! Check credentials.");
 
                         if (await authService.isUserDetailsInitialised()) {
-                          
-                          // ==========================================
-                          // THE DATA BRIDGE: Fetch all live data!
-                          // ==========================================
                           if (mounted) {
                             await Future.wait([
                               context.read<CalorieProvider>().fetchUserDataAndLogs(),
-                              context.read<HealthProvider>().checkDeviceAndStartMock(), // FIXED!
+                              context.read<HealthProvider>().checkDeviceAndStartMock(), 
                               context.read<GoalProvider>().fetchGoalData(),
                               context.read<HPProvider>().fetchHPConnections(),
                               context.read<FeedbackProvider>().fetchFeedback(),
@@ -289,7 +294,8 @@ class _LoginPageState extends State<LoginPage> {
                             Navigator.pushNamedAndRemoveUntil(context, widget.homeRoute, (route) => false);
                           }
                         } else {
-                          if (mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationIntro()));
+                          // Falls back to Intro if they closed app midway through registration
+                          if (mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrationIntro()));
                         }
                       } on AuthException catch (e) {
                         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent));

@@ -75,7 +75,7 @@ Respond ONLY with this exact JSON structure:
     
     // Apply the cleaner before parsing
     String cleanJson = _cleanJsonResponse(rawText);
-    return NutritionResult.fromJson(cleanJson);
+    return await NutritionResult.fromJsonAsync(cleanJson);
   }
 
   // Getting AI calorie estimate from image
@@ -118,6 +118,6 @@ Respond ONLY with this exact JSON structure:
     
     // Apply the cleaner before parsing
     String cleanJson = _cleanJsonResponse(rawText);
-    return NutritionResult.fromJson(cleanJson);
+    return await NutritionResult.fromJsonAsync(cleanJson);
   }
 }

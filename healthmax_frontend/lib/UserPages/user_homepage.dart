@@ -25,7 +25,6 @@ class _UserHomePageState extends State<UserHomePage> {
   late ScrollController _scrollController;
   bool _isScrolled = false;
 
-  // --- NEW: Appointment State ---
   Map<String, dynamic>? _upcomingAppointment;
   bool _isLoadingAppointment = true;
 
@@ -41,7 +40,6 @@ class _UserHomePageState extends State<UserHomePage> {
       }
     });
     
-    // Fetch appointment on load
     _fetchUpcomingAppointment();
   }
 
@@ -51,7 +49,6 @@ class _UserHomePageState extends State<UserHomePage> {
     super.dispose();
   }
 
-  // --- NEW: Fetch Logic from Supabase ---
   Future<void> _fetchUpcomingAppointment() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
@@ -61,7 +58,7 @@ class _UserHomePageState extends State<UserHomePage> {
           .from('book_appointment')
           .select()
           .eq('user_id', user.id)
-          .inFilter('status', ['Pending', 'Confirmed']) // Only show active ones
+          .inFilter('status', ['Pending', 'Confirmed'])
           .order('appointment_date', ascending: true)
           .order('appointment_time', ascending: true)
           .limit(1)
@@ -75,8 +72,49 @@ class _UserHomePageState extends State<UserHomePage> {
       }
     } catch (e) {
       print("Error fetching appointment: $e");
-      if (mounted) setState(() => _isLoadingAppointment = false);
+      if (mounted) {
+        setState(() {
+          _upcomingAppointment = null; // Clear it if not found
+          _isLoadingAppointment = false;
+        });
+      }
     }
+  }
+
+  // --- NEW: MANUAL CANCEL BUTTON LOGIC ---
+  void _confirmCancelAppointment(String appointmentId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: const Text("Cancel Appointment?", style: TextStyle(fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal")),
+        content: const Text("Are you sure you want to cancel this booking? This action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text("Keep it", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                // Delete from database completely
+                await Supabase.instance.client.from('book_appointment').delete().eq('id', appointmentId);
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Appointment cancelled."), backgroundColor: Colors.orange));
+                  _fetchUpcomingAppointment(); // Refresh the UI banner
+                }
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to cancel appointment."), backgroundColor: Colors.redAccent));
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text("Cancel Booking", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          )
+        ],
+      )
+    );
   }
 
   void _routeToStatistic(String metric) {
@@ -117,296 +155,301 @@ class _UserHomePageState extends State<UserHomePage> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: CustomScrollView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: userBlue,
-            expandedHeight: dynamicAppBarHeight,
-            toolbarHeight: 90.0,
-            pinned: true,
-            elevation: 0,
-            scrolledUnderElevation: 0.0,
-            surfaceTintColor: Colors.transparent,
-            title: AnimatedOpacity(
-              duration: const Duration(milliseconds: 250),
-              opacity: _isScrolled ? 1.0 : 0.0,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 15.0, top: 10.0),
-                child: ShaderMask(
-                  shaderCallback: (Rect bounds) => const LinearGradient(
-                    begin: Alignment.centerLeft, end: Alignment.centerRight,
-                    colors: [Colors.white, Colors.white, Colors.transparent],
-                    stops: [0.0, 0.85, 1.0],
-                  ).createShader(bounds),
-                  blendMode: BlendMode.dstIn,
-                  child: Text(
-                    "${themeProvider.translate('hi')} $liveUsername!",
-                    maxLines: 1, softWrap: false, overflow: TextOverflow.clip,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal"),
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 30.0, top: 10.0),
-                child: Center(child: UserGlassyProfile(onTap: () => Navigator.pushNamed(context, '/user_settings'))),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.parallax,
-              background: SafeArea(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _fetchUpcomingAppointment();
+          await healthData.checkDeviceAndStartMock();
+          await hpData.fetchHPConnections();
+        },
+        color: userBlue,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              automaticallyImplyLeading: false,
+              backgroundColor: userBlue,
+              expandedHeight: dynamicAppBarHeight,
+              toolbarHeight: 90.0,
+              pinned: true,
+              elevation: 0,
+              scrolledUnderElevation: 0.0,
+              surfaceTintColor: Colors.transparent,
+              title: AnimatedOpacity(
+                duration: const Duration(milliseconds: 250),
+                opacity: _isScrolled ? 1.0 : 0.0,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(30, 25, 30, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        themeProvider.translate('hi'),
-                        style: TextStyle(fontSize: 45 * themeProvider.fontScale, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, fontFamily: "LexendExaNormal"),
-                      ),
-                      Text(
-                        "$liveUsername!",
-                        maxLines: 2, overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 35 * themeProvider.fontScale, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: "LexendExaNormal"),
-                      ),
-                    ],
+                  padding: const EdgeInsets.only(left: 15.0, top: 10.0),
+                  child: ShaderMask(
+                    shaderCallback: (Rect bounds) => const LinearGradient(
+                      begin: Alignment.centerLeft, end: Alignment.centerRight,
+                      colors: [Colors.white, Colors.white, Colors.transparent],
+                      stops: [0.0, 0.85, 1.0],
+                    ).createShader(bounds),
+                    blendMode: BlendMode.dstIn,
+                    child: Text(
+                      "${themeProvider.translate('hi')} $liveUsername!",
+                      maxLines: 1, softWrap: false, overflow: TextOverflow.clip,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal"),
+                    ),
                   ),
                 ),
               ),
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(30),
-              child: Transform.translate(
-                offset: const Offset(0, 1),
-                child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 30.0, top: 10.0),
+                  child: Center(child: UserGlassyProfile(onTap: () => Navigator.pushNamed(context, '/user_settings'))),
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.parallax,
+                background: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 25, 30, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          themeProvider.translate('hi'),
+                          style: TextStyle(fontSize: 45 * themeProvider.fontScale, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, fontFamily: "LexendExaNormal"),
+                        ),
+                        Text(
+                          "$liveUsername!",
+                          maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 35 * themeProvider.fontScale, fontWeight: FontWeight.bold, color: Colors.white, fontFamily: "LexendExaNormal"),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(30),
+                child: Transform.translate(
+                  offset: const Offset(0, 1),
+                  child: Container(height: 31, width: double.infinity, decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40)))),
+                ),
               ),
             ),
-          ),
 
-          SliverToBoxAdapter(
-            child: Container(
-              color: bgColor,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  
-                  // ==========================================
-                  // NEW: DYNAMIC APPOINTMENT REMINDER BANNER
-                  // ==========================================
-                  if (_upcomingAppointment != null)
-                    _buildAppointmentReminder(_upcomingAppointment!, isDark, themeProvider),
+            SliverToBoxAdapter(
+              child: Container(
+                color: bgColor,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    
+                    if (_upcomingAppointment != null)
+                      _buildAppointmentReminder(_upcomingAppointment!, isDark, themeProvider),
 
-                  // Original Top Padding if Banner isn't there
-                  if (_upcomingAppointment == null) const SizedBox(height: 10),
+                    if (_upcomingAppointment == null) const SizedBox(height: 10),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Container(
-                      padding: const EdgeInsets.all(25),
-                      decoration: BoxDecoration(
-                        color: surfaceColor, borderRadius: BorderRadius.circular(35),
-                        border: isDark ? Border.all(color: dividerColor) : null,
-                        boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, 8))],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                flex: 3, 
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildMetric(
-                                      icon: Icons.monitor_heart, color: hrActive ? const Color(0xFFFF6B6B) : Colors.grey.shade400,
-                                      value: hrActive ? healthData.heartRate.toString() : "--", unit: hrActive ? "bpm" : "",
-                                      status: hrActive ? themeProvider.translate(healthData.heartRateStatusKey) : "Not Connected",
-                                      textPrimary: hrActive ? textPrimary : textSecondary, textSecondary: textSecondary,
-                                      onTap: () => _routeToStatistic("Heart Rate"),
-                                    ),
-                                    const SizedBox(height: 15),
-                                    _buildMetric(
-                                      icon: Icons.bloodtype, color: glucoseActive ? const Color(0xFF4ECDC4) : Colors.grey.shade400,
-                                      value: glucoseActive ? healthData.bloodGlucose.toString() : "--", unit: glucoseActive ? "mg/dL" : "",
-                                      status: glucoseActive ? themeProvider.translate(healthData.bloodGlucoseStatusKey) : "Not Connected",
-                                      textPrimary: glucoseActive ? textPrimary : textSecondary, textSecondary: textSecondary,
-                                      onTap: () => _routeToStatistic("Blood Glucose"),
-                                    ),
-                                    const SizedBox(height: 15),
-                                    _buildMetric(
-                                      icon: Icons.hearing, color: noiseActive ? const Color(0xFF45B7D1) : Colors.grey.shade400,
-                                      value: noiseActive ? healthData.envNoise.toString() : "--", unit: noiseActive ? "dB" : "",
-                                      status: noiseActive ? themeProvider.translate(healthData.envNoiseStatusKey) : "Not Connected",
-                                      textPrimary: noiseActive ? textPrimary : textSecondary, textSecondary: textSecondary,
-                                      onTap: () => _routeToStatistic("Env. Noise"),
-                                    ),
-                                  ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        padding: const EdgeInsets.all(25),
+                        decoration: BoxDecoration(
+                          color: surfaceColor, borderRadius: BorderRadius.circular(35),
+                          border: isDark ? Border.all(color: dividerColor) : null,
+                          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, 8))],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  flex: 3, 
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildMetric(
+                                        icon: Icons.monitor_heart, color: hrActive ? const Color(0xFFFF6B6B) : Colors.grey.shade400,
+                                        value: hrActive ? healthData.heartRate.toString() : "--", unit: hrActive ? "bpm" : "",
+                                        status: hrActive ? themeProvider.translate(healthData.heartRateStatusKey) : "Not Connected",
+                                        textPrimary: hrActive ? textPrimary : textSecondary, textSecondary: textSecondary,
+                                        onTap: () => _routeToStatistic("Heart Rate"),
+                                      ),
+                                      const SizedBox(height: 15),
+                                      _buildMetric(
+                                        icon: Icons.bloodtype, color: glucoseActive ? const Color(0xFF4ECDC4) : Colors.grey.shade400,
+                                        value: glucoseActive ? healthData.bloodGlucose.toString() : "--", unit: glucoseActive ? "mg/dL" : "",
+                                        status: glucoseActive ? themeProvider.translate(healthData.bloodGlucoseStatusKey) : "Not Connected",
+                                        textPrimary: glucoseActive ? textPrimary : textSecondary, textSecondary: textSecondary,
+                                        onTap: () => _routeToStatistic("Blood Glucose"),
+                                      ),
+                                      const SizedBox(height: 15),
+                                      _buildMetric(
+                                        icon: Icons.hearing, color: noiseActive ? const Color(0xFF45B7D1) : Colors.grey.shade400,
+                                        value: noiseActive ? healthData.envNoise.toString() : "--", unit: noiseActive ? "dB" : "",
+                                        status: noiseActive ? themeProvider.translate(healthData.envNoiseStatusKey) : "Not Connected",
+                                        textPrimary: noiseActive ? textPrimary : textSecondary, textSecondary: textSecondary,
+                                        onTap: () => _routeToStatistic("Env. Noise"),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              
-                              const SizedBox(width: 10), 
+                                
+                                const SizedBox(width: 10), 
 
-                              Expanded(
-                                flex: 2,
-                                child: GestureDetector(
-                                  onTap: () => _routeToStatistic("Steps"),
-                                  child: AspectRatio(
-                                    aspectRatio: 1,
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        CircularProgressIndicator(value: 1.0, strokeWidth: 10, color: isDark ? Colors.white10 : Colors.grey.shade100),
-                                        TweenAnimationBuilder(
-                                          tween: Tween<double>(begin: 0, end: stepsActive ? (healthData.currentSteps / healthData.targetSteps).clamp(0.0, 1.0) : 0.0),
-                                          duration: const Duration(seconds: 1), curve: Curves.easeOutCubic,
-                                          builder: (context, value, child) => CircularProgressIndicator(value: value, strokeWidth: 10, backgroundColor: Colors.transparent, valueColor: AlwaysStoppedAnimation<Color>(stepsActive ? const Color(0xFFFF9F43) : Colors.grey), strokeCap: StrokeCap.round),
-                                        ),
-                                        Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(themeProvider.translate('steps_label'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textSecondary)),
-                                            ),
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(stepsActive ? healthData.currentSteps.toString() : "--", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: stepsActive ? textPrimary : textSecondary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                Expanded(
+                                  flex: 2,
+                                  child: GestureDetector(
+                                    onTap: () => _routeToStatistic("Steps"),
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          CircularProgressIndicator(value: 1.0, strokeWidth: 10, color: isDark ? Colors.white10 : Colors.grey.shade100),
+                                          TweenAnimationBuilder(
+                                            tween: Tween<double>(begin: 0, end: stepsActive ? (healthData.currentSteps / healthData.targetSteps).clamp(0.0, 1.0) : 0.0),
+                                            duration: const Duration(seconds: 1), curve: Curves.easeOutCubic,
+                                            builder: (context, value, child) => CircularProgressIndicator(value: value, strokeWidth: 10, backgroundColor: Colors.transparent, valueColor: AlwaysStoppedAnimation<Color>(stepsActive ? const Color(0xFFFF9F43) : Colors.grey), strokeCap: StrokeCap.round),
+                                          ),
+                                          Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(themeProvider.translate('steps_label'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textSecondary)),
+                                              ),
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(stepsActive ? healthData.currentSteps.toString() : "--", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: stepsActive ? textPrimary : textSecondary, fontFamily: "LexendExaNormal", letterSpacing: -1)),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          Padding(padding: const EdgeInsets.symmetric(vertical: 15), child: Divider(color: dividerColor, height: 1)),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text("${themeProvider.translate('last_updated')} ${healthData.hasDeviceConnected ? themeProvider.translate(healthData.lastUpdatedKey) : 'Never'}", style: TextStyle(color: textSecondary, fontSize: 12)))),
-                              const SizedBox(width: 8),
-                              AnimatedRotation(
-                                turns: healthData.currentSteps % 2 == 0 ? 0.5 : 0.0,
-                                duration: const Duration(milliseconds: 500),
-                                child: Icon(Icons.sync, size: 16, color: healthData.hasDeviceConnected ? userBlue : Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 35),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25),
-                    child: Text(themeProvider.translate('quick_action'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
-                  ),
-                  const SizedBox(height: 15),
-                  
-                  SizedBox(
-                    height: dynamicQuickActionHeight, 
-                    child: ListView(
-                      scrollDirection: Axis.horizontal, 
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      children: [
-                        _buildQuickActionCard(
-                          icon: Icons.calendar_month_rounded, iconBgColor: const Color(0xFF00D1FF),
-                          title: "Book Appointment", 
-                          subtitle: "Schedule a checkup\nwith your provider", 
-                          isAppointment: true, surfaceColor: surfaceColor, textPrimary: textPrimary,
-                          textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark, themeProvider: themeProvider,
-                          onTap: () => _showBookAppointmentSheet(hpData, surfaceColor, textPrimary, textSecondary, dividerColor, isDark, userBlue),
-                        ),
-                        const SizedBox(width: 15),
-                        _buildQuickActionCard(
-                          icon: Icons.local_fire_department_rounded, iconBgColor: const Color(0xFFFFD93D),
-                          title: themeProvider.translate('burned_calories'),
-                          subtitle: "${calorieData.burnedCalories} ${themeProvider.translate('kcal_burned')}",
-                          isProgress: false, 
-                          surfaceColor: surfaceColor, textPrimary: textPrimary,
-                          textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark, themeProvider: themeProvider,
-                          onTap: () => Navigator.pushReplacementNamed(context, '/user_calorie'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 35),
-                  
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(themeProvider.translate('feedback'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
-                        GestureDetector(
-                          onTap: () => Navigator.pushReplacementNamed(context, '/user_history'),
-                          child: Text("View All", style: TextStyle(color: userBlue, fontWeight: FontWeight.bold, fontSize: 12)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: feedbackData.feedbackHistory.isEmpty 
-                    ? Container(
-                        width: double.infinity, padding: const EdgeInsets.all(30),
-                        decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(20), border: Border.all(color: dividerColor)),
-                        child: Column(
-                          children: [
-                            Icon(Icons.chat_bubble_outline_rounded, size: 40, color: textSecondary.withValues(alpha: 0.5)),
-                            const SizedBox(height: 10),
-                            Text("No Feedback Yet", style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary)),
-                            const SizedBox(height: 5),
-                            Text("Feedback from your healthcare providers will appear here.", textAlign: TextAlign.center, style: TextStyle(color: textSecondary, fontSize: 12)),
+                              ],
+                            ),
+                            Padding(padding: const EdgeInsets.symmetric(vertical: 15), child: Divider(color: dividerColor, height: 1)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text("${themeProvider.translate('last_updated')} ${healthData.hasDeviceConnected ? themeProvider.translate(healthData.lastUpdatedKey) : 'Never'}", style: TextStyle(color: textSecondary, fontSize: 12)))),
+                                const SizedBox(width: 8),
+                                AnimatedRotation(
+                                  turns: healthData.currentSteps % 2 == 0 ? 0.5 : 0.0,
+                                  duration: const Duration(milliseconds: 500),
+                                  child: Icon(Icons.sync, size: 16, color: healthData.hasDeviceConnected ? userBlue : Colors.grey),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                      )
-                    : Column(
+                      ),
+                    ),
+                    const SizedBox(height: 35),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 25),
+                      child: Text(themeProvider.translate('quick_action'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
+                    ),
+                    const SizedBox(height: 15),
+                    
+                    SizedBox(
+                      height: dynamicQuickActionHeight, 
+                      child: ListView(
+                        scrollDirection: Axis.horizontal, 
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         children: [
-                          ...feedbackData.feedbackHistory.take(3).map((f) => 
-                            _buildFeedbackCard(f.hospitalName, f.message, "${f.date} • ${f.time}", surfaceColor, textPrimary, textSecondary, dividerColor, f.typeColor, isDark)
+                          _buildQuickActionCard(
+                            icon: Icons.calendar_month_rounded, iconBgColor: const Color(0xFF00D1FF),
+                            title: "Book Appointment", 
+                            subtitle: "Schedule a checkup\nwith your provider", 
+                            isAppointment: true, surfaceColor: surfaceColor, textPrimary: textPrimary,
+                            textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark, themeProvider: themeProvider,
+                            onTap: () => _showBookAppointmentSheet(hpData, surfaceColor, textPrimary, textSecondary, dividerColor, isDark, userBlue),
+                          ),
+                          const SizedBox(width: 15),
+                          _buildQuickActionCard(
+                            icon: Icons.local_fire_department_rounded, iconBgColor: const Color(0xFFFFD93D),
+                            title: themeProvider.translate('burned_calories'),
+                            subtitle: "${calorieData.burnedCalories} ${themeProvider.translate('kcal_burned')}",
+                            isProgress: false, 
+                            surfaceColor: surfaceColor, textPrimary: textPrimary,
+                            textSecondary: textSecondary, dividerColor: dividerColor, isDark: isDark, themeProvider: themeProvider,
+                            onTap: () => Navigator.pushReplacementNamed(context, '/user_calorie'),
                           ),
                         ],
                       ),
-                  ),
-                  const SizedBox(height: 100),
-                ],
+                    ),
+                    const SizedBox(height: 35),
+                    
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 25),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(themeProvider.translate('feedback'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
+                          GestureDetector(
+                            onTap: () => Navigator.pushReplacementNamed(context, '/user_history'),
+                            child: Text("View All", style: TextStyle(color: userBlue, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: feedbackData.feedbackHistory.isEmpty 
+                      ? Container(
+                          width: double.infinity, padding: const EdgeInsets.all(30),
+                          decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(20), border: Border.all(color: dividerColor)),
+                          child: Column(
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded, size: 40, color: textSecondary.withValues(alpha: 0.5)),
+                              const SizedBox(height: 10),
+                              Text("No Feedback Yet", style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary)),
+                              const SizedBox(height: 5),
+                              Text("Feedback from your healthcare providers will appear here.", textAlign: TextAlign.center, style: TextStyle(color: textSecondary, fontSize: 12)),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            ...feedbackData.feedbackHistory.take(3).map((f) => 
+                              _buildFeedbackCard(f.hospitalName, f.message, "${f.date} • ${f.time}", surfaceColor, textPrimary, textSecondary, dividerColor, f.typeColor, isDark)
+                            ),
+                          ],
+                        ),
+                    ),
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: const UserBottomNavBar(currentIndex: 0),
     );
   }
 
-  // --- NEW: APPOINTMENT REMINDER UI ---
+// --- UPDATED: APPOINTMENT REMINDER WITH BEAUTIFUL BUTTONS ---
   Widget _buildAppointmentReminder(Map<String, dynamic> appointment, bool isDark, ThemeProvider theme) {
     String dateRaw = appointment['appointment_date'];
-    String timeRaw = appointment['appointment_time'].toString().substring(0, 5); // Grabs "HH:MM"
+    String timeRaw = appointment['appointment_time'].toString().substring(0, 5);
     String provider = appointment['provider_name'];
     String status = appointment['status'];
+    String appointmentId = appointment['id'];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 25),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [userBlue, userPurple],
+          gradient: const LinearGradient(
+            colors: [Color(0xFF5A84F1), Color(0xFF8E33FF)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -415,40 +458,95 @@ class _UserHomePageState extends State<UserHomePage> {
             BoxShadow(color: userBlue.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8))
           ],
         ),
-        child: Row(
+        child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-              child: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 30),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Upcoming Appointment", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                  const SizedBox(height: 4),
-                  Text("$provider", maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
-                  const SizedBox(height: 4),
-                  Row(
+            // TOP ROW: Icon, Details, and Status Badge
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+                  child: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 30),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.access_time_rounded, color: Colors.white, size: 12),
-                      const SizedBox(width: 4),
-                      Text("$dateRaw • $timeRaw", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text("Upcoming Appointment", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      const SizedBox(height: 4),
+                      Text(provider, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time_rounded, color: Colors.white, size: 12),
+                          const SizedBox(width: 4),
+                          Text("$dateRaw • $timeRaw", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: status == 'Confirmed' ? Colors.greenAccent : Colors.orangeAccent,
+                    borderRadius: BorderRadius.circular(12)
+                  ),
+                  child: Text(status, style: const TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: status == 'Confirmed' ? Colors.greenAccent : Colors.orangeAccent,
-                borderRadius: BorderRadius.circular(12)
-              ),
-              child: Text(status, style: const TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
+            
+            const SizedBox(height: 20),
+            
+            // BOTTOM ROW: Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: _buildGlassyBtn(
+                    icon: Icons.phone_rounded, 
+                    label: "Contact", 
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Calling $provider..."), backgroundColor: Colors.green));
+                    }
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildGlassyBtn(
+                    icon: Icons.close_rounded, 
+                    label: "Cancel", 
+                    isDestructive: true, // Turns it slightly red
+                    onTap: () => _confirmCancelAppointment(appointmentId),
+                  ),
+                ),
+              ],
             )
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- NEW: HELPER FOR BEAUTIFUL GLASSY BUTTONS ---
+  Widget _buildGlassyBtn({required IconData icon, required String label, required VoidCallback onTap, bool isDestructive = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isDestructive ? Colors.redAccent.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isDestructive ? Colors.redAccent.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: isDestructive ? Colors.red.shade100 : Colors.white, size: 16),
+            const SizedBox(width: 6),
+            Text(label, style: TextStyle(color: isDestructive ? Colors.red.shade100 : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
           ],
         ),
       ),
@@ -692,9 +790,7 @@ class _UserHomePageState extends State<UserHomePage> {
                         if (context.mounted) {
                           Navigator.pop(context); 
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Appointment Requested with $selectedHp!"), backgroundColor: Colors.green));
-                          
-                          // --- NEW: Refresh to show banner instantly ---
-                          _fetchUpcomingAppointment();
+                          _fetchUpcomingAppointment(); 
                         }
                       } catch (e) {
                          setModalState(() => isSaving = false);

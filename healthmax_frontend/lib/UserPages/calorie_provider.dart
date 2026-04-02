@@ -1,7 +1,16 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CalorieRecord {
+  static final _random = Random();
+  static final _icons = [
+    Icons.free_breakfast,
+    Icons.breakfast_dining,
+    Icons.lunch_dining,
+    Icons.food_bank,
+    Icons.dinner_dining,
+  ];
   String foodName;
   int quantity;
   String protein;
@@ -10,8 +19,8 @@ class CalorieRecord {
   int calories;
   String? notes;
   double? confidence;
-  late IconData placeholderIcon;
-  late Color iconColor;
+ late IconData placeholderIcon;
+ late Color iconColor;
   DateTime timestamp;
 
   // ========================================================
@@ -30,7 +39,6 @@ class CalorieRecord {
       Icons.set_meal_rounded,
       Icons.ramen_dining_rounded,
     ];
-    // Create a consistent number from the food string
     int hash = name.trim().toLowerCase().hashCode.abs();
     return icons[hash % icons.length];
   }
@@ -50,7 +58,6 @@ class CalorieRecord {
     return colors[hash % colors.length];
   }
 
-  // Regular Constructor (intercepts and overrides random icons from UI)
   CalorieRecord(
     this.foodName, this.quantity, this.protein, this.carbs, this.fats, this.calories,
     IconData ignoredIcon, Color ignoredColor, this.timestamp, {
@@ -65,7 +72,6 @@ class CalorieRecord {
     return double.tryParse(value.toString().replaceAll('%', '').trim());
   }
 
-  // --- CONNECTED TO DB COLUMNS ---
   CalorieRecord.fromMap(Map<String, dynamic> map)
     : foodName = map['food_name'] ?? '',
       quantity = map['quantity'] ?? 1,
@@ -76,7 +82,6 @@ class CalorieRecord {
       notes = map['notes'],
       confidence = _parseConfidence(map['confidence']),
       timestamp = map['logged_at'] != null ? DateTime.parse(map['logged_at']) : DateTime.now() {
-        // Assigns the exact same color/icon on refresh
         placeholderIcon = _getDeterministicIcon(foodName);
         iconColor = _getDeterministicColor(foodName);
       }
@@ -86,9 +91,6 @@ class CalorieProvider extends ChangeNotifier {
   List<CalorieRecord> _calorieHistory = [];
   List<CalorieRecord> get calorieHistory => _calorieHistory;
 
-  // ========================================================
-  // DYNAMIC GETTERS: Guarantees totals perfectly match the History List!
-  // ========================================================
   int get totalEaten => _calorieHistory.fold(0, (sum, item) => sum + item.calories);
   
   double get totalCarbs => _calorieHistory.fold(0.0, (sum, item) => 
@@ -100,28 +102,23 @@ class CalorieProvider extends ChangeNotifier {
   double get totalFats => _calorieHistory.fold(0.0, (sum, item) => 
       sum + (double.tryParse(item.fats.replaceAll('g', '').trim()) ?? 0.0));
 
-  // Dynamic Targets
   int targetCalories = 2000; 
   int targetCarbs = 250;
   int targetProtein = 100;
   int targetFats = 60;
 
   int currentSteps = 0;
-  int workoutCalories = 0;
+  int workoutCalories = 0; // Handled dynamically now!
 
   int get burnedCalories => (currentSteps * 0.04).toInt() + workoutCalories;
   int get leftCalories => targetCalories - totalEaten + burnedCalories;
 
-  // ========================================================
-  // REAL DATABASE FETCH 
-  // ========================================================
   Future<void> fetchUserDataAndLogs() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
     try {
-      // 1. CALCULATE TARGETS (BMR)
       final userData = await supabase.from('users').select().eq('id', user.id).maybeSingle();
       if (userData != null) {
         double weight = (userData['weight_kg'] ?? 70).toDouble();
@@ -134,12 +131,21 @@ class CalorieProvider extends ChangeNotifier {
            age = DateTime.now().year - dob.year;
         }
 
+        double heightInMeters = height / 100;
+        double bmi = weight / (heightInMeters * heightInMeters);
+
         double bmr = (10 * weight) + (6.25 * height) - (5 * age);
         bmr += (gender.toLowerCase() == 'male') ? 5 : -161;
         double tdee = bmr * 1.375;
 
-        if (mainGoal == 'Lose Weight') tdee -= 500;
-        else if (mainGoal == 'Build Muscle') tdee += 300;
+        if (mainGoal == 'Lose Weight') {
+          tdee -= 500;
+        } else if (mainGoal == 'Build Muscle') {
+          tdee += 300;
+        } else if (mainGoal == 'N/A' || mainGoal == 'Maintain Weight') {
+          if (bmi > 25.0) tdee -= 500; 
+          else if (bmi < 18.5) tdee += 300; 
+        }
 
         targetCalories = tdee.toInt();
         targetProtein = (weight * 2.2).toInt(); 
@@ -147,7 +153,6 @@ class CalorieProvider extends ChangeNotifier {
         targetCarbs = ((tdee - (targetProtein * 4) - (targetFats * 9)) / 4).toInt();
       }
 
-      // 2. FETCH ALL LOGS FROM `food_logs` (Filtered for TODAY ONLY)
       final today = DateTime.now().toIso8601String().split('T')[0];
       final logs = await supabase.from('food_logs').select()
           .eq('user_id', user.id)
@@ -157,8 +162,8 @@ class CalorieProvider extends ChangeNotifier {
           
       _calorieHistory = logs.map((log) => CalorieRecord.fromMap(log)).toList();
       
-      // 3. AUTO-HEAL: Sync the `user_food_stats` table to match reality
       await _syncStatsToDatabase();
+      await syncWorkoutCalories(); // Sync active targets
 
       notifyListeners();
     } catch (e) {
@@ -166,15 +171,35 @@ class CalorieProvider extends ChangeNotifier {
     }
   }
 
+  // --- NEW: FETCHES ACTIVE CALORIE TARGETS TO ADD TO BURNED ---
+  Future<void> syncWorkoutCalories() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final targetsData = await supabase.from('user_targets').select('current_value, unit').eq('user_id', user.id);
+
+      int totalWorkoutCals = 0;
+      for (var t in targetsData) {
+        String unit = (t['unit'] ?? '').toString().toLowerCase();
+        if (unit.contains('kcal') || unit.contains('cal')) {
+          totalWorkoutCals += (t['current_value'] as num?)?.toInt() ?? 0;
+        }
+      }
+
+      workoutCalories = totalWorkoutCals;
+      notifyListeners();
+    } catch (e) {
+      print("Error syncing workout calories: $e");
+    }
+  }
+
   void clear() {
     _calorieHistory.clear(); currentSteps = 0; workoutCalories = 0; notifyListeners();
   }
 
-  // ========================================================
-  // SECURE DATABASE WRITE (No Upsert errors)
-  // ========================================================
   Future<void> addFoodRecord(CalorieRecord newRecord) async {
-    // 1. Instantly Update UI (Optimistic Update)
     _calorieHistory.insert(0, newRecord);
     notifyListeners(); 
 
@@ -183,7 +208,6 @@ class CalorieProvider extends ChangeNotifier {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception("User not authenticated.");
 
-      // Insert into food_logs
       await supabase.from("food_logs").insert({
         "user_id": user.id,
         "food_name": newRecord.foodName,
@@ -197,19 +221,14 @@ class CalorieProvider extends ChangeNotifier {
         "logged_at": newRecord.timestamp.toIso8601String(),
       });
 
-      // Sync updated totals to user_food_stats
       await _syncStatsToDatabase();
-
     } catch (e) {
-      // Rollback UI if database fails
       _calorieHistory.remove(newRecord);
       notifyListeners();
-      print("Error saving food log: $e");
       rethrow; 
     }
   }
 
-  // Helper function to force user_food_stats to match the actual History list
   Future<void> _syncStatsToDatabase() async {
     try {
       final supabase = Supabase.instance.client;

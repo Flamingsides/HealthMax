@@ -5,6 +5,7 @@ import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart';
 import 'goal_provider.dart'; 
 import 'AI_Features/ai_translator_service.dart';
+import '../UserPages/calorie_provider.dart';
 
 class UserTargetPage extends StatefulWidget {
   const UserTargetPage({super.key});
@@ -357,63 +358,73 @@ class _UserTargetPageState extends State<UserTargetPage> {
     );
   }
 
-  void _showAddSubTargetSheet(GoalProvider goalData, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, ThemeProvider theme) {
+void _showAddSubTargetSheet(GoalProvider goalData, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, ThemeProvider theme) {
     final TextEditingController titleCtrl = TextEditingController();
     final TextEditingController targetCtrl = TextEditingController();
     final TextEditingController unitCtrl = TextEditingController();
+    bool isSaving = false;
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
-          padding: const EdgeInsets.fromLTRB(25, 10, 25, 40),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
-                Text(theme.translate("set_new_target"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
-                const SizedBox(height: 20),
-                
-                TextField(controller: titleCtrl, decoration: InputDecoration(labelText: theme.translate("Target Name"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
-                const SizedBox(height: 10),
-                
-                Row(
-                  children: [
-                    Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("target_label"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
-                    const SizedBox(width: 10),
-                    Expanded(child: TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. kcal, mins)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
-                  ],
-                ),
-                
-                const SizedBox(height: 25),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-                    onPressed: () {
-                      if (titleCtrl.text.isNotEmpty && targetCtrl.text.isNotEmpty) {
-                        int targetVal = int.tryParse(targetCtrl.text) ?? 1;
-                        if (targetVal <= 0) targetVal = 1; 
-                        
-                        goalData.addTarget(TargetItem(
-                          title: titleCtrl.text, 
-                          description: "Custom User Target", 
-                          progress: 0.0, 
-                          currentValue: 0,
-                          targetValue: targetVal, 
-                          unit: unitCtrl.text, 
-                          isCompleted: false,
-                        ));
-                        Navigator.pop(context);
-                      }
-                    },
-                    child: Text(theme.translate("Add Target"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
+            padding: const EdgeInsets.fromLTRB(25, 10, 25, 40),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
+                  Text(theme.translate("set_new_target"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                  const SizedBox(height: 20),
+                  
+                  TextField(controller: titleCtrl, decoration: InputDecoration(labelText: theme.translate("Target Name"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
+                  const SizedBox(height: 10),
+                  
+                  Row(
+                    children: [
+                      Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("target_label"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+                      const SizedBox(width: 10),
+                      Expanded(child: TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. kcal, mins)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+                    ],
                   ),
-                )
-              ],
+                  
+                  const SizedBox(height: 25),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                      onPressed: isSaving ? null : () async {
+                        if (titleCtrl.text.isNotEmpty && targetCtrl.text.isNotEmpty) {
+                          setModalState(() => isSaving = true);
+                          int targetVal = int.tryParse(targetCtrl.text) ?? 1;
+                          if (targetVal <= 0) targetVal = 1; 
+                          
+                          try {
+                            await goalData.addTarget(TargetItem(
+                              title: titleCtrl.text, description: "Custom User Target", progress: 0.0, currentValue: 0,
+                              targetValue: targetVal, unit: unitCtrl.text, isCompleted: false,
+                            ));
+                            if (context.mounted) {
+                              // --- TRIGGERS CALORIE SYNC IF IT'S A WORKOUT TARGET ---
+                              await context.read<CalorieProvider>().syncWorkoutCalories();
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            setModalState(() => isSaving = false);
+                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to save target. Check connection."), backgroundColor: Colors.redAccent));
+                          }
+                        }
+                      },
+                      child: isSaving 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                        : Text(theme.translate("Add Target"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         ),
@@ -426,75 +437,96 @@ class _UserTargetPageState extends State<UserTargetPage> {
     final TextEditingController currentCtrl = TextEditingController(text: target.currentValue.toString());
     final TextEditingController targetCtrl = TextEditingController(text: target.targetValue.toString());
     final TextEditingController unitCtrl = TextEditingController(text: target.unit);
+    bool isSaving = false;
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
-          padding: const EdgeInsets.fromLTRB(25, 10, 25, 40),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
-                Text(theme.translate("Edit Target"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
-                const SizedBox(height: 20),
-                
-                TextField(controller: titleCtrl, decoration: InputDecoration(labelText: theme.translate("Target Name"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
-                const SizedBox(height: 10),
-                
-                Row(
-                  children: [
-                    // CLEARLY LABELLED FOR UPDATING PROGRESS
-                    Expanded(child: TextField(controller: currentCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("Current Progress"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
-                    const SizedBox(width: 10),
-                    Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("target_label"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. kcal, mins)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
-                
-                const SizedBox(height: 25),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-                        onPressed: () { goalData.deleteTarget(index); Navigator.pop(context); },
-                        child: Text(theme.translate("remove"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
+            padding: const EdgeInsets.fromLTRB(25, 10, 25, 40),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
+                  Text(theme.translate("Edit Target"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                  const SizedBox(height: 20),
+                  
+                  TextField(controller: titleCtrl, decoration: InputDecoration(labelText: theme.translate("Target Name"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
+                  const SizedBox(height: 10),
+                  
+                  Row(
+                    children: [
+                      Expanded(child: TextField(controller: currentCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("Current Progress"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+                      const SizedBox(width: 10),
+                      Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("target_label"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. kcal, mins)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
+                  
+                  const SizedBox(height: 25),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                          onPressed: isSaving ? null : () async { 
+                            try {
+                              await goalData.deleteTarget(index); 
+                              if (context.mounted) {
+                                await context.read<CalorieProvider>().syncWorkoutCalories();
+                                Navigator.pop(context); 
+                              }
+                            } catch(e) {
+                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to delete target."), backgroundColor: Colors.redAccent));
+                            }
+                          },
+                          child: Text(theme.translate("remove"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-                        onPressed: () {
-                          if (titleCtrl.text.isNotEmpty && targetCtrl.text.isNotEmpty) {
-                            int current = int.tryParse(currentCtrl.text) ?? 0;
-                            int targetVal = int.tryParse(targetCtrl.text) ?? 1;
-                            if (targetVal <= 0) targetVal = 1; 
-                            
-                            target.title = titleCtrl.text;
-                            target.currentValue = current;
-                            target.targetValue = targetVal;
-                            target.unit = unitCtrl.text;
-                            
-                            target.progress = (current / targetVal).clamp(0.0, 1.0);
-                            target.isCompleted = current >= targetVal;
-                            
-                            goalData.editTarget(index, target);
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: Text(theme.translate("Save"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                          onPressed: isSaving ? null : () async {
+                            if (titleCtrl.text.isNotEmpty && targetCtrl.text.isNotEmpty) {
+                              setModalState(() => isSaving = true);
+                              int current = int.tryParse(currentCtrl.text) ?? 0;
+                              int targetVal = int.tryParse(targetCtrl.text) ?? 1;
+                              if (targetVal <= 0) targetVal = 1; 
+                              
+                              target.title = titleCtrl.text;
+                              target.currentValue = current;
+                              target.targetValue = targetVal;
+                              target.unit = unitCtrl.text;
+                              target.progress = (current / targetVal).clamp(0.0, 1.0);
+                              target.isCompleted = current >= targetVal;
+                              
+                              try {
+                                await goalData.editTarget(index, target);
+                                if (context.mounted) {
+                                  await context.read<CalorieProvider>().syncWorkoutCalories();
+                                  Navigator.pop(context);
+                                }
+                              } catch(e) {
+                                setModalState(() => isSaving = false);
+                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to update target."), backgroundColor: Colors.redAccent));
+                              }
+                            }
+                          },
+                          child: isSaving 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                            : Text(theme.translate("Save"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
                       ),
-                    ),
-                  ],
-                )
-              ],
+                    ],
+                  )
+                ],
+              ),
             ),
           ),
         ),

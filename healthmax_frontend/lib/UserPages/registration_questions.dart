@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'goal_provider.dart';
 
+// --- ADDED: Safe Area and Universal Back Button ---
 class RegistrationQuestions extends StatelessWidget {
   final int numQuestions;
   final int currentIndex;
@@ -25,14 +26,26 @@ class RegistrationQuestions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Screen(
       bgDecoration: bgWhite,
-      child: ListView(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(50, 0, 50, 0),
-            child: ProgressBar(current: currentIndex, countBars: numQuestions),
-          ),
-          ...children ?? [],
-        ],
+      child: SafeArea(
+        child: ListView(
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 15.0, top: 10.0, bottom: 20.0),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 22),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(50, 0, 50, 0),
+              child: ProgressBar(current: currentIndex, countBars: numQuestions),
+            ),
+            ...children ?? [],
+          ],
+        ),
       ),
     );
   }
@@ -120,13 +133,15 @@ class _RegistrationGenderState extends State<RegistrationGender> {
 
   @override
   Widget build(BuildContext context) {
+    bool isReady = selectedGender != null; // Indicator switch
+    
     return RegistrationQuestions(
       numQuestions: 5,
       currentIndex: 0,
       children: [
-        const SizedBox(height: 100),
+        const SizedBox(height: 50),
         const Text("Select your Gender", style: TextStyle(color: Colors.black, fontSize: 25, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal"), textAlign: TextAlign.center),
-        const SizedBox(height: 100),
+        const SizedBox(height: 80),
         Row(
           children: [
             Expanded(child: GenderCard(icon: Icons.male, color: Colors.lightBlueAccent, label: "Male", userAnswers: userAnswers, selectedGender: selectedGender ?? "None", setSelectedGender: setSelectedGender)),
@@ -134,16 +149,28 @@ class _RegistrationGenderState extends State<RegistrationGender> {
             Expanded(child: GenderCard(icon: Icons.female, label: "Female", color: Colors.purpleAccent, userAnswers: userAnswers, selectedGender: selectedGender ?? "None", setSelectedGender: setSelectedGender)),
           ],
         ),
-        const SizedBox(height: 100),
-        CustomButton(
-          label: "Next",
-          onPressed: () {
-            if (selectedGender == null) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a gender!"), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
-              return;
-            }
-            Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationDOB(userAnswers: userAnswers)));
-          },
+        const SizedBox(height: 80),
+        
+        // --- ADDED: Dynamic Button Coloring ---
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: ElevatedButton(
+            onPressed: () {
+              if (!isReady) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a gender!"), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+                return;
+              }
+              Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationDOB(userAnswers: userAnswers)));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isReady ? const Color(0xFF8E33FF) : Colors.grey.shade300,
+              foregroundColor: isReady ? Colors.white : Colors.black54,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: isReady ? 8 : 0,
+            ),
+            child: const Text("Next", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+          ),
         ),
       ],
     );
@@ -152,7 +179,9 @@ class _RegistrationGenderState extends State<RegistrationGender> {
 
 class EnterDOBWidget extends StatefulWidget {
   final UserAnswers userAnswers;
-  const EnterDOBWidget({super.key, required this.userAnswers});
+  final VoidCallback onDateChanged; // <-- Added callback
+
+  const EnterDOBWidget({super.key, required this.userAnswers, required this.onDateChanged});
   @override
   State<EnterDOBWidget> createState() => _EnterDOBWidgetState();
 }
@@ -179,6 +208,8 @@ class _EnterDOBWidgetState extends State<EnterDOBWidget> {
         selectedDate = date;
         widget.userAnswers.dob = date;
       });
+      // <-- Tells the parent page to rebuild the Next button!
+      widget.onDateChanged(); 
     }
   }
 
@@ -209,29 +240,56 @@ class _EnterDOBWidgetState extends State<EnterDOBWidget> {
   }
 }
 
-class RegistrationDOB extends StatelessWidget {
+// --- 2. UPDATED RegistrationDOB (Converted to StatefulWidget) ---
+class RegistrationDOB extends StatefulWidget {
   final UserAnswers userAnswers;
   const RegistrationDOB({super.key, required this.userAnswers});
+
+  @override
+  State<RegistrationDOB> createState() => _RegistrationDOBState();
+}
+
+class _RegistrationDOBState extends State<RegistrationDOB> {
   @override
   Widget build(BuildContext context) {
+    // Dynamically checks if the date is filled out
+    bool isReady = widget.userAnswers.dob != null;
+    
     return RegistrationQuestions(
       numQuestions: 5,
       currentIndex: 1,
       children: [
-        const SizedBox(height: 100),
+        const SizedBox(height: 50),
         const Text("Enter your date of birth", style: TextStyle(color: Colors.black, fontSize: 25, fontWeight: FontWeight.bold, fontFamily: "LexendExaNormal"), textAlign: TextAlign.center),
         const SizedBox(height: 100),
-        EnterDOBWidget(userAnswers: userAnswers),
+        
+        // Pass the callback down to the picker widget
+        EnterDOBWidget(
+          userAnswers: widget.userAnswers,
+          onDateChanged: () => setState(() {}), 
+        ),
+        
         const SizedBox(height: 100),
-        CustomButton(
-          label: "Next",
-          onPressed: () {
-            if (userAnswers.dob == null) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select your date of birth!"), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
-              return;
-            }
-            Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationWeight(userAnswers: userAnswers)));
-          },
+        
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: ElevatedButton(
+            onPressed: () {
+              if (!isReady) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select your date of birth!"), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+                return;
+              }
+              Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationWeight(userAnswers: widget.userAnswers)));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isReady ? const Color(0xFF8E33FF) : Colors.grey.shade300,
+              foregroundColor: isReady ? Colors.white : Colors.black54,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: isReady ? 8 : 0,
+            ),
+            child: const Text("Next", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+          ),
         ),
       ],
     );
@@ -421,7 +479,21 @@ class RegistrationWeight extends StatelessWidget {
         const SizedBox(height: 40),
         WeightInputSection(userAnswers: userAnswers),
         const SizedBox(height: 60),
-        CustomButton(label: "Next", onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationHeight(userAnswers: userAnswers)))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          // Defaults are active/ready by default
+          child: ElevatedButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationHeight(userAnswers: userAnswers))),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8E33FF),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: 8,
+            ),
+            child: const Text("Next", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+          ),
+        ),
       ],
     );
   }
@@ -496,7 +568,20 @@ class RegistrationHeight extends StatelessWidget {
         const SizedBox(height: 40),
         HeightInputSection(userAnswers: userAnswers),
         const SizedBox(height: 60),
-        CustomButton(label: "Next", onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationGoal(userAnswers: userAnswers)))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: ElevatedButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationGoal(userAnswers: userAnswers))),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8E33FF),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: 8,
+            ),
+            child: const Text("Next", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+          ),
+        ),
         const SizedBox(height: 40),
       ],
     );
@@ -521,15 +606,14 @@ class _RegistrationGoalState extends State<RegistrationGoal> {
   final TextEditingController _aiChatCtrl = TextEditingController();
 
   final List<Map<String, String>> commonGoals = [
-    {"title": "Lose Weight", "icon": "🔥", "unit": "kg"},
-    {"title": "More Steps", "icon": "👟", "unit": "steps/day"},
+    {"title": "Lose Weight", "icon": "📉", "unit": "kg"},
+    {"title": "More Steps", "icon": "🚶", "unit": "steps/day"},
     {"title": "Less Sugar", "icon": "🍬", "unit": "g/day"},
     {"title": "Build Muscle", "icon": "💪", "unit": "kg"},
   ];
 
   bool _isAiThinking = false;
 
-  // --- 1. FULLY WIRED GEMINI AI CLASSIFIER ---
   void _submitAiPrompt() async {
     if (_aiChatCtrl.text.isEmpty) return;
 
@@ -540,7 +624,6 @@ class _RegistrationGoalState extends State<RegistrationGoal> {
       final apiKey = dotenv.env["GEMINI_API_KEY"];
       if (apiKey == null || apiKey.isEmpty) throw "Gemini API key missing in .env!";
 
-      // Initialize model specifically asking for JSON
       final model = GenerativeModel(
         model: 'gemini-2.5-flash',
         apiKey: apiKey,
@@ -568,15 +651,12 @@ class _RegistrationGoalState extends State<RegistrationGoal> {
 
       final response = await model.generateContent([Content.text(prompt)]);
       
-      // Clean up potential markdown formatting block
       final jsonStr = response.text!.replaceAll(RegExp(r'```json|```'), '').trim();
       final data = jsonDecode(jsonStr);
 
       if (mounted) {
         setState(() {
           _isAiThinking = false;
-          
-          // Verify the AI returned a valid title, else fallback safely
           if (commonGoals.any((g) => g["title"] == data["title"])) {
             selectedGoal = data["title"];
           } else {
@@ -615,7 +695,7 @@ class _RegistrationGoalState extends State<RegistrationGoal> {
     if (skip) {
       widget.userAnswers.mainGoal = "N/A";
       widget.userAnswers.goalTargetValue = "N/A";
-      goalData.updateMainGoal("N/A", "N/A"); // Handles skips perfectly!
+      goalData.updateMainGoal("N/A", "N/A"); 
     } else {
       if (selectedGoal == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a goal or skip."), backgroundColor: Colors.redAccent));
@@ -657,6 +737,8 @@ class _RegistrationGoalState extends State<RegistrationGoal> {
     if (selectedGoal == "Lose Weight") {
       dynamicPrompt = "Target Weight (Currently ${widget.userAnswers.weight?.toInt() ?? 0} ${widget.userAnswers.weightUnit})";
     }
+
+    bool isReady = selectedGoal != null;
 
     return RegistrationQuestions(
       numQuestions: 5,
@@ -744,7 +826,14 @@ class _RegistrationGoalState extends State<RegistrationGoal> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: ElevatedButton(
             onPressed: () => _finishRegistration(false),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFB300), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), elevation: 8, shadowColor: const Color(0xFFFFB300).withValues(alpha: 0.6)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isReady ? const Color(0xFFFFB300) : Colors.grey.shade300,
+              foregroundColor: isReady ? Colors.white : Colors.black54,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: isReady ? 8 : 0,
+              shadowColor: const Color(0xFFFFB300).withValues(alpha: 0.6)
+            ),
             child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text("Complete Registration", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", letterSpacing: 0.5)), SizedBox(width: 10), Icon(Icons.check_circle_rounded, size: 24)]),
           ),
         ),
