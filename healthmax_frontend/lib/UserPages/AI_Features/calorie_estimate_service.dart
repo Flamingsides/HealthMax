@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import 'nutrition_result_model.dart';
 
 class CalorieEstimatorService {
@@ -21,28 +20,40 @@ class CalorieEstimatorService {
       model: 'gemini-2.5-flash',
       apiKey: apiKey,
       generationConfig: GenerationConfig(
-        // Ensure output is in the right structure (JSON)
         responseMimeType: 'application/json',
       ),
     );
   }
 
+  // --- NEW: Helper function to clean Markdown formatting ---
+  String _cleanJsonResponse(String text) {
+    String cleaned = text.trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.replaceFirst('```json', '');
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replaceFirst('```', '');
+    }
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+    return cleaned.trim();
+  }
+
   // Getting AI calorie estimation from text
   Future<NutritionResult> estimateFromText(String foodDescription) async {
-    final prompt =
-        '''
+    final prompt = '''
 You are a nutrition expert. Estimate the nutritional content for a food described as: "$foodDescription"
 
 If there is missing information then assume and specify assumption in "notes" in the JSON below.
 
 Respond ONLY with this exact JSON structure:
 {
-  "label": "Name of the food without the number (e.g., 'Fried Eggs' instead of '2 Fried Eggs')",
-  "servings": <integer representing the exact quantity requested, e.g., 2>,
+  "label": "Name of the food without the number",
+  "servings": 1,
   "foods": [
     {
       "name": "food name",
-      "amount": "estimated portion (e.g. 1 cup, 150g)",
+      "amount": "estimated portion",
       "calories_kcal": 000,
       "protein_g": 00.0,
       "carbs_g": 00.0,
@@ -59,11 +70,12 @@ Respond ONLY with this exact JSON structure:
 }
 ''';
 
-    print("Prompting with: $foodDescription");
-
     final jsonResponse = await model.generateContent([Content.text(prompt)]);
-    print(jsonResponse.text!);
-    return NutritionResult.fromJson(jsonResponse.text!);
+    String rawText = jsonResponse.text ?? "{}";
+    
+    // Apply the cleaner before parsing
+    String cleanJson = _cleanJsonResponse(rawText);
+    return NutritionResult.fromJson(cleanJson);
   }
 
   // Getting AI calorie estimate from image
@@ -96,15 +108,16 @@ Respond ONLY with this exact JSON structure:
   "confidence": "00.0%",
   "notes": "brief description of what you see"
 }
-
-Be realistic with portion sizes. If image is unclear, set confidence to "low".
 ''';
 
     final jsonResponse = await model.generateContent([
       Content.multi([TextPart(prompt), DataPart("image/jpeg", imageBytes)]),
     ]);
 
-    print("DEBUG\n${jsonResponse.text!}");
-    return NutritionResult.fromJson(jsonResponse.text!);
+    String rawText = jsonResponse.text ?? "{}";
+    
+    // Apply the cleaner before parsing
+    String cleanJson = _cleanJsonResponse(rawText);
+    return NutritionResult.fromJson(cleanJson);
   }
 }

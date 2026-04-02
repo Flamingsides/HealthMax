@@ -5,7 +5,7 @@ import '../user_bottomnavbar.dart';
 import '../user_glassy_profile.dart';
 import 'user_history_feedback.dart'; 
 import '../calorie_provider.dart';
-import '../AI_Features/ai_translator_service.dart'; // <-- IMPORT AI SERVICE
+import '../AI_Features/ai_translator_service.dart';
 
 class UserHistoryCaloriePage extends StatefulWidget {
   const UserHistoryCaloriePage({super.key});
@@ -15,7 +15,6 @@ class UserHistoryCaloriePage extends StatefulWidget {
 
 class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
   final Color themeBlue = const Color(0xFF5A84F1);
-  String _currentSort = 'Newest First'; 
 
   @override
   Widget build(BuildContext context) {
@@ -62,62 +61,80 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
                 ),
               ),
               
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final item = sortedHistory[index];
-                      return Column(
-                        children: [
-                          InkWell(
-                            onTap: () => _showDetailSheet(item.foodName, "${themeProvider.translate('detailed_breakdown')} ${item.foodName}.", isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(height: 70, width: 70, decoration: BoxDecoration(color: item.iconColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)), child: Icon(item.placeholderIcon, size: 35, color: item.iconColor)),
-                                  const SizedBox(width: 15),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            // AI TRANSLATION FOR DYNAMIC FOOD NAMES!
-                                            Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: AiTranslatedText(item.foodName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")))),
-                                            const SizedBox(width: 10),
-                                            Text("Qty : ${item.quantity}", style: TextStyle(fontSize: 11, color: textSecondary)),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('protein')} : ${item.protein}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)))),
-                                            Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('carbohydrates')} : ${item.carbs}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)))),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 5),
-                                        FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('fats')} : ${item.fats}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary))),
-                                        const SizedBox(height: 8),
-                                        Align(alignment: Alignment.centerRight, child: FittedBox(fit: BoxFit.scaleDown, child: Text("${item.calories} kcal", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary)))),
-                                      ],
+              // --- THE NEW EMPTY STATE UI CHECK ---
+              if (sortedHistory.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(40.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.fastfood_outlined, size: 80, color: textSecondary.withValues(alpha: 0.3)),
+                        const SizedBox(height: 20),
+                        Text("No Food Logged Yet", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
+                        const SizedBox(height: 10),
+                        Text("Start tracking your meals to see your daily calorie intake history.", textAlign: TextAlign.center, style: TextStyle(color: textSecondary, height: 1.5)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final item = sortedHistory[index];
+                        return Column(
+                          children: [
+                            InkWell(
+                              onTap: () => _showDetailSheet(item.foodName, "${themeProvider.translate('detailed_breakdown')} ${item.foodName}.", isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(height: 70, width: 70, decoration: BoxDecoration(color: item.iconColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)), child: Icon(item.placeholderIcon, size: 35, color: item.iconColor)),
+                                    const SizedBox(width: 15),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: AiTranslatedText(item.foodName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")))),
+                                              const SizedBox(width: 10),
+                                              Text("Qty : ${item.quantity}", style: TextStyle(fontSize: 11, color: textSecondary)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('protein')} : ${item.protein}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)))),
+                                              Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('carbohydrates')} : ${item.carbs}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)))),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 5),
+                                          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('fats')} : ${item.fats}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary))),
+                                          const SizedBox(height: 8),
+                                          Align(alignment: Alignment.centerRight, child: FittedBox(fit: BoxFit.scaleDown, child: Text("${item.calories} kcal", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary)))),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          if (index < sortedHistory.length - 1) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Divider(color: dividerColor, thickness: 1)),
-                        ],
-                      );
-                    },
-                    childCount: sortedHistory.length,
+                            if (index < sortedHistory.length - 1) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Divider(color: dividerColor, thickness: 1)),
+                          ],
+                        );
+                      },
+                      childCount: sortedHistory.length,
+                    ),
                   ),
                 ),
-              ),
               const SliverToBoxAdapter(child: SizedBox(height: 100)), 
             ],
           ),
@@ -167,7 +184,7 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
     );
   }
 
-void _showCalorieBreakdownSheet(List<CalorieRecord> dataList, int total, bool isDark, Color surfaceColor, Color textPrimary, Color dividerColor, ThemeProvider theme) {
+  void _showCalorieBreakdownSheet(List<CalorieRecord> dataList, int total, bool isDark, Color surfaceColor, Color textPrimary, Color dividerColor, ThemeProvider theme) {
     showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
       builder: (context) => _buildBottomSheetLayout(
@@ -181,7 +198,6 @@ void _showCalorieBreakdownSheet(List<CalorieRecord> dataList, int total, bool is
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // FIXED: Expanded prevents right-side overflow!
                     Expanded(
                       child: AiTranslatedText("${item.quantity}x ${item.foodName}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary))
                     ),
@@ -195,7 +211,6 @@ void _showCalorieBreakdownSheet(List<CalorieRecord> dataList, int total, bool is
             const SizedBox(height: 5),
             Row(
               children: [
-                 // FIXED: Expanded forces the title to respect boundaries
                 Expanded(child: Text(theme.translate('total_intake'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal", color: textPrimary))),
                 const SizedBox(width: 10),
                 Text("$total kcal", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue)),
