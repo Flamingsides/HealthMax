@@ -32,7 +32,7 @@ class AuthGate extends StatelessWidget {
           return FutureBuilder(
             future: Future.wait([
               Provider.of<CalorieProvider>(context, listen: false).fetchUserDataAndLogs(),
-              Provider.of<HealthProvider>(context, listen: false).fetchHealthData(),
+              Provider.of<HealthProvider>(context, listen: false).checkDeviceAndStartMock(),
               Provider.of<GoalProvider>(context, listen: false).fetchGoalData(),
               Provider.of<HPProvider>(context, listen: false).fetchHPConnections(),
               Provider.of<FeedbackProvider>(context, listen: false).fetchFeedback(),

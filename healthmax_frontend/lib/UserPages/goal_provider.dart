@@ -108,8 +108,47 @@ class GoalProvider extends ChangeNotifier {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
     if (user == null) return;
-    try { await supabase.from('users').update({'main_goal': title}).eq('id', user.id); } 
+
+    try { 
+      // Save Main Goal to the Users table
+      await supabase.from('users').update({'main_goal': title}).eq('id', user.id); 
+      
+      // 3. AUTO-GENERATE SUB-TARGETS based on the goal chosen
+      if (title != "N/A" && targets.isEmpty) {
+        await _generateAndSaveSubTargets(title, user.id);
+      }
+    } 
     catch (e) { print("Failed to save main goal: $e"); }
+  }
+
+  // --- NEW: Auto-Generates and Saves to Supabase! ---
+  Future<void> _generateAndSaveSubTargets(String goalTitle, String userId) async {
+    List<TargetItem> generated = [];
+    
+    if (goalTitle == "Lose Weight") {
+      generated = [
+        TargetItem(title: "Calorie Deficit", description: "Stay under your daily calorie limit.", progress: 0.0, currentValue: 0, targetValue: 2000, unit: "kcal", isCompleted: false),
+        TargetItem(title: "Cardio", description: "Complete a cardio session.", progress: 0.0, currentValue: 0, targetValue: 30, unit: "min", isCompleted: false),
+      ];
+    } else if (goalTitle == "More Steps") {
+      generated = [
+        TargetItem(title: "Daily Steps", description: "Walk 10,000 steps today.", progress: 0.0, currentValue: 0, targetValue: 10000, unit: "steps", isCompleted: false),
+      ];
+    } else if (goalTitle == "Build Muscle") {
+      generated = [
+        TargetItem(title: "Protein Intake", description: "Hit your daily protein goal.", progress: 0.0, currentValue: 0, targetValue: 150, unit: "g", isCompleted: false),
+        TargetItem(title: "Strength Training", description: "Complete weight lifting session.", progress: 0.0, currentValue: 0, targetValue: 1, unit: "session", isCompleted: false),
+      ];
+    } else if (goalTitle == "Less Sugar") {
+      generated = [
+        TargetItem(title: "Sugar Limit", description: "Keep added sugar under 30g.", progress: 0.0, currentValue: 0, targetValue: 30, unit: "g", isCompleted: false),
+      ];
+    }
+
+    // Save them to the database and UI instantly
+    for (var target in generated) {
+      addTarget(target); 
+    }
   }
 
   Future<void> addTarget(TargetItem newTarget) async {

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 import '../theme_provider.dart';
 import 'user_bottomnavbar.dart';
 import 'user_glassy_profile.dart'; 
 import '../GeneralPages/supabase_health_service.dart';
 import 'calorie_provider.dart';
 import '../GeneralPages/health_providers.dart'; 
+import 'hp_providers.dart';
 
 class UserStatisticPage extends StatefulWidget {
   final String initialMetric;
@@ -74,10 +76,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   double _getIntervalY() => {'Heart Rate': 25.0, 'Steps': 5000.0, 'Calories': 1000.0, 'Blood Glucose': 50.0, 'Env. Noise': 25.0}[selectedMetric] ?? 25.0;
 
   List<double> _getRawData(HealthProvider hp, CalorieProvider cp) {
-    // --- FLATLINE CHECK (If no device connected, return 0 for everything) ---
-    if (!hp.hasDeviceConnected) {
-       return List.generate(24, (index) => 0.0);
-    }
+    if (!hp.activeMetrics.contains(selectedMetric)) return List.generate(24, (index) => 0.0);
 
     if (selectedTimeframe == 'Day' && _liveHourlyData != null) {
       List<double> updatedCloud = List.from(_liveHourlyData!);
@@ -111,7 +110,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   }
 
   String _getAverageValue(HealthProvider hp, CalorieProvider cp) {
-    if (!hp.hasDeviceConnected) return "0"; // Show 0 if no device
+    if (!hp.activeMetrics.contains(selectedMetric)) return "0"; 
     if (selectedMetric == 'Heart Rate') return "${hp.heartRate} bpm";
     if (selectedMetric == 'Steps') return "${hp.currentSteps}";
     if (selectedMetric == 'Calories') return "${cp.burnedCalories} kcal";
@@ -124,9 +123,9 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
-    
     final healthData = Provider.of<HealthProvider>(context);
     final calorieData = Provider.of<CalorieProvider>(context);
+    final hpData = Provider.of<HPProvider>(context); 
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
@@ -134,6 +133,8 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     final textSecondary = isDark ? Colors.white54 : Colors.grey.shade600;
     final dividerColor = Theme.of(context).dividerColor;
     final currentColor = metricColors[selectedMetric] ?? userBlue;
+
+    bool isMetricUnlocked = healthData.hasDeviceConnected && healthData.activeMetrics.contains(selectedMetric);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -195,65 +196,88 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                       ),
                       const SizedBox(height: 30),
 
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(15, 20, 20, 15),
-                        decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.04), blurRadius: 15, offset: const Offset(0, 8))]),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(child: _buildDropdown(['Heart Rate', 'Steps', 'Calories', 'Blood Glucose', 'Env. Noise'], selectedMetric, (v) { if (v != null) { setState(() { selectedMetric = v; }); _loadDataFromCloud(v); }}, surfaceColor, textPrimary, isDark, themeProvider)),
-                                const SizedBox(width: 10),
-                                Expanded(child: _buildDropdown(['Day', 'Week', 'Month', 'Year'], selectedTimeframe, (v) => setState(() { selectedTimeframe = v!; }), surfaceColor, textPrimary, isDark, themeProvider)),
-                              ],
-                            ),
-                            const SizedBox(height: 30),
-                            SizedBox(height: 220, child: _getGraphType() == 'Spline' ? _buildSplineChart(currentColor, textSecondary, dividerColor, healthData, calorieData) : _buildBarChart(currentColor, textSecondary, dividerColor, healthData, calorieData)),
-                          ],
+                      if (!isMetricUnlocked)
+                        Container(
+                          width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                          decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(30), border: Border.all(color: dividerColor)),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.lock_outline_rounded, size: 60, color: textSecondary.withValues(alpha:0.5)),
+                              const SizedBox(height: 15),
+                              Text("Permission Missing", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                              const SizedBox(height: 8),
+                              Text("You have not permitted any device to track ${themeProvider.translate(selectedMetric)}.", textAlign: TextAlign.center, style: TextStyle(color: textSecondary, fontSize: 13, height: 1.5)),
+                              const SizedBox(height: 25),
+                              Row(
+                                children: [
+                                  Expanded(child: _buildDropdown(['Heart Rate', 'Steps', 'Calories', 'Blood Glucose', 'Env. Noise'], selectedMetric, (v) { if (v != null) { setState(() { selectedMetric = v; }); _loadDataFromCloud(v); }}, surfaceColor, textPrimary, isDark, themeProvider)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        )
+                      else ...[
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(15, 20, 20, 15),
+                          decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.04), blurRadius: 15, offset: const Offset(0, 8))]),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(child: _buildDropdown(['Heart Rate', 'Steps', 'Calories', 'Blood Glucose', 'Env. Noise'], selectedMetric, (v) { if (v != null) { setState(() { selectedMetric = v; }); _loadDataFromCloud(v); }}, surfaceColor, textPrimary, isDark, themeProvider)),
+                                  const SizedBox(width: 10),
+                                  Expanded(child: _buildDropdown(['Day', 'Week', 'Month', 'Year'], selectedTimeframe, (v) => setState(() { selectedTimeframe = v!; }), surfaceColor, textPrimary, isDark, themeProvider)),
+                                ],
+                              ),
+                              const SizedBox(height: 30),
+                              SizedBox(height: 220, child: _getGraphType() == 'Spline' ? _buildSplineChart(currentColor, textSecondary, dividerColor, healthData, calorieData) : _buildBarChart(currentColor, textSecondary, dividerColor, healthData, calorieData)),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: InkWell(
-                          onTap: _isSyncing || !healthData.hasDeviceConnected ? null : () async {
-                            setState(() => _isSyncing = true);
-                            bool success = await SupabaseHealthService().generateAndPushData(selectedMetric);
-                            if (success) {
-                              await _loadDataFromCloud(selectedMetric);
-                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(themeProvider.translate('cloud_sync_complete'), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)), backgroundColor: currentColor, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))));
-                            } else {
-                              setState(() => _isSyncing = false);
-                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(themeProvider.translate('failed_to_connect')), backgroundColor: Colors.red));
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(color: currentColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: currentColor.withValues(alpha: 0.3))),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _isSyncing ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: currentColor, strokeWidth: 2)) : Icon(Icons.cloud_sync_rounded, size: 16, color: currentColor),
-                                const SizedBox(width: 8),
-                                Text(_isSyncing ? themeProvider.translate('syncing') : themeProvider.translate('sync_cloud_data'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: currentColor)),
-                              ],
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: InkWell(
+                            onTap: _isSyncing ? null : () async {
+                              setState(() => _isSyncing = true);
+                              bool success = await SupabaseHealthService().generateAndPushData(selectedMetric);
+                              if (success) {
+                                await _loadDataFromCloud(selectedMetric);
+                                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(themeProvider.translate('cloud_sync_complete'), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)), backgroundColor: currentColor, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))));
+                              } else {
+                                setState(() => _isSyncing = false);
+                                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(themeProvider.translate('failed_to_connect')), backgroundColor: Colors.red));
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(color: currentColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: currentColor.withValues(alpha: 0.3))),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _isSyncing ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: currentColor, strokeWidth: 2)) : Icon(Icons.cloud_sync_rounded, size: 16, color: currentColor),
+                                  const SizedBox(width: 8),
+                                  Text(_isSyncing ? themeProvider.translate('syncing') : themeProvider.translate('sync_cloud_data'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: currentColor)),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 25),
-                      Text(themeProvider.translate('data_breakdown'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
-                      const SizedBox(height: 15),
-                      Row(
-                        children: [
-                          Expanded(child: _buildStatCard(selectedTimeframe == 'Day' ? themeProvider.translate('todays_record') : themeProvider.translate('daily_avg'), _getAverageValue(healthData, calorieData), isDark ? currentColor : currentColor.withValues(alpha:0.8), isDark ? currentColor.withValues(alpha:0.1) : currentColor.withValues(alpha:0.05), textPrimary)),
-                          const SizedBox(width: 15),
-                          Expanded(child: _buildStatCard(themeProvider.translate('status'), _liveHourlyData != null ? "Supabase" : "Mock", isDark ? Colors.lightBlueAccent : Colors.blue.shade800, isDark ? Colors.blue.withValues(alpha:0.1) : Colors.blue.shade50, textPrimary)),
-                        ],
-                      ),
+                        const SizedBox(height: 25),
+                        Text(themeProvider.translate('data_breakdown'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.2, fontFamily: "LexendExaNormal")),
+                        const SizedBox(height: 15),
+                        Row(
+                          children: [
+                            Expanded(child: _buildStatCard(selectedTimeframe == 'Day' ? themeProvider.translate('todays_record') : themeProvider.translate('daily_avg'), _getAverageValue(healthData, calorieData), isDark ? currentColor : currentColor.withValues(alpha:0.8), isDark ? currentColor.withValues(alpha:0.1) : currentColor.withValues(alpha:0.05), textPrimary)),
+                            const SizedBox(width: 15),
+                            Expanded(child: _buildStatCard(themeProvider.translate('status'), _liveHourlyData != null ? "Supabase" : "Live Source", isDark ? Colors.lightBlueAccent : Colors.blue.shade800, isDark ? Colors.blue.withValues(alpha:0.1) : Colors.blue.shade50, textPrimary)),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 140), 
                     ],
                   ),
@@ -262,6 +286,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
             ],
           ),
 
+          // --- BOTTOM ACTION BUTTONS ---
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Container(
@@ -270,9 +295,13 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Expanded(child: _actionBtn(themeProvider.translate('compare_data'), isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE), Icons.compare_arrows_rounded, isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E3A8A), onTap: () {})),
+                  Expanded(child: _actionBtn(themeProvider.translate('compare_data'), isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE), Icons.compare_arrows_rounded, isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E3A8A), onTap: () {
+                    if (isMetricUnlocked) _showCompareDataSheet(surfaceColor, textPrimary, textSecondary, dividerColor, isDark, currentColor, themeProvider);
+                  })),
                   const SizedBox(width: 15),
-                  Expanded(child: _actionBtn(themeProvider.translate('request_feedback'), isDark ? Color.lerp(currentColor, Colors.black, 0.7)! : Color.lerp(currentColor, Colors.white, 0.85)!, Icons.chat_bubble_rounded, currentColor, onTap: () {})),
+                  Expanded(child: _actionBtn(themeProvider.translate('request_feedback'), isDark ? Color.lerp(currentColor, Colors.black, 0.7)! : Color.lerp(currentColor, Colors.white, 0.85)!, Icons.chat_bubble_rounded, currentColor, onTap: () {
+                    if (isMetricUnlocked) _showRequestFeedbackSheet(hpData, _getAverageValue(healthData, calorieData), surfaceColor, textPrimary, textSecondary, dividerColor, isDark, currentColor, themeProvider);
+                  })),
                 ],
               ),
             ),
@@ -283,6 +312,252 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     );
   }
 
+  // ==========================================
+  // 1. COMPARE DATA BOTTOM SHEET (GRAPHS & AI)
+  // ==========================================
+  void _showCompareDataSheet(Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, Color currentColor, ThemeProvider theme) {
+    DateTime date1 = DateTime.now().subtract(const Duration(days: 1));
+    DateTime date2 = DateTime.now();
+    bool isCompared = false;
+    bool isCalculating = false;
+    
+    List<double> mockData1 = [];
+    List<double> mockData2 = [];
+    double avg1 = 0;
+    double avg2 = 0;
+    String aiAnalysisText = "";
+
+    showModalBottomSheet(
+      context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85, // Give it room to breathe
+            decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))), padding: EdgeInsets.fromLTRB(25, 10, 25, 20 + bottomPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 25), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10)))),
+                Text("Compare $selectedMetric", style: TextStyle(color: textPrimary, fontSize: 22, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+                const SizedBox(height: 25),
+
+                // DATE SELECTORS
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final d = await showDatePicker(context: context, initialDate: date1, firstDate: DateTime(2020), lastDate: DateTime.now());
+                          if (d != null) setModalState(() { date1 = d; isCompared = false; });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(15)),
+                          child: Column(children: [Text("Date 1", style: TextStyle(color: textSecondary, fontSize: 11)), const SizedBox(height: 5), Text("${date1.day}/${date1.month}/${date1.year}", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold))]),
+                        ),
+                      ),
+                    ),
+                    Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Icon(Icons.compare_arrows_rounded, color: textSecondary)),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final d = await showDatePicker(context: context, initialDate: date2, firstDate: DateTime(2020), lastDate: DateTime.now());
+                          if (d != null) setModalState(() { date2 = d; isCompared = false; });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(15)),
+                          child: Column(children: [Text("Date 2", style: TextStyle(color: textSecondary, fontSize: 11)), const SizedBox(height: 5), Text("${date2.day}/${date2.month}/${date2.year}", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold))]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // GENERATE BUTTON
+                if (!isCompared && !isCalculating)
+                  SizedBox(width: double.infinity, child: ElevatedButton(
+                    onPressed: () async {
+                      setModalState(() => isCalculating = true);
+                      await Future.delayed(const Duration(seconds: 2)); // Simulate AI analysis
+
+                      // Generate mock arrays
+                      final random = Random();
+                      int base = selectedMetric == 'Steps' ? 300 : (selectedMetric == 'Calories' ? 80 : 65);
+                      int variance = selectedMetric == 'Steps' ? 1000 : (selectedMetric == 'Calories' ? 150 : 25);
+                      
+                      mockData1 = List.generate(24, (index) => (base + random.nextInt(variance)).toDouble());
+                      mockData2 = List.generate(24, (index) => (base + random.nextInt(variance)).toDouble());
+                      
+                      avg1 = mockData1.reduce((a, b) => a + b) / 24;
+                      avg2 = mockData2.reduce((a, b) => a + b) / 24;
+
+                      // AI Analysis Logic
+                      String trend = avg2 > avg1 ? "an increase" : "a decrease";
+                      double percentDiff = ((avg2 - avg1).abs() / avg1) * 100;
+                      
+                      aiAnalysisText = "Your $selectedMetric showed $trend of ${percentDiff.toStringAsFixed(1)}% on ${date2.day}/${date2.month} compared to ${date1.day}/${date1.month}. " +
+                         (avg2 > avg1 
+                          ? (selectedMetric == 'Heart Rate' ? "This higher intensity could indicate stress, intense workouts, or illness." : "Excellent job staying highly active!") 
+                          : (selectedMetric == 'Steps' ? "Your activity dropped significantly. Try taking a walk to hit your goals!" : "Your levels were generally lower and more stable."));
+
+                      setModalState(() { isCalculating = false; isCompared = true; });
+                    }, 
+                    style: ElevatedButton.styleFrom(backgroundColor: currentColor, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))), 
+                    child: const Text("Compare Now", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal"))
+                  )),
+
+                // LOADING STATE
+                if (isCalculating)
+                   Expanded(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: currentColor), const SizedBox(height: 20), Text("AI is analyzing your data...", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold))]))),
+
+                // RESULTS UI (Graphs & AI text)
+                if (isCompared)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Graph 1
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("Date 1 (${date1.day}/${date1.month})", style: TextStyle(fontWeight: FontWeight.bold, color: textSecondary, fontSize: 12)), Text("Avg: ${avg1.toInt()}", style: TextStyle(fontWeight: FontWeight.w900, color: textPrimary))]),
+                          const SizedBox(height: 10),
+                          SizedBox(height: 110, child: _buildMiniChart(mockData1, Colors.grey.shade400, dividerColor)),
+                          const SizedBox(height: 25),
+                          
+                          // Graph 2
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("Date 2 (${date2.day}/${date2.month})", style: TextStyle(fontWeight: FontWeight.bold, color: textSecondary, fontSize: 12)), Text("Avg: ${avg2.toInt()}", style: TextStyle(fontWeight: FontWeight.w900, color: currentColor))]),
+                          const SizedBox(height: 10),
+                          SizedBox(height: 110, child: _buildMiniChart(mockData2, currentColor, dividerColor)),
+                          const SizedBox(height: 30),
+
+                          // AI Insights Box
+                          Container(
+                            padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: currentColor.withValues(alpha:0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: currentColor.withValues(alpha:0.3))),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [Icon(Icons.auto_awesome, color: currentColor, size: 18), const SizedBox(width: 8), Text("AI Insights", style: TextStyle(color: currentColor, fontWeight: FontWeight.w900, fontSize: 14, fontFamily: "LexendExaNormal"))]),
+                                const SizedBox(height: 10),
+                                Text(aiAnalysisText, style: TextStyle(color: textPrimary, fontSize: 13, height: 1.5, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(width: double.infinity, child: TextButton(onPressed: () => setModalState(() => isCompared = false), child: Text("Re-Calculate", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)))),
+                        ],
+                      ),
+                    ),
+                  )
+              ],
+            ),
+          );
+        }
+      ),
+    );
+  }
+
+  // Mini Chart Builder for the Compare Bottom Sheet
+  Widget _buildMiniChart(List<double> data, Color lineColor, Color dividerColor) {
+    if (_getGraphType() == 'Spline') {
+      return LineChart(LineChartData(gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: dividerColor, strokeWidth: 1)), titlesData: const FlTitlesData(show: false), borderData: FlBorderData(show: false), minX: 0, maxX: 23, minY: _getMinY(), maxY: _getMaxY(), lineBarsData: [LineChartBarData(spots: List.generate(data.length, (index) => FlSpot(index.toDouble(), data[index])), isCurved: true, color: lineColor, barWidth: 3, isStrokeCapRound: true, dotData: const FlDotData(show: false), belowBarData: BarAreaData(show: true, color: lineColor.withValues(alpha:0.1)))]));
+    } else {
+      return BarChart(BarChartData(gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: dividerColor, strokeWidth: 1)), titlesData: const FlTitlesData(show: false), borderData: FlBorderData(show: false), maxY: _getMaxY(), barGroups: List.generate(data.length, (index) => BarChartGroupData(x: index, barRods: [BarChartRodData(toY: data[index], color: lineColor, width: 4, borderRadius: const BorderRadius.vertical(top: Radius.circular(2)))]))));
+    }
+  }
+
+  // ==========================================
+  // 2. REQUEST FEEDBACK BOTTOM SHEET (AI)
+  // ==========================================
+  void _showRequestFeedbackSheet(HPProvider hpData, String currentVal, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, Color currentColor, ThemeProvider theme) {
+    if (hpData.connectedCount == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please connect to a Healthcare Provider in Settings first!"), backgroundColor: Colors.redAccent));
+      return;
+    }
+
+    String selectedHp = hpData.providers.firstWhere((hp) => hp.isConnected).name;
+    final TextEditingController msgCtrl = TextEditingController();
+    bool isGenerating = false;
+
+    showModalBottomSheet(
+      context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+          return Container(
+            decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))), padding: EdgeInsets.fromLTRB(25, 10, 25, 30 + bottomPadding),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 25), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10)))),
+                  Text("Ask a Doctor", style: TextStyle(color: textPrimary, fontSize: 24, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal")),
+                  const SizedBox(height: 25),
+
+                  Text("Select Provider", style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 15), decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(15)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedHp, isExpanded: true, dropdownColor: surfaceColor,
+                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: textPrimary),
+                        onChanged: (v) { if (v != null) setModalState(() => selectedHp = v); },
+                        items: hpData.providers.where((hp) => hp.isConnected).map((hp) => DropdownMenuItem(value: hp.name, child: Text(hp.name, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)))).toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Message", style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
+                      GestureDetector(
+                        onTap: () async {
+                          setModalState(() => isGenerating = true);
+                          await Future.delayed(const Duration(seconds: 1)); // Simulate AI
+                          setModalState(() {
+                            msgCtrl.text = "Hello Dr., I am reviewing my $selectedMetric data. My current reading is $currentVal. Is this within a normal range or should I schedule a follow-up consultation?";
+                            isGenerating = false;
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            isGenerating ? SizedBox(width: 12, height: 12, child: CircularProgressIndicator(color: currentColor, strokeWidth: 2)) : Icon(Icons.auto_awesome, color: currentColor, size: 14),
+                            const SizedBox(width: 5),
+                            Text("Auto-Draft with AI", style: TextStyle(color: currentColor, fontWeight: FontWeight.bold, fontSize: 11)),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: msgCtrl, maxLines: 4, style: TextStyle(color: textPrimary, fontSize: 13),
+                    decoration: InputDecoration(filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, hintText: "Describe your concern...", hintStyle: TextStyle(color: textSecondary), border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none), contentPadding: const EdgeInsets.all(15)),
+                  ),
+
+                  const SizedBox(height: 35),
+                  SizedBox(width: double.infinity, child: ElevatedButton(
+                    onPressed: () { 
+                      if (msgCtrl.text.isEmpty) return;
+                      Navigator.pop(context); 
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Secure message sent to $selectedHp!"), backgroundColor: Colors.green));
+                    }, 
+                    style: ElevatedButton.styleFrom(backgroundColor: currentColor, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))), 
+                    child: const Text("Send Request", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900, fontFamily: "LexendExaNormal"))
+                  ))
+                ],
+              ),
+            ),
+          );
+        }
+      ),
+    );
+  }
+
+  // --- EXISTING CHART HELPERS (UNCHANGED) ---
   Widget _buildSplineChart(Color currentColor, Color textSecondary, Color dividerColor, HealthProvider hp, CalorieProvider cp) {
     List<double> rawData = _getRawData(hp, cp);
     return ClipRect(child: LineChart(LineChartData(gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: dividerColor, strokeWidth: 1)), titlesData: _buildTitlesData(textSecondary), borderData: FlBorderData(show: false), minX: 0, maxX: _getMaxX(), minY: _getMinY(), maxY: _getMaxY(), lineBarsData: [LineChartBarData(spots: List.generate(rawData.length, (index) => FlSpot(index.toDouble(), rawData[index])), isCurved: true, curveSmoothness: 0.35, color: currentColor, barWidth: 3.5, isStrokeCapRound: true, dotData: FlDotData(show: selectedTimeframe != 'Day', getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 4, color: currentColor, strokeWidth: 1.5, strokeColor: Theme.of(context).colorScheme.surface)), belowBarData: BarAreaData(show: true, color: currentColor.withValues(alpha:0.1)))]), duration: const Duration(milliseconds: 500), curve: Curves.easeOutCubic));

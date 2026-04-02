@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme_provider.dart';
+import '../GeneralPages/health_providers.dart';
 
 class DeviceModel {
   final String id; final String name; bool isActive; final String syncTime; final IconData icon; final List<String> tags; final int batteryLevel; 
@@ -58,8 +59,12 @@ class _ManageDevicesPageState extends State<ManageDevicesPage> {
         setState(() {
           devices.insert(0, DeviceModel(id: response['id'], name: name, isActive: true, syncTime: "Just Now", icon: Icons.devices_other_rounded, tags: tags, batteryLevel: 100));
         });
+        
+        context.read<HealthProvider>().checkDeviceAndStartMock();
       }
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to save device: $e"), backgroundColor: Colors.redAccent)); }
+    } catch (e) { 
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to save device: $e"), backgroundColor: Colors.redAccent)); 
+    }
   }
 
   Future<void> _toggleDeviceStatus(int index) async {
@@ -67,8 +72,24 @@ class _ManageDevicesPageState extends State<ManageDevicesPage> {
     final newStatus = !device.isActive;
     setState(() { devices[index].isActive = newStatus; devices.sort((a, b) => b.isActive ? 1 : -1); });
 
-    try { await Supabase.instance.client.from('user_devices').update({'is_active': newStatus}).eq('id', device.id); } 
+    try { 
+        await Supabase.instance.client.from('user_devices').update({'is_active': newStatus}).eq('id', device.id); 
+        if (mounted) context.read<HealthProvider>().checkDeviceAndStartMock();
+    } 
     catch (e) { setState(() { devices[index].isActive = !newStatus; }); }
+  }
+
+  // --- NEW: Remove Device Logic ---
+  Future<void> _removeDevice(int index) async {
+    final device = devices[index];
+    setState(() { devices.removeAt(index); });
+    
+    try {
+      await Supabase.instance.client.from('user_devices').delete().eq('id', device.id);
+      if (mounted) context.read<HealthProvider>().checkDeviceAndStartMock();
+    } catch(e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to remove device: $e"), backgroundColor: Colors.redAccent)); 
+    }
   }
 
   @override
@@ -163,7 +184,7 @@ class _ManageDevicesPageState extends State<ManageDevicesPage> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(25),
-          onTap: () => _toggleDeviceStatus(index),
+          onTap: () => _showDeviceDetailsSheet(device, index, surfaceColor, textPrimary, textSecondary, dividerColor, isDark, theme), // UPDATED!
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
@@ -171,10 +192,77 @@ class _ManageDevicesPageState extends State<ManageDevicesPage> {
                 Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, shape: BoxShape.circle), child: Icon(device.icon, size: 28, color: device.isActive ? userBlue : textSecondary)),
                 const SizedBox(width: 15),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(device.name, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: textPrimary)), const SizedBox(height: 4), Row(children: [Icon(Icons.circle, size: 8, color: device.isActive ? Colors.green : Colors.redAccent), const SizedBox(width: 4), Text(device.isActive ? theme.translate('live_syncing') : theme.translate('status_quiet'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: textSecondary))])])),
-                Icon(Icons.power_settings_new_rounded, color: device.isActive ? Colors.green : Colors.redAccent, size: 22),
+                Icon(Icons.arrow_forward_ios_rounded, color: textSecondary.withValues(alpha: 0.5), size: 14),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // --- NEW: THE DETAILS BOTTOM SHEET ---
+  void _showDeviceDetailsSheet(DeviceModel device, int index, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, ThemeProvider theme) {
+    showModalBottomSheet(
+      context: context, backgroundColor: Colors.transparent, isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))), padding: const EdgeInsets.fromLTRB(25, 10, 25, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 25), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10)))),
+            Row(
+              children: [
+                CircleAvatar(radius: 30, backgroundColor: isDark ? Colors.white10 : Colors.grey.shade100, child: Icon(device.icon, size: 30, color: textPrimary)),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(device.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(device.batteryLevel > 20 ? Icons.battery_full_rounded : Icons.battery_alert_rounded, size: 14, color: device.batteryLevel > 20 ? Colors.green : Colors.redAccent),
+                          const SizedBox(width: 4),
+                          Text("${device.batteryLevel}% Battery", style: TextStyle(fontSize: 12, color: textSecondary, fontWeight: FontWeight.bold))
+                        ]
+                      )
+                    ]
+                  )
+                )
+              ]
+            ),
+            const SizedBox(height: 25),
+            Text(theme.translate('select_data_accessed').toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: device.tags.map((tag) => Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: userBlue.withValues(alpha:0.1), borderRadius: BorderRadius.circular(10)), child: Text(theme.translate(tag), style: TextStyle(color: userBlue, fontWeight: FontWeight.bold, fontSize: 11)))).toList()
+            ),
+            const SizedBox(height: 30),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () { Navigator.pop(context); _removeDevice(index); },
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                    label: Text(theme.translate('remove'), style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent.withValues(alpha:0.1), elevation: 0, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  )
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () { Navigator.pop(context); _toggleDeviceStatus(index); },
+                    icon: Icon(device.isActive ? Icons.power_settings_new_rounded : Icons.power_rounded, color: Colors.white, size: 18),
+                    label: Text(device.isActive ? "Disable" : "Enable", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(backgroundColor: device.isActive ? Colors.orange.shade400 : Colors.green.shade500, elevation: 0, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  )
+                ),
+              ],
+            )
+          ],
         ),
       ),
     );

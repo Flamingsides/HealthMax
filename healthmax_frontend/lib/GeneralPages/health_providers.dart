@@ -13,50 +13,90 @@ class HealthProvider extends ChangeNotifier {
   bool isConnected = false;
   bool get hasDeviceConnected => isConnected;
 
-  // ========================================================
-  // REAL DATABASE FETCH (Triggered by AuthGate)
-  // ========================================================
-  Future<void> fetchHealthData() async {
+  // --- NEW: Tracks exactly WHICH metrics the user permitted ---
+  Set<String> activeMetrics = {};
+
+  Timer? _liveDataTimer;
+  Timer? _stepsTimer;
+  final Random _random = Random();
+
+  Future<void> checkDeviceAndStartMock() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
-    final today = DateTime.now().toIso8601String().split('T')[0];
     try {
-      final metrics = await supabase.from('health_metrics').select()
-          .eq('user_id', user.id)
-          .eq('date', today);
+      final response = await supabase
+          .from('user_devices')
+          .select('is_active, permissions_granted')
+          .eq('user_id', user.id);
 
-      if (metrics.isEmpty) {
-         // NEW USER: No data for today. Ensure everything is 0.
-         isConnected = false;
-         heartRate = 0; bloodGlucose = 0; envNoise = 0; currentSteps = 0;
-         heartRateStatusKey = "no_data"; bloodGlucoseStatusKey = "no_data"; envNoiseStatusKey = "no_data";
-      } else {
-         isConnected = true;
-         lastUpdatedKey = "just_now";
-         
-         for (var m in metrics) {
-            String type = m['metric_type'];
-            // Handles both JSON arrays or direct integers based on your schema
-            int val = (m['data_points'] is List) ? (m['data_points'] as List).last : (int.tryParse(m['data_points'].toString()) ?? 0);
-            
-            if (type == 'Heart Rate') { heartRate = val; heartRateStatusKey = "status_normal"; }
-            if (type == 'Steps') currentSteps = val;
-            if (type == 'Blood Glucose') { bloodGlucose = val; bloodGlucoseStatusKey = "status_normal"; }
-            if (type == 'Env. Noise') { envNoise = val; envNoiseStatusKey = "status_quiet"; }
-         }
+      bool hasActiveDevice = false;
+      activeMetrics.clear(); // Reset metrics
+
+      // Loop through all devices and collect the permitted metrics
+      for (var device in response) {
+        if (device['is_active'] == true) {
+          hasActiveDevice = true;
+          List<dynamic> perms = device['permissions_granted'] ?? [];
+          for (var p in perms) {
+            activeMetrics.add(p.toString());
+          }
+        }
       }
-      notifyListeners();
+
+      if (hasActiveDevice) {
+        if (!isConnected) {
+          isConnected = true;
+          _startMockDataEngine();
+        } else {
+          notifyListeners(); 
+        }
+      } else {
+        disconnectAll();
+      }
     } catch (e) {
-      print("Error fetching health metrics: $e");
+      print("Error checking devices: $e");
     }
+  }
+
+  void _startMockDataEngine() {
+    _liveDataTimer?.cancel();
+    _stepsTimer?.cancel();
+
+    heartRate = 72; bloodGlucose = 95; envNoise = 45; currentSteps = 4320;
+    heartRateStatusKey = "status_normal"; bloodGlucoseStatusKey = "status_normal"; 
+    envNoiseStatusKey = "status_quiet"; lastUpdatedKey = "live_syncing";
+    notifyListeners();
+
+    _liveDataTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      heartRate = 70 + _random.nextInt(15);
+      envNoise = 40 + _random.nextInt(25);
+      notifyListeners();
+    });
+
+    _stepsTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
+      currentSteps += _random.nextInt(5);
+      notifyListeners();
+    });
   }
 
   void disconnectAll() {
     isConnected = false;
+    activeMetrics.clear(); // Clear all permissions
+    _liveDataTimer?.cancel();
+    _stepsTimer?.cancel();
+    
     heartRate = 0; bloodGlucose = 0; envNoise = 0; currentSteps = 0;
-    heartRateStatusKey = "no_data"; bloodGlucoseStatusKey = "no_data"; envNoiseStatusKey = "no_data"; lastUpdatedKey = "never";
+    heartRateStatusKey = "no_data"; bloodGlucoseStatusKey = "no_data"; 
+    envNoiseStatusKey = "no_data"; lastUpdatedKey = "never";
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _liveDataTimer?.cancel();
+    _stepsTimer?.cancel();
+    super.dispose();
   }
 }

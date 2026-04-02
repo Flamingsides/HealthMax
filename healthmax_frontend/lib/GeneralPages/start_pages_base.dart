@@ -7,14 +7,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'helper_widgets.dart'; 
 import '../GeneralPages/auth_provider.dart'; 
+import '../theme_provider.dart'; 
 
-// --- Import Global Providers ---
+// --- IMPORT ALL PROVIDERS FOR THE DATA BRIDGE ---
 import 'package:healthmax_frontend/UserPages/calorie_provider.dart';
-import 'package:healthmax_frontend/GeneralPages/health_providers.dart';
 import 'package:healthmax_frontend/UserPages/goal_provider.dart';
+import 'package:healthmax_frontend/GeneralPages/health_providers.dart';
+import 'package:healthmax_frontend/UserPages/hp_providers.dart';
+import 'package:healthmax_frontend/UserPages/feedback_provider.dart';
 
 // ==========================================
-// 1. START PAGE (Role Selection Gateway)
+// 1. START PAGE
 // ==========================================
 class StartPage extends StatelessWidget {
   final String heading1;
@@ -38,6 +41,8 @@ class StartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context); 
+
     return Screen(
       bgDecoration: decoration,
       child: ListView(
@@ -45,22 +50,13 @@ class StartPage extends StatelessWidget {
           BackButton(),
           const SizedBox(height: 100),
           Text(
-            heading1,
-            style: const TextStyle(
-              fontSize: 45,
-              fontFamily: "LexendTeraNormal",
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-            ),
+            theme.translate(heading1), 
+            style: const TextStyle(fontSize: 45, fontFamily: "LexendTeraNormal", fontWeight: FontWeight.w900, color: Colors.white),
             textAlign: TextAlign.center,
           ),
           Text(
-            heading2,
-            style: const TextStyle(
-              fontSize: 30,
-              fontFamily: "LexendMegaNormal",
-              color: Color.fromARGB(255, 249, 234, 67),
-            ),
+            theme.translate(heading2), 
+            style: const TextStyle(fontSize: 30, fontFamily: "LexendMegaNormal", color: Color.fromARGB(255, 249, 234, 67)),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 300),
@@ -68,32 +64,16 @@ class StartPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               CustomButton(
-                label: "LOGIN",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: loginPage),
-                  );
-                },
-                buttonStyle: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade200,
-                  padding: const EdgeInsets.all(5),
-                ),
+                label: theme.translate('LOGIN'), 
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: loginPage)),
+                buttonStyle: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade200, padding: const EdgeInsets.all(5)),
                 textColor: Colors.black87,
               ),
               const SizedBox(height: 20),
               CustomButton(
-                label: "REGISTER",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: registrationPage),
-                  );
-                },
-                buttonStyle: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade200,
-                  padding: const EdgeInsets.all(5),
-                ),
+                label: theme.translate('REGISTER'), 
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: registrationPage)),
+                buttonStyle: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade200, padding: const EdgeInsets.all(5)),
                 textColor: Colors.black87,
               ),
             ],
@@ -112,12 +92,7 @@ class RegistrationPage extends StatefulWidget {
   final WidgetBuilder loginPage;
   final String role; 
 
-  const RegistrationPage({
-    super.key,
-    required this.loginPage,
-    required this.postRegistration,
-    required this.role,
-  });
+  const RegistrationPage({super.key, required this.loginPage, required this.postRegistration, required this.role});
 
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();
@@ -129,18 +104,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
 
-  bool _isSupabaseLoading = false;
+  bool _isSupabaseLoading = false; 
 
   @override
   void dispose() {
-    _usernameCtrl.dispose();
-    _emailCtrl.dispose();
-    _passwordCtrl.dispose();
-    _confirmCtrl.dispose();
+    _usernameCtrl.dispose(); _emailCtrl.dispose(); _passwordCtrl.dispose(); _confirmCtrl.dispose();
     super.dispose();
   }
-
-  // --- REMOVED OLD FETCH DATA LOGIC HERE ---
 
   void register() async {
     final username = _usernameCtrl.text;
@@ -160,17 +130,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
     if (widget.role == "user") {
       setState(() => _isSupabaseLoading = true);
-
       try {
         final authService = AuthService();
-        final response = await authService.register(
-          username, email, password, "Lose Weight",
-        );
+        final response = await authService.register(username, email, password, "Lose Weight");
 
-        if (response == null || response.user == null) {
-          throw const AuthException("Registration failed");
-        }
-
+        if (response == null || response.user == null) throw const AuthException("Registration failed");
         if (mounted) {
           context.read<UserProvider>().setUsername(username);
           Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: widget.postRegistration), (_) => false);
@@ -185,18 +149,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
     } else {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       bool success = await authProvider.registerBaseAccount(username, email, password, widget.role);
-
-      if (success && mounted) {
-        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: widget.postRegistration), (_) => false);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("HP Registration Failed!"), backgroundColor: Colors.redAccent));
-      }
+      if (success && mounted) Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: widget.postRegistration), (_) => false);
+      else if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("HP Registration Failed!"), backgroundColor: Colors.redAccent));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final theme = Provider.of<ThemeProvider>(context); 
 
     return Screen(
       bgDecoration: bgGradientHP, 
@@ -204,22 +165,22 @@ class _RegistrationPageState extends State<RegistrationPage> {
         children: [
           BackButton(),
           const SizedBox(height: 50),
-          const CustomHeading1(text: "Hello!"),
+          CustomHeading1(text: theme.translate("Hello!")),
           const SizedBox(height: 3),
-          const CustomHeading2(text: "Register to get started!"),
+          CustomHeading2(text: theme.translate("Register to get started!")),
           const SizedBox(height: 30),
 
-          _buildTextField("Username", _usernameCtrl, false), const SizedBox(height: 20),
-          _buildTextField("Email", _emailCtrl, false), const SizedBox(height: 20),
-          _buildTextField("Password", _passwordCtrl, true), const SizedBox(height: 20),
-          _buildTextField("Confirm Password", _confirmCtrl, true), const SizedBox(height: 50),
+          _buildTextField(theme.translate("Username"), _usernameCtrl, false), const SizedBox(height: 20),
+          _buildTextField(theme.translate("Email"), _emailCtrl, false), const SizedBox(height: 20),
+          _buildTextField(theme.translate("Password"), _passwordCtrl, true), const SizedBox(height: 20),
+          _buildTextField(theme.translate("Confirm Password"), _confirmCtrl, true), const SizedBox(height: 50),
 
           (_isSupabaseLoading || authProvider.isLoading)
               ? const Center(child: CircularProgressIndicator(color: Colors.white))
-              : CustomShortButton(label: "Register", width: 200, onPressed: register),
+              : CustomShortButton(label: theme.translate("REGISTER"), width: 200, onPressed: register),
           CustomQuestionLink(
-            question: "Already have an account?",
-            linkText: "Login now!",
+            question: theme.translate("Already have an account?"),
+            linkText: theme.translate("Login now!"),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: widget.loginPage)),
           ),
           const SizedBox(height: 40),
@@ -255,15 +216,7 @@ class LoginPage extends StatefulWidget {
   final String homeRoute;
   final String role; 
 
-  const LoginPage({
-    super.key,
-    required this.registrationPage,
-    required this.homeRoute,
-    required this.role,
-    this.decoration,
-    this.onLoginSuccess,
-  });
-
+  const LoginPage({super.key, required this.registrationPage, required this.homeRoute, required this.role, this.decoration, this.onLoginSuccess});
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
@@ -274,17 +227,12 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoggingIn = false;
 
   @override
-  void dispose() {
-    _usernameCtrl.dispose();
-    _passwordCtrl.dispose();
-    super.dispose();
-  }
-
-  // --- REMOVED OLD FETCH DATA LOGIC HERE ---
+  void dispose() { _usernameCtrl.dispose(); _passwordCtrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final theme = Provider.of<ThemeProvider>(context); 
 
     return Screen(
       bgDecoration: widget.decoration,
@@ -292,14 +240,14 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           BackButton(),
           const SizedBox(height: 50),
-          const CustomHeading1(text: "Welcome"),
-          const CustomHeading1(text: "back!"),
+          CustomHeading1(text: theme.translate("Welcome")),
+          CustomHeading1(text: theme.translate("back!")),
           const SizedBox(height: 10),
-          const CustomHeading2(text: "Glad to see you again!"),
+          CustomHeading2(text: theme.translate("Glad to see you again!")),
           const SizedBox(height: 30),
 
-          _buildTextField("Username", _usernameCtrl, false), const SizedBox(height: 20),
-          _buildTextField("Password", _passwordCtrl, true), const SizedBox(height: 50),
+          _buildTextField(theme.translate("Username"), _usernameCtrl, false), const SizedBox(height: 20),
+          _buildTextField(theme.translate("Password"), _passwordCtrl, true), const SizedBox(height: 50),
 
           (auth.isLoading || _isLoggingIn)
               ? const Center(child: Column(
@@ -310,11 +258,11 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ))
               : CustomShortButton(
-                  label: "Login", width: 200,
+                  label: theme.translate("LOGIN"),
+                  width: 200,
                   onPressed: () async {
                     if (_usernameCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields!"), backgroundColor: Colors.redAccent));
-                      return;
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields!"), backgroundColor: Colors.redAccent)); return;
                     }
 
                     if (widget.role == "user") {
@@ -322,23 +270,22 @@ class _LoginPageState extends State<LoginPage> {
                       AuthService authService = AuthService();
                       try {
                         AuthResponse response = await authService.loginWithUsernameAndPassword(_usernameCtrl.text, _passwordCtrl.text);
-
-                        if (response.user == null) {
-                          throw const AuthException("Login failed! Check credentials.");
-                        }
+                        if (response.user == null) throw const AuthException("Login failed! Check credentials.");
 
                         if (await authService.isUserDetailsInitialised()) {
                           
                           // ==========================================
-                          // THE DATA BRIDGE: Fetch all data before routing!
+                          // THE DATA BRIDGE: Fetch all live data!
                           // ==========================================
                           if (mounted) {
                             await Future.wait([
                               context.read<CalorieProvider>().fetchUserDataAndLogs(),
-                              context.read<HealthProvider>().fetchHealthData(),
+                              context.read<HealthProvider>().checkDeviceAndStartMock(), // FIXED!
                               context.read<GoalProvider>().fetchGoalData(),
+                              context.read<HPProvider>().fetchHPConnections(),
+                              context.read<FeedbackProvider>().fetchFeedback(),
                             ]);
-                            
+
                             Navigator.pushNamedAndRemoveUntil(context, widget.homeRoute, (route) => false);
                           }
                         } else {
@@ -356,15 +303,13 @@ class _LoginPageState extends State<LoginPage> {
                       if (success && mounted) {
                         if (widget.onLoginSuccess != null) widget.onLoginSuccess!();
                         else Navigator.pushNamedAndRemoveUntil(context, widget.homeRoute, (route) => false);
-                      } else if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid Credentials!"), backgroundColor: Colors.redAccent));
-                      }
+                      } else if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid Credentials!"), backgroundColor: Colors.redAccent));
                     }
                   },
                 ),
           CustomQuestionLink(
-            question: "Don't have an account?",
-            linkText: "Register Now!",
+            question: theme.translate("Don't have an account?"),
+            linkText: theme.translate("Register Now!"),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: widget.registrationPage)),
           ),
           const SizedBox(height: 40),

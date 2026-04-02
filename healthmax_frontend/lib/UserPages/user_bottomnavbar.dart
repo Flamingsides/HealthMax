@@ -26,10 +26,9 @@ class UserBottomNavBar extends StatelessWidget {
         boxShadow: [BoxShadow(color: shadowColor, blurRadius: 20, offset: const Offset(0, -5))],
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0), 
+        child: SizedBox(
+          height: 75, // FIXED: Replaced Padding with fixed height to match HP Navbar
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(context, Icons.home_filled, themeProvider.translate('home'), 0, isDark, themeProvider),
@@ -52,39 +51,44 @@ class UserBottomNavBar extends StatelessWidget {
       child: GestureDetector(
         onTap: () => _handleNavigation(context, index),
         behavior: HitTestBehavior.opaque, 
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack( // FIXED: Switched to Stack to allow absolute positioning of the indicator
+          alignment: Alignment.center,
           children: [
+            // --- FIXED: Locked strictly to the top edge ---
             if (isActive)
-              Container(
-                height: 5, width: 40,
-                margin: const EdgeInsets.only(bottom: 5),
-                decoration: BoxDecoration(
-                  color: activeColor,
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: [BoxShadow(color: activeColor.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))],
-                ),
-              )
-            else
-              const SizedBox(height: 10),
-              
-            Icon(icon, size: 28, color: isActive ? activeColor : defaultColor),
-            const SizedBox(height: 4),
-            // FIXED: Using Flexible + FittedBox prevents the awkward "Hom-e" word wrap
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: isActive ? activeColor : defaultColor, 
-                    fontSize: 11 * theme.fontScale, 
-                    fontWeight: isActive ? FontWeight.w900 : FontWeight.w700, 
-                    fontFamily: "LexendExaNormal",
+              Positioned(
+                top: 0,
+                child: Container(
+                  height: 5, width: 40,
+                  decoration: BoxDecoration(
+                    color: activeColor,
+                    borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(6), bottomRight: Radius.circular(6)),
+                    boxShadow: [BoxShadow(color: activeColor.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))],
                   ),
                 ),
               ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 5),
+                Icon(icon, size: 28, color: isActive ? activeColor : defaultColor),
+                const SizedBox(height: 4),
+                // PRESERVED: Flexible + FittedBox prevents word wrap on scaling/translations
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: isActive ? activeColor : defaultColor, 
+                        fontSize: 11 * theme.fontScale, 
+                        fontWeight: isActive ? FontWeight.w900 : FontWeight.w700, 
+                        fontFamily: "LexendExaNormal",
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
