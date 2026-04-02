@@ -5,12 +5,7 @@ import '../user_bottomnavbar.dart';
 import '../user_glassy_profile.dart';
 import 'user_history_calorie.dart'; 
 import '../AI_Features/ai_translator_service.dart';
-
-class FeedbackRecord {
-  final String hospitalName; final String date; final String time;
-  final String message; final String feedbackType; final Color typeColor;
-  FeedbackRecord(this.hospitalName, this.date, this.time, this.message, this.feedbackType, this.typeColor);
-}
+import '../feedback_provider.dart'; 
 
 class UserHistoryFeedbackPage extends StatefulWidget {
   const UserHistoryFeedbackPage({super.key});
@@ -20,16 +15,13 @@ class UserHistoryFeedbackPage extends StatefulWidget {
 
 class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
   final Color themeBlue = const Color(0xFF5A84F1);
-  final List<FeedbackRecord> feedbackHistory = [
-    FeedbackRecord("Hospital 1", "17 December 2025", "10:00 am", "Your heart rate today is a bit above normal, try to relax for a while.", "Heart Rate", Colors.redAccent),
-    FeedbackRecord("Hospital 2", "3 December 2025", "10:30 am", "Great job! You've hit a healthy number of steps today.", "Steps", Colors.orange),
-    FeedbackRecord("Hospital 3", "17 December 2025", "10:00 am", "Your glucose level is slightly high, remember to stay hydrated.", "Blood Glucose", Colors.blueAccent),
-  ];
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final feedbackProvider = Provider.of<FeedbackProvider>(context); 
+    
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
     final textPrimary = Theme.of(context).colorScheme.onSurface;
@@ -42,7 +34,6 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverAppBar(
-            // ... (AppBar setup remains the same)
             automaticallyImplyLeading: false, backgroundColor: themeBlue, expandedHeight: 200.0, toolbarHeight: 90.0, pinned: true, elevation: 0, scrolledUnderElevation: 0.0, surfaceTintColor: Colors.transparent,
             actions: const [Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile()))],
             title: Padding(padding: const EdgeInsets.only(left: 15.0), child: FittedBox(fit: BoxFit.scaleDown, child: Text(themeProvider.translate('history'), style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1)))),
@@ -67,68 +58,83 @@ class _UserHistoryFeedbackPageState extends State<UserHistoryFeedbackPage> {
             ),
           ),
           
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final feedback = feedbackHistory[index];
-                  return Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(25), border: isDark ? Border.all(color: dividerColor) : null, boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.03), blurRadius: 8, offset: const Offset(0, 4))]),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start, // Align to top incase text wraps
-                          children: [
-                            CircleAvatar(backgroundColor: isDark ? Colors.white10 : Colors.black87, radius: 22, child: const Icon(Icons.local_hospital, color: Colors.white, size: 20)),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // FIXED: Removed FittedBox, allowed multi-line wrap
-                                      Expanded(child: Text(feedback.hospitalName, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textPrimary))),
-                                      const SizedBox(width: 10),
-                                      // FIXED: Stacked date and time so it doesn't steal width from the hospital name
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(feedback.date, style: TextStyle(fontSize: 10, color: textSecondary)),
-                                          const SizedBox(height: 2),
-                                          Text(feedback.time, style: TextStyle(fontSize: 10, color: textSecondary)),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  
-                                  AiTranslatedText('"${feedback.message}"', style: TextStyle(fontSize: 12, color: textSecondary, height: 1.4)),
-                                  
-                                  const SizedBox(height: 15),
-                                  Row(
-                                    children: [
-                                      Text("Feedback on ", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                                      Text(themeProvider.translate(feedback.feedbackType), style: TextStyle(fontSize: 10, color: feedback.typeColor, fontWeight: FontWeight.bold)),
-                                    ],
-                                  ),
-                                ],
+          // --- EMPTY STATE UI CHECK ---
+          if (feedbackProvider.feedbackHistory.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.monitor_heart_outlined, size: 80, color: textSecondary.withValues(alpha: 0.3)),
+                    const SizedBox(height: 20),
+                    Text("No Feedback Yet", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
+                    const SizedBox(height: 10),
+                    Text("Connect a wearable device or health provider to receive personalized insights.", textAlign: TextAlign.center, style: TextStyle(color: textSecondary, height: 1.5)),
+                  ],
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final feedback = feedbackProvider.feedbackHistory[index];
+                    return Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(25), border: isDark ? Border.all(color: dividerColor) : null, boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.03), blurRadius: 8, offset: const Offset(0, 4))]),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start, 
+                            children: [
+                              CircleAvatar(backgroundColor: isDark ? Colors.white10 : Colors.black87, radius: 22, child: const Icon(Icons.local_hospital, color: Colors.white, size: 20)),
+                              const SizedBox(width: 15),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(child: Text(feedback.hospitalName, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textPrimary))),
+                                        const SizedBox(width: 10),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Text(feedback.date, style: TextStyle(fontSize: 10, color: textSecondary)),
+                                            const SizedBox(height: 2),
+                                            Text(feedback.time, style: TextStyle(fontSize: 10, color: textSecondary)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    AiTranslatedText('"${feedback.message}"', style: TextStyle(fontSize: 12, color: textSecondary, height: 1.4)),
+                                    const SizedBox(height: 15),
+                                    Row(
+                                      children: [
+                                        const Text("Feedback on ", style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                        Text(themeProvider.translate(feedback.feedbackType), style: TextStyle(fontSize: 10, color: feedback.typeColor, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      if (index < feedbackHistory.length - 1) const SizedBox(height: 15), 
-                    ],
-                  );
-                },
-                childCount: feedbackHistory.length,
+                        if (index < feedbackProvider.feedbackHistory.length - 1) const SizedBox(height: 15), 
+                      ],
+                    );
+                  },
+                  childCount: feedbackProvider.feedbackHistory.length,
+                ),
               ),
             ),
-          ),
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),

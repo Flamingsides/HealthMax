@@ -18,8 +18,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
   late ScrollController _scrollController;
   bool _isScrolled = false;
   bool _isAiCalculating = true; 
-  
-  // State to handle the expandable Leaderboard
   bool _isRankingExpanded = false; 
 
   @override
@@ -50,6 +48,10 @@ class _UserTargetPageState extends State<UserTargetPage> {
     int completedTargets = goalData.targets.where((t) => t.isCompleted).length;
     bool hasNoMainGoal = goalData.mainGoal.title == "N/A";
 
+    bool isUserInTop3 = goalData.allRankings.take(3).any((u) => u.isCurrentUser);
+    bool isUserInTop10 = goalData.allRankings.take(10).any((u) => u.isCurrentUser);
+    bool showBottomRow = _isRankingExpanded ? !isUserInTop10 : !isUserInTop3;
+
     return Scaffold(
       backgroundColor: bgColor,
       body: goalData.isLoading ? Center(child: CircularProgressIndicator(color: themeBlue)) : CustomScrollView(
@@ -69,7 +71,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- MAIN GOAL CARD ---
                   Container(
                     width: double.infinity, padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(gradient: LinearGradient(colors: isDark ? [themePurple.withValues(alpha:0.2), surfaceColor] : [themePurple.withValues(alpha:0.1), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(30), border: Border.all(color: themePurple.withValues(alpha:0.5), width: 1.5), boxShadow: isDark ? [] : [BoxShadow(color: themePurple.withValues(alpha:0.15), blurRadius: 20, offset: const Offset(0, 10))]),
@@ -77,37 +78,29 @@ class _UserTargetPageState extends State<UserTargetPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-  crossAxisAlignment: CrossAxisAlignment.start, // Align top so button stays neat if text wraps
-  children: [
-    // FIXED: Wrapped the left section in Expanded
-    Expanded(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8), 
-            decoration: BoxDecoration(color: themePurple.withValues(alpha:0.2), shape: BoxShape.circle), 
-            child: Icon(Icons.flag_circle_rounded, color: themePurple, size: 20)
-          ), 
-          const SizedBox(width: 10), 
-          // Removed FittedBox, allowed wrapping
-          Expanded(
-            child: Text(themeProvider.translate('main_goal'), maxLines: 2, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: themePurple, letterSpacing: 1.5, fontFamily: "LexendExaNormal"))
-          )
-        ]
-      )
-    ),
-    const SizedBox(width: 10),
-    GestureDetector(
-      onTap: () => _showMainGoalEditorSheet(goalData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider), 
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
-        decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha:0.05), borderRadius: BorderRadius.circular(12)), 
-        child: Text(hasNoMainGoal ? "Add Main Goal" : themeProvider.translate('edit'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textPrimary))
-      )
-    ),
-  ],
-),
+                          crossAxisAlignment: CrossAxisAlignment.start, 
+                          children: [
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: themePurple.withValues(alpha:0.2), shape: BoxShape.circle), child: Icon(Icons.flag_circle_rounded, color: themePurple, size: 20)), 
+                                  const SizedBox(width: 10), 
+                                  Expanded(child: Text(themeProvider.translate('main_goal'), maxLines: 2, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: themePurple, letterSpacing: 1.5, fontFamily: "LexendExaNormal")))
+                                ]
+                              )
+                            ),
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: () => _showMainGoalEditorSheet(goalData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider), 
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
+                                decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha:0.05), borderRadius: BorderRadius.circular(12)), 
+                                child: Text(hasNoMainGoal ? themeProvider.translate('Add Main Goal') : themeProvider.translate('edit'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textPrimary))
+                              )
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 20),
                         
                         if (hasNoMainGoal) ...[
@@ -122,7 +115,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    FittedBox(fit: BoxFit.scaleDown, child: AiTranslatedText(goalData.mainGoal.title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal"))),
+                                    FittedBox(fit: BoxFit.scaleDown, child: AiTranslatedText(themeProvider.translate(goalData.mainGoal.title), style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal"))),
                                     const SizedBox(height: 4),
                                     FittedBox(fit: BoxFit.scaleDown, child: Text("${themeProvider.translate('target_label')} ${goalData.mainGoal.targetValue}", style: TextStyle(color: textSecondary, fontSize: 14, fontWeight: FontWeight.w600))),
                                   ],
@@ -139,7 +132,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 500),
                             child: _isAiCalculating 
-                              ? Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha:0.05), borderRadius: BorderRadius.circular(15)), child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: themePurple, strokeWidth: 2)), const SizedBox(width: 10), Expanded(child: AiTranslatedText("AI is analyzing your recent history...", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white54 : Colors.black54)))]))
+                              ? Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black.withValues(alpha:0.05), borderRadius: BorderRadius.circular(15)), child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: themePurple, strokeWidth: 2)), const SizedBox(width: 10), Expanded(child: AiTranslatedText(themeProvider.translate("Analyzing data..."), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white54 : Colors.black54)))]))
                               : Container(
                                   padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: themePurple.withValues(alpha:0.1), borderRadius: BorderRadius.circular(15), border: Border.all(color: themePurple.withValues(alpha:0.3))),
                                   child: Row(
@@ -157,7 +150,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
                   ),
                   const SizedBox(height: 25),
 
-                  // --- SCORE & DAILY GOALS CARD ---
                   Container(
                     width: double.infinity, padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), border: isDark ? Border.all(color: dividerColor) : null, boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.04), blurRadius: 15, offset: const Offset(0, 8))]),
@@ -171,16 +163,14 @@ class _UserTargetPageState extends State<UserTargetPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              FittedBox(fit: BoxFit.scaleDown, child: Text("$completedTargets/${goalData.targets.length} Achieved!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue, fontFamily: "LexendExaNormal"), textAlign: TextAlign.center)),
-                              const SizedBox(height: 4),
-                              Text(goalData.targets.length == completedTargets ? "All targets completed! Great job!" : "Complete ${goalData.targets.length - completedTargets} more to get extra points!", style: TextStyle(fontSize: 11, color: textSecondary, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+                              FittedBox(fit: BoxFit.scaleDown, child: Text("$completedTargets/${goalData.targets.length} ${themeProvider.translate('status')}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: themeBlue, fontFamily: "LexendExaNormal"), textAlign: TextAlign.center)),
                               const SizedBox(height: 35),
                               
                               Text(themeProvider.translate('daily_goals'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: textSecondary, letterSpacing: 1.5, fontFamily: "LexendExaNormal")),
                               const SizedBox(height: 15),
                               
                               if (goalData.targets.isEmpty) 
-                                Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: Text("No targets set.", style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)))
+                                Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: Text(themeProvider.translate("No targets set."), style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold)))
                               else 
                                 ...goalData.targets.asMap().entries.map((entry) => _buildTargetProgress(entry.value, entry.key, goalData, textPrimary, textSecondary, dividerColor, isDark, surfaceColor, themeProvider)),
                             ],
@@ -191,7 +181,6 @@ class _UserTargetPageState extends State<UserTargetPage> {
                   ),
                   const SizedBox(height: 25),
 
-                  // --- EXPANDABLE LEADERBOARD SECTION ---
                   Container(
                     width: double.infinity, padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), border: Border.all(color: dividerColor), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha:0.04), blurRadius: 15, offset: const Offset(0, 8))]),
@@ -199,8 +188,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                       children: [
                         InkWell(
                           onTap: () => setState(() => _isRankingExpanded = !_isRankingExpanded),
-                          splashColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent, highlightColor: Colors.transparent,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -217,30 +205,28 @@ class _UserTargetPageState extends State<UserTargetPage> {
                         
                         AnimatedCrossFade(
                           firstChild: Column(
-                            children: [
-                              ...goalData.allRankings.take(3).map((user) => _buildRankingRow(user, textPrimary)),
-                            ]
+                            children: goalData.allRankings.take(3).map((user) => _buildRankingRow(user, textPrimary)).toList()
                           ),
                           secondChild: Column(
-                            children: [
-                              ...goalData.allRankings.take(10).map((user) => _buildRankingRow(user, textPrimary)),
-                            ]
+                            children: goalData.allRankings.take(10).map((user) => _buildRankingRow(user, textPrimary)).toList()
                           ),
                           crossFadeState: _isRankingExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
                           duration: const Duration(milliseconds: 300),
                         ),
                         
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Column(
-                            children: [
-                              Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26), const SizedBox(height: 4),
-                              Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26), const SizedBox(height: 4),
-                              Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26),
-                            ],
+                        if (showBottomRow) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Column(
+                              children: [
+                                Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26), const SizedBox(height: 4),
+                                Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26), const SizedBox(height: 4),
+                                Icon(Icons.circle, size: 4, color: isDark ? Colors.white24 : Colors.black26),
+                              ],
+                            ),
                           ),
-                        ),
-                        _buildRankingRow(goalData.currentUserRank, textPrimary),
+                          _buildRankingRow(goalData.currentUserRank, textPrimary),
+                        ]
                       ],
                     ),
                   ),
@@ -253,18 +239,17 @@ class _UserTargetPageState extends State<UserTargetPage> {
         ],
       ),
       
-      // --- STATIC FLOATING ADD TARGET BUTTON ---
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 10.0),
         child: FloatingActionButton.extended(
-          onPressed: () => _showAddSubTargetSheet(goalData, surfaceColor, textPrimary, textSecondary, dividerColor, isDark),
+          onPressed: () => _showAddSubTargetSheet(goalData, surfaceColor, textPrimary, textSecondary, dividerColor, isDark, themeProvider),
           backgroundColor: themeBlue, 
           elevation: 8,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          label: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20), 
-            child: Text("Add New Target", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: "LexendExaNormal"))
+          label: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20), 
+            child: Text(themeProvider.translate('set_new_target'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: "LexendExaNormal"))
           ),
         ),
       ),
@@ -286,14 +271,14 @@ class _UserTargetPageState extends State<UserTargetPage> {
                   children: [
                     Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: AiTranslatedText(target.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textPrimary)))),
                     const SizedBox(width: 8),
-                    // DYNAMIC AUTOMATED POINTS
                     if (target.earnedPoints > 0) 
                       Text("+${target.earnedPoints} pts", style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
+              // THE EDIT BUTTON
               GestureDetector(
-                onTap: () => _showEditSubTargetSheet(target, index, goalData, surfaceColor, textPrimary, textSecondary, dividerColor, isDark), 
+                onTap: () => _showEditSubTargetSheet(target, index, goalData, surfaceColor, textPrimary, textSecondary, dividerColor, isDark, theme), 
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
@@ -322,6 +307,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
   }
 
   Widget _buildRankingRow(RankingUser user, Color textPrimary) {
+    String rankText = user.rank > 0 ? "${user.rank}." : "-.";
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -330,7 +316,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
           Expanded(
             child: Row(
               children: [
-                SizedBox(width: 30, child: Text("${user.rank}.", style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : textPrimary))),
+                SizedBox(width: 30, child: Text(rankText, style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : textPrimary))),
                 Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(user.name, style: TextStyle(fontSize: 16, fontWeight: user.isCurrentUser ? FontWeight.w900 : FontWeight.w600, color: user.isCurrentUser ? themeBlue : textPrimary, fontFamily: user.isCurrentUser ? "LexendExaNormal" : null)))),
               ],
             ),
@@ -355,10 +341,10 @@ class _UserTargetPageState extends State<UserTargetPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
-            Text("Set Main Goal", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+            Text(theme.translate("Set Main Goal"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
             const SizedBox(height: 20),
             ...["Lose Weight", "More Steps", "Build Muscle", "Less Sugar"].map((goal) => ListTile(
-              title: Text(goal, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+              title: Text(theme.translate(goal), style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
               trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
               onTap: () {
                 goalData.updateMainGoal(goal, "Optimal");
@@ -371,7 +357,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
     );
   }
 
-  void _showAddSubTargetSheet(GoalProvider goalData, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark) {
+  void _showAddSubTargetSheet(GoalProvider goalData, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, ThemeProvider theme) {
     final TextEditingController titleCtrl = TextEditingController();
     final TextEditingController targetCtrl = TextEditingController();
     final TextEditingController unitCtrl = TextEditingController();
@@ -388,17 +374,17 @@ class _UserTargetPageState extends State<UserTargetPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
-                Text("Add New Daily Target", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                Text(theme.translate("set_new_target"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
                 const SizedBox(height: 20),
                 
-                TextField(controller: titleCtrl, decoration: InputDecoration(labelText: "Task Name (e.g. Drink Water)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
+                TextField(controller: titleCtrl, decoration: InputDecoration(labelText: theme.translate("Target Name"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
                 const SizedBox(height: 10),
                 
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Target Value (e.g. 8)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+                    Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("target_label"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
                     const SizedBox(width: 10),
-                    Expanded(child: TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. glasses)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+                    Expanded(child: TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. kcal, mins)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
                   ],
                 ),
                 
@@ -424,7 +410,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                         Navigator.pop(context);
                       }
                     },
-                    child: const Text("Save Target", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Text(theme.translate("Add Target"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 )
               ],
@@ -435,7 +421,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
     );
   }
 
-  void _showEditSubTargetSheet(TargetItem target, int index, GoalProvider goalData, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark) {
+  void _showEditSubTargetSheet(TargetItem target, int index, GoalProvider goalData, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, ThemeProvider theme) {
     final TextEditingController titleCtrl = TextEditingController(text: target.title);
     final TextEditingController currentCtrl = TextEditingController(text: target.currentValue.toString());
     final TextEditingController targetCtrl = TextEditingController(text: target.targetValue.toString());
@@ -453,22 +439,23 @@ class _UserTargetPageState extends State<UserTargetPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
-                Text("Update Progress", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                Text(theme.translate("Edit Target"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
                 const SizedBox(height: 20),
                 
-                TextField(controller: titleCtrl, decoration: InputDecoration(labelText: "Task Name", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
+                TextField(controller: titleCtrl, decoration: InputDecoration(labelText: theme.translate("Target Name"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
                 const SizedBox(height: 10),
                 
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: currentCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Current Progress", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+                    // CLEARLY LABELLED FOR UPDATING PROGRESS
+                    Expanded(child: TextField(controller: currentCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("Current Progress"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
                     const SizedBox(width: 10),
-                    Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Target Value", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+                    Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("target_label"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
                   ],
                 ),
                 const SizedBox(height: 10),
 
-                TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. steps)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
+                TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. kcal, mins)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
                 
                 const SizedBox(height: 25),
                 Row(
@@ -477,7 +464,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
                         onPressed: () { goalData.deleteTarget(index); Navigator.pop(context); },
-                        child: const Text("Delete", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: Text(theme.translate("remove"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -502,7 +489,7 @@ class _UserTargetPageState extends State<UserTargetPage> {
                             Navigator.pop(context);
                           }
                         },
-                        child: const Text("Save", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: Text(theme.translate("Save"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

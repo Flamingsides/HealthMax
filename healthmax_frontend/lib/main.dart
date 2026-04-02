@@ -13,6 +13,7 @@ import 'UserPages/calorie_provider.dart';
 import 'UserPages/goal_provider.dart';
 import 'UserPages/hp_providers.dart';
 import 'GeneralPages/health_providers.dart';
+import 'UserPages/feedback_provider.dart';
 
 // --- General & User Pages ---
 import 'GeneralPages/welcome_page.dart';
@@ -49,6 +50,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => HPProvider()), 
         ChangeNotifierProvider(create: (context) => HealthProvider()),
+        ChangeNotifierProvider(create: (_) => FeedbackProvider()),
       ],
       child: const MyApp(),
     ),

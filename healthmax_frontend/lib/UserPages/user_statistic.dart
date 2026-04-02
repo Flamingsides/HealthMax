@@ -73,11 +73,14 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
   double _getMaxY() => {'Heart Rate': 150.0, 'Steps': 15000.0, 'Calories': 3500.0, 'Blood Glucose': 150.0, 'Env. Noise': 100.0}[selectedMetric] ?? 150.0;
   double _getIntervalY() => {'Heart Rate': 25.0, 'Steps': 5000.0, 'Calories': 1000.0, 'Blood Glucose': 50.0, 'Env. Noise': 25.0}[selectedMetric] ?? 25.0;
 
-  // --- CONNECTS GRAPH TO THE LIVE HOMEPAGE METRICS ---
   List<double> _getRawData(HealthProvider hp, CalorieProvider cp) {
+    // --- FLATLINE CHECK (If no device connected, return 0 for everything) ---
+    if (!hp.hasDeviceConnected) {
+       return List.generate(24, (index) => 0.0);
+    }
+
     if (selectedTimeframe == 'Day' && _liveHourlyData != null) {
       List<double> updatedCloud = List.from(_liveHourlyData!);
-      // Inject the live real-time value into the current hour so the graph jumps synchronously!
       int currentHour = DateTime.now().hour;
       if (selectedMetric == 'Heart Rate') updatedCloud[currentHour] = hp.heartRate.toDouble();
       else if (selectedMetric == 'Steps') updatedCloud[currentHour] = hp.currentSteps.toDouble();
@@ -97,7 +100,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     int requiredLength = (_getMaxX() + 1).toInt();
     List<double> finalData = baseData.sublist(0, requiredLength);
     
-    // Inject the real live number directly into the end of the chart for the fallback view!
     if (selectedTimeframe == 'Day' && _liveHourlyData == null) {
       if (selectedMetric == 'Heart Rate') finalData[finalData.length - 1] = hp.heartRate.toDouble();
       else if (selectedMetric == 'Steps') finalData[finalData.length - 1] = hp.currentSteps.toDouble();
@@ -108,8 +110,8 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     return finalData;
   }
 
-  // --- CONNECTS TEXT TO THE LIVE HOMEPAGE METRICS ---
   String _getAverageValue(HealthProvider hp, CalorieProvider cp) {
+    if (!hp.hasDeviceConnected) return "0"; // Show 0 if no device
     if (selectedMetric == 'Heart Rate') return "${hp.heartRate} bpm";
     if (selectedMetric == 'Steps') return "${hp.currentSteps}";
     if (selectedMetric == 'Calories') return "${cp.burnedCalories} kcal";
@@ -123,7 +125,6 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     
-    // --- CONSUME GLOBAL PROVIDERS ---
     final healthData = Provider.of<HealthProvider>(context);
     final calorieData = Provider.of<CalorieProvider>(context);
 
@@ -217,7 +218,7 @@ class _UserStatisticPageState extends State<UserStatisticPage> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: InkWell(
-                          onTap: _isSyncing ? null : () async {
+                          onTap: _isSyncing || !healthData.hasDeviceConnected ? null : () async {
                             setState(() => _isSyncing = true);
                             bool success = await SupabaseHealthService().generateAndPushData(selectedMetric);
                             if (success) {
