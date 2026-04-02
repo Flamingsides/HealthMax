@@ -33,110 +33,117 @@ class _UserHistoryCaloriePageState extends State<UserHistoryCaloriePage> {
       backgroundColor: bgColor,
       body: Stack(
         children: [
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                automaticallyImplyLeading: false, backgroundColor: themeBlue, expandedHeight: 200.0, toolbarHeight: 90.0, pinned: true, elevation: 0, scrolledUnderElevation: 0.0, surfaceTintColor: Colors.transparent,
-                actions: const [Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile()))],
-                title: Padding(padding: const EdgeInsets.only(left: 15.0), child: FittedBox(fit: BoxFit.scaleDown, child: Text(themeProvider.translate('history'), style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1)))),
-                flexibleSpace: const FlexibleSpaceBar(collapseMode: CollapseMode.parallax, background: SizedBox.shrink()),
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(60), 
-                  child: Container(
-                    height: 60, width: double.infinity, decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40))),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(30, 10, 30, 10), 
-                      child: Container(
-                        height: 40, decoration: BoxDecoration(color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade200, borderRadius: BorderRadius.circular(30)),
-                        child: Row(
-                          children: [
-                            Expanded(child: Container(margin: const EdgeInsets.all(3), decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2))]), alignment: Alignment.center, child: FittedBox(fit: BoxFit.scaleDown, child: Text(themeProvider.translate('calorie_intake'), style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal", fontSize: 12))))),
-                            Expanded(child: GestureDetector(onTap: () => Navigator.pushReplacement(context, PageRouteBuilder(pageBuilder: (_, __, ___) => const UserHistoryFeedbackPage(), transitionDuration: Duration.zero)), child: Container(margin: const EdgeInsets.all(3), color: Colors.transparent, alignment: Alignment.center, child: FittedBox(fit: BoxFit.scaleDown, child: Text(themeProvider.translate('feedback'), style: TextStyle(fontWeight: FontWeight.w600, color: textSecondary, fontFamily: "LexendExaNormal", fontSize: 12)))))),
-                          ],
+          // --- PULL TO REFRESH ADDED HERE ---
+          RefreshIndicator(
+            onRefresh: () async {
+              await Provider.of<CalorieProvider>(context, listen: false).fetchUserDataAndLogs();
+            },
+            color: themeBlue,
+            backgroundColor: surfaceColor,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(), // Allows pull-to-refresh even if list is short
+              slivers: [
+                SliverAppBar(
+                  automaticallyImplyLeading: false, backgroundColor: themeBlue, expandedHeight: 200.0, toolbarHeight: 90.0, pinned: true, elevation: 0, scrolledUnderElevation: 0.0, surfaceTintColor: Colors.transparent,
+                  actions: const [Padding(padding: EdgeInsets.only(right: 30.0, top: 10.0), child: Center(child: UserGlassyProfile()))],
+                  title: Padding(padding: const EdgeInsets.only(left: 15.0), child: FittedBox(fit: BoxFit.scaleDown, child: Text(themeProvider.translate('history'), style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: "LexendExaNormal", letterSpacing: -1.0, height: 1.1)))),
+                  flexibleSpace: const FlexibleSpaceBar(collapseMode: CollapseMode.parallax, background: SizedBox.shrink()),
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(60), 
+                    child: Container(
+                      height: 60, width: double.infinity, decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40))),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(30, 10, 30, 10), 
+                        child: Container(
+                          height: 40, decoration: BoxDecoration(color: isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade200, borderRadius: BorderRadius.circular(30)),
+                          child: Row(
+                            children: [
+                              Expanded(child: Container(margin: const EdgeInsets.all(3), decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(30), boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2))]), alignment: Alignment.center, child: FittedBox(fit: BoxFit.scaleDown, child: Text(themeProvider.translate('calorie_intake'), style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal", fontSize: 12))))),
+                              Expanded(child: GestureDetector(onTap: () => Navigator.pushReplacement(context, PageRouteBuilder(pageBuilder: (_, __, ___) => const UserHistoryFeedbackPage(), transitionDuration: Duration.zero)), child: Container(margin: const EdgeInsets.all(3), color: Colors.transparent, alignment: Alignment.center, child: FittedBox(fit: BoxFit.scaleDown, child: Text(themeProvider.translate('feedback'), style: TextStyle(fontWeight: FontWeight.w600, color: textSecondary, fontFamily: "LexendExaNormal", fontSize: 12)))))),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              
-              // --- THE NEW EMPTY STATE UI CHECK ---
-              if (sortedHistory.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Padding(
-                    padding: const EdgeInsets.all(40.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.fastfood_outlined, size: 80, color: textSecondary.withValues(alpha: 0.3)),
-                        const SizedBox(height: 20),
-                        Text("No Food Logged Yet", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
-                        const SizedBox(height: 10),
-                        Text("Start tracking your meals to see your daily calorie intake history.", textAlign: TextAlign.center, style: TextStyle(color: textSecondary, height: 1.5)),
-                      ],
+                
+                if (sortedHistory.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Padding(
+                      padding: const EdgeInsets.all(40.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.fastfood_outlined, size: 80, color: textSecondary.withValues(alpha: 0.3)),
+                          const SizedBox(height: 20),
+                          Text("No Food Logged Yet", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")),
+                          const SizedBox(height: 10),
+                          Text("Start tracking your meals to see your daily calorie intake history.\n(Pull down to refresh database)", textAlign: TextAlign.center, style: TextStyle(color: textSecondary, height: 1.5)),
+                        ],
+                      ),
                     ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final item = sortedHistory[index];
-                        return Column(
-                          children: [
-                            InkWell(
-                              onTap: () => _showDetailSheet(item.foodName, "${themeProvider.translate('detailed_breakdown')} ${item.foodName}.", isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(height: 70, width: 70, decoration: BoxDecoration(color: item.iconColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)), child: Icon(item.placeholderIcon, size: 35, color: item.iconColor)),
-                                    const SizedBox(width: 15),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: AiTranslatedText(item.foodName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")))),
-                                              const SizedBox(width: 10),
-                                              Text("Qty : ${item.quantity}", style: TextStyle(fontSize: 11, color: textSecondary)),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            children: [
-                                              Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('protein')} : ${item.protein}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)))),
-                                              Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('carbohydrates')} : ${item.carbs}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)))),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 5),
-                                          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('fats')} : ${item.fats}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary))),
-                                          const SizedBox(height: 8),
-                                          Align(alignment: Alignment.centerRight, child: FittedBox(fit: BoxFit.scaleDown, child: Text("${item.calories} kcal", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary)))),
-                                        ],
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final item = sortedHistory[index];
+                          return Column(
+                            children: [
+                              InkWell(
+                                onTap: () => _showDetailSheet(item.foodName, "${themeProvider.translate('detailed_breakdown')} ${item.foodName}.", isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(height: 70, width: 70, decoration: BoxDecoration(color: item.iconColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)), child: Icon(item.placeholderIcon, size: 35, color: item.iconColor)),
+                                      const SizedBox(width: 15),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: AiTranslatedText(item.foodName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal")))),
+                                                const SizedBox(width: 10),
+                                                Text("Qty : ${item.quantity}", style: TextStyle(fontSize: 11, color: textSecondary)),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('protein')} : ${item.protein}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)))),
+                                                Expanded(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('carbohydrates')} : ${item.carbs}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary)))),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 5),
+                                            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text("${themeProvider.translate('fats')} : ${item.fats}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textPrimary))),
+                                            const SizedBox(height: 8),
+                                            Align(alignment: Alignment.centerRight, child: FittedBox(fit: BoxFit.scaleDown, child: Text("${item.calories} kcal", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary)))),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            if (index < sortedHistory.length - 1) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Divider(color: dividerColor, thickness: 1)),
-                          ],
-                        );
-                      },
-                      childCount: sortedHistory.length,
+                              if (index < sortedHistory.length - 1) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Divider(color: dividerColor, thickness: 1)),
+                            ],
+                          );
+                        },
+                        childCount: sortedHistory.length,
+                      ),
                     ),
                   ),
-                ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)), 
-            ],
+                const SliverToBoxAdapter(child: SizedBox(height: 100)), 
+              ],
+            ),
           ),
           
           Positioned(

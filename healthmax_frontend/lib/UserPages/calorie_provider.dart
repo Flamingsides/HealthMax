@@ -1,16 +1,7 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CalorieRecord {
-  static final _random = Random();
-  static final _icons = [
-    Icons.free_breakfast,
-    Icons.breakfast_dining,
-    Icons.lunch_dining,
-    Icons.food_bank,
-    Icons.dinner_dining,
-  ];
   String foodName;
   int quantity;
   String protein;
@@ -19,15 +10,55 @@ class CalorieRecord {
   int calories;
   String? notes;
   double? confidence;
-  IconData placeholderIcon;
-  Color iconColor;
+  late IconData placeholderIcon;
+  late Color iconColor;
   DateTime timestamp;
 
+  // ========================================================
+  // DETERMINISTIC GENERATORS (Always consistent based on name!)
+  // ========================================================
+  static IconData _getDeterministicIcon(String name) {
+    final icons = [
+      Icons.restaurant_rounded,
+      Icons.local_pizza_rounded,
+      Icons.fastfood_rounded,
+      Icons.local_cafe_rounded,
+      Icons.lunch_dining_rounded,
+      Icons.dinner_dining_rounded,
+      Icons.bakery_dining_rounded,
+      Icons.icecream_rounded,
+      Icons.set_meal_rounded,
+      Icons.ramen_dining_rounded,
+    ];
+    // Create a consistent number from the food string
+    int hash = name.trim().toLowerCase().hashCode.abs();
+    return icons[hash % icons.length];
+  }
+
+  static Color _getDeterministicColor(String name) {
+    final colors = [
+      const Color(0xFF5A84F1), // Blue
+      const Color(0xFFFF9F43), // Orange
+      const Color(0xFF2ED573), // Green
+      const Color(0xFFFF4757), // Red
+      const Color(0xFF8E33FF), // Purple
+      const Color(0xFF1DD1A1), // Mint
+      const Color(0xFFFF7A00), // Deep Orange
+      const Color(0xFF00A8FF), // Light Blue
+    ];
+    int hash = name.trim().toLowerCase().hashCode.abs();
+    return colors[hash % colors.length];
+  }
+
+  // Regular Constructor (intercepts and overrides random icons from UI)
   CalorieRecord(
     this.foodName, this.quantity, this.protein, this.carbs, this.fats, this.calories,
-    this.placeholderIcon, this.iconColor, this.timestamp, {
+    IconData ignoredIcon, Color ignoredColor, this.timestamp, {
     this.notes, String? confidence, r,
-  }) : confidence = _parseConfidence(confidence);
+  }) : confidence = _parseConfidence(confidence) {
+    placeholderIcon = _getDeterministicIcon(foodName);
+    iconColor = _getDeterministicColor(foodName);
+  }
 
   static double? _parseConfidence(dynamic value) {
     if (value == null) return null;
@@ -38,31 +69,36 @@ class CalorieRecord {
   CalorieRecord.fromMap(Map<String, dynamic> map)
     : foodName = map['food_name'] ?? '',
       quantity = map['quantity'] ?? 1,
-      protein = map['proteins']?.toString() ?? '0', // Uses 'proteins' from DB
+      protein = map['proteins']?.toString() ?? '0', 
       carbs = map['carbohydrates']?.toString() ?? '0',
       fats = map['fats']?.toString() ?? '0',
       calories = map['calories'] ?? 0,
       notes = map['notes'],
       confidence = _parseConfidence(map['confidence']),
-      placeholderIcon = _icons[_random.nextInt(_icons.length)],
-      iconColor = Color.fromARGB(255, _random.nextInt(256), _random.nextInt(256), _random.nextInt(256)),
-      timestamp = map['logged_at'] != null ? DateTime.parse(map['logged_at']) : DateTime.now();
+      timestamp = map['logged_at'] != null ? DateTime.parse(map['logged_at']) : DateTime.now() {
+        // Assigns the exact same color/icon on refresh
+        placeholderIcon = _getDeterministicIcon(foodName);
+        iconColor = _getDeterministicColor(foodName);
+      }
 }
 
 class CalorieProvider extends ChangeNotifier {
   List<CalorieRecord> _calorieHistory = [];
   List<CalorieRecord> get calorieHistory => _calorieHistory;
 
-  // Total stats pulled from user_food_stats table
-  int _totalEaten = 0;
-  double _totalCarbs = 0.0;
-  double _totalProtein = 0.0;
-  double _totalFats = 0.0;
-
-  int get totalEaten => _totalEaten;
-  double get totalCarbs => _totalCarbs;
-  double get totalProtein => _totalProtein;
-  double get totalFats => _totalFats;
+  // ========================================================
+  // DYNAMIC GETTERS: Guarantees totals perfectly match the History List!
+  // ========================================================
+  int get totalEaten => _calorieHistory.fold(0, (sum, item) => sum + item.calories);
+  
+  double get totalCarbs => _calorieHistory.fold(0.0, (sum, item) => 
+      sum + (double.tryParse(item.carbs.replaceAll('g', '').trim()) ?? 0.0));
+      
+  double get totalProtein => _calorieHistory.fold(0.0, (sum, item) => 
+      sum + (double.tryParse(item.protein.replaceAll('g', '').trim()) ?? 0.0));
+      
+  double get totalFats => _calorieHistory.fold(0.0, (sum, item) => 
+      sum + (double.tryParse(item.fats.replaceAll('g', '').trim()) ?? 0.0));
 
   // Dynamic Targets
   int targetCalories = 2000; 
@@ -111,21 +147,19 @@ class CalorieProvider extends ChangeNotifier {
         targetCarbs = ((tdee - (targetProtein * 4) - (targetFats * 9)) / 4).toInt();
       }
 
-      // 2. FETCH TOTAL STATS FROM `user_food_stats`
-      final statsData = await supabase.from('user_food_stats').select().eq('user_id', user.id).maybeSingle();
-      if (statsData != null) {
-        _totalEaten = (statsData['total_calories'] ?? 0).toInt();
-        _totalCarbs = (statsData['total_carbohydrates'] ?? 0).toDouble();
-        _totalProtein = (statsData['total_proteins'] ?? 0).toDouble();
-        _totalFats = (statsData['total_fats'] ?? 0).toDouble();
-      } else {
-        _totalEaten = 0; _totalCarbs = 0.0; _totalProtein = 0.0; _totalFats = 0.0;
-      }
-
-      // 3. FETCH ALL LOGS FROM `food_logs`
-      final logs = await supabase.from('food_logs').select().eq('user_id', user.id).order('logged_at', ascending: false);
+      // 2. FETCH ALL LOGS FROM `food_logs` (Filtered for TODAY ONLY)
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final logs = await supabase.from('food_logs').select()
+          .eq('user_id', user.id)
+          .gte('logged_at', '${today}T00:00:00Z')
+          .lte('logged_at', '${today}T23:59:59Z')
+          .order('logged_at', ascending: false);
+          
       _calorieHistory = logs.map((log) => CalorieRecord.fromMap(log)).toList();
       
+      // 3. AUTO-HEAL: Sync the `user_food_stats` table to match reality
+      await _syncStatsToDatabase();
+
       notifyListeners();
     } catch (e) {
       print("Error fetching calorie data: $e");
@@ -133,27 +167,21 @@ class CalorieProvider extends ChangeNotifier {
   }
 
   void clear() {
-    _calorieHistory.clear(); _totalEaten = 0; _totalCarbs = 0.0; _totalProtein = 0.0; _totalFats = 0.0;
-    currentSteps = 0; workoutCalories = 0; notifyListeners();
+    _calorieHistory.clear(); currentSteps = 0; workoutCalories = 0; notifyListeners();
   }
 
   // ========================================================
-  // REAL DATABASE WRITE 
+  // SECURE DATABASE WRITE (No Upsert errors)
   // ========================================================
   Future<void> addFoodRecord(CalorieRecord newRecord) async {
     // 1. Instantly Update UI (Optimistic Update)
     _calorieHistory.insert(0, newRecord);
-    _totalEaten += newRecord.calories;
-    _totalCarbs += double.parse(newRecord.carbs.replaceAll('g', '').trim());
-    _totalProtein += double.parse(newRecord.protein.replaceAll('g', '').trim());
-    _totalFats += double.parse(newRecord.fats.replaceAll('g', '').trim());
     notifyListeners(); 
 
-    // 2. Sync with Backend
     try {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
-      if (user == null) return;
+      if (user == null) throw Exception("User not authenticated.");
 
       // Insert into food_logs
       await supabase.from("food_logs").insert({
@@ -163,23 +191,51 @@ class CalorieProvider extends ChangeNotifier {
         "calories": newRecord.calories,
         "notes": newRecord.notes,
         "confidence": newRecord.confidence,
-        "fats": double.parse(newRecord.fats.replaceAll('g', '').trim()),
-        "proteins": double.parse(newRecord.protein.replaceAll('g', '').trim()), // Matches DB 'proteins'
-        "carbohydrates": double.parse(newRecord.carbs.replaceAll('g', '').trim()),
+        "fats": double.tryParse(newRecord.fats.replaceAll('g', '').trim()) ?? 0,
+        "proteins": double.tryParse(newRecord.protein.replaceAll('g', '').trim()) ?? 0, 
+        "carbohydrates": double.tryParse(newRecord.carbs.replaceAll('g', '').trim()) ?? 0,
         "logged_at": newRecord.timestamp.toIso8601String(),
       });
 
-      // Upsert into user_food_stats
-      await supabase.from("user_food_stats").upsert({
-        "user_id": user.id,
-        "total_calories": _totalEaten,
-        "total_proteins": _totalProtein,
-        "total_fats": _totalFats,
-        "total_carbohydrates": _totalCarbs,
-      });
+      // Sync updated totals to user_food_stats
+      await _syncStatsToDatabase();
 
     } catch (e) {
+      // Rollback UI if database fails
+      _calorieHistory.remove(newRecord);
+      notifyListeners();
       print("Error saving food log: $e");
+      rethrow; 
+    }
+  }
+
+  // Helper function to force user_food_stats to match the actual History list
+  Future<void> _syncStatsToDatabase() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
+
+      final existingStats = await supabase.from("user_food_stats").select().eq("user_id", user.id).maybeSingle();
+      
+      if (existingStats != null) {
+        await supabase.from("user_food_stats").update({
+          "total_calories": totalEaten,
+          "total_proteins": totalProtein,
+          "total_fats": totalFats,
+          "total_carbohydrates": totalCarbs,
+        }).eq("user_id", user.id);
+      } else {
+        await supabase.from("user_food_stats").insert({
+          "user_id": user.id,
+          "total_calories": totalEaten,
+          "total_proteins": totalProtein,
+          "total_fats": totalFats,
+          "total_carbohydrates": totalCarbs,
+        });
+      }
+    } catch(e) {
+        print("Failed to sync stats: $e");
     }
   }
 }

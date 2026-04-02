@@ -28,6 +28,7 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
   String? _error;
 
   final _manualNameCtrl = TextEditingController();
+  final _manualQtyCtrl = TextEditingController(); // NEW QUANTITY CONTROLLER
   final _manualCalCtrl = TextEditingController();
   final _manualCarbCtrl = TextEditingController();
   final _manualProteinCtrl = TextEditingController();
@@ -36,8 +37,13 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
 
   @override
   void dispose() {
-    _textController.dispose(); _manualNameCtrl.dispose(); _manualCalCtrl.dispose();
-    _manualCarbCtrl.dispose(); _manualProteinCtrl.dispose(); _manualFatCtrl.dispose();
+    _textController.dispose(); 
+    _manualNameCtrl.dispose(); 
+    _manualQtyCtrl.dispose();
+    _manualCalCtrl.dispose();
+    _manualCarbCtrl.dispose(); 
+    _manualProteinCtrl.dispose(); 
+    _manualFatCtrl.dispose();
     _manualCommentCtrl.dispose();
     super.dispose();
   }
@@ -159,19 +165,35 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {
+                        onTap: () async {
                           if (_isAiMode) {
                             if (_result == null) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(themeProvider.translate("Please analyze food first!")), backgroundColor: Colors.redAccent)); return; }
                             final newRecord = CalorieRecord(_result!.label, _result!.servings, "${_result!.totalProtein.toStringAsFixed(0)}g", "${_result!.totalCarbs.toStringAsFixed(0)}g", "${_result!.totalFat.toStringAsFixed(0)}g", _result!.totalCalories, Icons.auto_awesome, themeBlue, DateTime.now());
-                            Provider.of<CalorieProvider>(context, listen: false).addFoodRecord(newRecord); Navigator.pop(context);
+                            
+                            try {
+                              await Provider.of<CalorieProvider>(context, listen: false).addFoodRecord(newRecord); 
+                              if (mounted) Navigator.pop(context);
+                            } catch(e) {
+                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to save to database: $e"), backgroundColor: Colors.red));
+                            }
                           } else {
                             if (_manualNameCtrl.text.trim().isEmpty) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(themeProvider.translate("Please enter a meal name!")), backgroundColor: Colors.redAccent)); return; }
+                            
                             int calories = int.tryParse(_manualCalCtrl.text.trim()) ?? 0;
+                            int quantity = int.tryParse(_manualQtyCtrl.text.trim()) ?? 1; // TAKES QUANTITY NOW
+                            
                             String protein = _manualProteinCtrl.text.trim().isEmpty ? "0g" : "${_manualProteinCtrl.text.trim()}g";
                             String carbs = _manualCarbCtrl.text.trim().isEmpty ? "0g" : "${_manualCarbCtrl.text.trim()}g";
                             String fats = _manualFatCtrl.text.trim().isEmpty ? "0g" : "${_manualFatCtrl.text.trim()}g";
-                            final newRecord = CalorieRecord(_manualNameCtrl.text.trim(), 1, protein, carbs, fats, calories, Icons.restaurant, const Color(0xFF2ED573), DateTime.now());
-                            Provider.of<CalorieProvider>(context, listen: false).addFoodRecord(newRecord); Navigator.pop(context);
+                            
+                            final newRecord = CalorieRecord(_manualNameCtrl.text.trim(), quantity, protein, carbs, fats, calories, Icons.restaurant, const Color(0xFF2ED573), DateTime.now());
+                            
+                            try {
+                              await Provider.of<CalorieProvider>(context, listen: false).addFoodRecord(newRecord); 
+                              if (mounted) Navigator.pop(context);
+                            } catch(e) {
+                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to save to database: $e"), backgroundColor: Colors.red));
+                            }
                           }
                         },
                         child: Container(
@@ -306,7 +328,8 @@ class _UserLogFoodPageState extends State<UserLogFoodPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildManualInput(label: null, hint: theme.translate('meal_name'), controller: _manualNameCtrl, textPrimary: textPrimary, textSecondary: textSecondary, isDark: isDark), const SizedBox(height: 25),
+        _buildManualInput(label: null, hint: theme.translate('meal_name'), controller: _manualNameCtrl, textPrimary: textPrimary, textSecondary: textSecondary, isDark: isDark), const SizedBox(height: 15),
+        _buildManualInput(label: theme.translate('Quantity') == 'Quantity' ? 'Quantity' : theme.translate('Quantity'), hint: "E.g. 1, 2, 3...", controller: _manualQtyCtrl, textPrimary: textPrimary, textSecondary: textSecondary, isDark: isDark, isNumber: true), const SizedBox(height: 25),
         _buildManualInput(label: theme.translate('calories'), hint: theme.translate('enter_in_gram'), controller: _manualCalCtrl, textPrimary: textPrimary, textSecondary: textSecondary, isDark: isDark, isNumber: true), const SizedBox(height: 15),
         _buildManualInput(label: theme.translate('carbohydrates'), hint: theme.translate('enter_in_gram'), controller: _manualCarbCtrl, textPrimary: textPrimary, textSecondary: textSecondary, isDark: isDark, isNumber: true), const SizedBox(height: 15),
         _buildManualInput(label: theme.translate('protein'), hint: theme.translate('enter_in_gram'), controller: _manualProteinCtrl, textPrimary: textPrimary, textSecondary: textSecondary, isDark: isDark, isNumber: true), const SizedBox(height: 15),
