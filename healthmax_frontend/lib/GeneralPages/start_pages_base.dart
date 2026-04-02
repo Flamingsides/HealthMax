@@ -281,7 +281,11 @@ class _LoginPageState extends State<LoginPage> {
                         AuthResponse response = await authService.loginWithUsernameAndPassword(_usernameCtrl.text, _passwordCtrl.text);
                         if (response.user == null) throw const AuthException("Login failed! Check credentials.");
 
-                        if (await authService.isUserDetailsInitialised()) {
+                        // --- THE GATEKEEPER CHECK ---
+                        bool isFullyRegistered = await authService.isUserDetailsInitialised();
+
+                        if (isFullyRegistered) {
+                          // They finished registration -> Let them into the Homepage
                           if (mounted) {
                             await Future.wait([
                               context.read<CalorieProvider>().fetchUserDataAndLogs(),
@@ -294,8 +298,14 @@ class _LoginPageState extends State<LoginPage> {
                             Navigator.pushNamedAndRemoveUntil(context, widget.homeRoute, (route) => false);
                           }
                         } else {
-                          // Falls back to Intro if they closed app midway through registration
-                          if (mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrationIntro()));
+                          // They skipped registration questions! Force them back.
+                          if (mounted) {
+                            Navigator.pushAndRemoveUntil(
+                              context, 
+                              MaterialPageRoute(builder: (_) => const RegistrationIntro()), 
+                              (route) => false
+                            );
+                          }
                         }
                       } on AuthException catch (e) {
                         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent));
@@ -304,12 +314,6 @@ class _LoginPageState extends State<LoginPage> {
                       } finally {
                         if (mounted) setState(() => _isLoggingIn = false);
                       }
-                    } else {
-                      bool success = await auth.login(_usernameCtrl.text, _passwordCtrl.text, widget.role);
-                      if (success && mounted) {
-                        if (widget.onLoginSuccess != null) widget.onLoginSuccess!();
-                        else Navigator.pushNamedAndRemoveUntil(context, widget.homeRoute, (route) => false);
-                      } else if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid Credentials!"), backgroundColor: Colors.redAccent));
                     }
                   },
                 ),

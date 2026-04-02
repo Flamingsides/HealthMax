@@ -67,7 +67,6 @@ class MockData {
   ];
 
   static List<UserModel> pendingRequests = [
-    // --- VARIETY INTRODUCED HERE! ---
     UserModel(username: "diana_p", fullName: "Diana Prince", gender: "F", height: 168, weight: 60, device: "Garmin Venu 3", requestedData: ['Heart Rate', 'Steps', 'Calories']),
     UserModel(username: "ethan_h", fullName: "Ethan Hunt", gender: "M", height: 178, weight: 80, device: "Apple Watch Ultra", requestedData: ['Heart Rate', 'Steps', 'Oxygen Saturation', 'Sleep']),
     UserModel(username: "clark_k", fullName: "Clark Kent", gender: "M", height: 190, weight: 95, device: "Fitbit Sense 2", requestedData: ['Steps', 'Calories']),
@@ -77,9 +76,13 @@ class MockData {
 
   static List<FeedbackRequest> feedbackRequests = [
     FeedbackRequest(activeUsers[2], "Heart Rate", "10 mins ago", const Color(0xFFFF4757), "HR"),
-    FeedbackRequest(activeUsers[1], "Glucose Level", "1 hour ago", const Color(0xFF2ED573), "GL"), 
+    FeedbackRequest(activeUsers[1], "Glucose Level", "1 hour ago", const Color(0xFF4ECDC4), "GL"), 
     FeedbackRequest(activeUsers[0], "Steps", "3 hours ago", const Color(0xFFFF9F43), "ST"), 
-    FeedbackRequest(activeUsers[4], "Calories", "5 hours ago", const Color(0xFF5A84F1), "CAL"), 
+    FeedbackRequest(activeUsers[4], "Calories", "5 hours ago", const Color(0xFFFFD93D), "CAL"), 
     FeedbackRequest(activeUsers[3], "Heart Rate", "1 day ago", const Color(0xFFFF4757), "HR"), 
+    FeedbackRequest(activeUsers[5], "Env. Noise", "1 day ago", const Color(0xFF45B7D1), "EN"), 
+    FeedbackRequest(activeUsers[6], "Steps", "2 days ago", const Color(0xFFFF9F43), "ST"), 
+    FeedbackRequest(activeUsers[7], "Calories", "2 days ago", const Color(0xFFFFD93D), "CAL"), 
+    FeedbackRequest(activeUsers[8], "Glucose Level", "3 days ago", const Color(0xFF4ECDC4), "GL"), 
   ];
 }

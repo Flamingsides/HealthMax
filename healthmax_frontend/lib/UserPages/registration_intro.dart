@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:healthmax_frontend/UserPages/registration_questions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../GeneralPages/helper_widgets.dart';
+import '../UserPages/user_start_pages.dart';
 
 class RegistrationIntro extends StatelessWidget {
   const RegistrationIntro({super.key});
@@ -25,15 +27,28 @@ class RegistrationIntro extends StatelessWidget {
             children: [
               // Universal Back Button
               Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 15.0, top: 10.0),
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 15.0, top: 10.0, bottom: 20.0),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+                onPressed: () async {
+                  // 1. Sign out the incomplete ghost session!
+                  await Supabase.instance.client.auth.signOut(); 
+                  
+                  // 2. Route safely back to the Start Page
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      // Replace this with however your User Start Page is called:
+                      MaterialPageRoute(builder: (context) => const UserStartPage()), 
+                      (route) => false
+                    );
+                  }
+                },
               ),
+            ),
+          ),
               
               Expanded(
                 child: Padding(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ==========================================
 // TRANSLATION DICTIONARY
@@ -32,6 +33,7 @@ class AppTranslations {
       'manage_devices': 'Manage Devices', 'no_devices_connected': 'No devices connected.', 'connect_new_device': 'Connect New Device', 'disconnect': 'Disconnect', 'target_name': 'Target Name',
       // Alerts & Actions
       'preparing_export': 'Preparing export...', 'logout_confirm': 'Are you sure you want to log out?',
+      
     },
     'ms': {
       'home': 'Utama', 'history': 'Sejarah', 'calorie': 'Kalori', 'statistics': 'Statistik', 'target': 'Sasaran', 'edit': 'Sunting', 'close': 'Tutup', 'status': 'Status',
@@ -114,6 +116,7 @@ class ThemeProvider extends ChangeNotifier {
     return AppTranslations.getText(currentLanguage, key);
   }
 
+
   static final lightTheme = ThemeData(
     fontFamily: "LexendExaNormal", 
     scaffoldBackgroundColor: const Color(0xFFF8F9FA), 
@@ -143,4 +146,20 @@ class ThemeProvider extends ChangeNotifier {
     iconTheme: const IconThemeData(color: Colors.white),
     dividerColor: Colors.white10,
   );
+
+  Future<void> resetToDefault() async {
+    // Reset internal variables to default
+    fontScale = 1.0; 
+    themeMode = ThemeMode.light;
+    currentLanguage = 'en'; 
+    
+    // Notify the UI to shrink the text back down
+    notifyListeners(); 
+
+    // Wipe the saved preferences from device storage
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('fontScale'); 
+    await prefs.remove('isDarkMode');
+    await prefs.remove('currentLanguage'); 
+  }
 }

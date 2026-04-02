@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../theme_provider.dart'; 
 import 'hp_bottomnavbar.dart';
 import 'hp_glassy_profile.dart';
-import 'usermodel.dart'; // Implemented MockData
+import 'usermodel.dart'; 
 import 'hp_requestselected.dart';
 import 'hp_feedback_desk.dart';
 
@@ -16,9 +16,8 @@ class HPRequestsPage extends StatefulWidget {
 }
 
 class _HPRequestsPageState extends State<HPRequestsPage> {
-  // --- STATE & DATA ---
   bool _isExpanded = false;
-  final List<UserModel> _newRequests = MockData.pendingRequests; // Wired directly to MockData!
+  final List<UserModel> _newRequests = MockData.pendingRequests; 
 
   @override
   Widget build(BuildContext context) {
@@ -39,11 +38,10 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // --- PREMIUM SLIVER APP BAR ---
               SliverAppBar(
                 automaticallyImplyLeading: false,
                 backgroundColor: themePurple,
-                expandedHeight: 150.0, // FIX 5: Decreased height
+                expandedHeight: 150.0, 
                 toolbarHeight: 90.0,
                 pinned: true,
                 elevation: 0,
@@ -80,12 +78,10 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
                 ),
               ),
 
-              // --- MAIN BODY CONTENT ---
               SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- FIX 5: MODERN SEARCH BAR ---
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 25.0),
                       child: Container(
@@ -135,14 +131,12 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
                       child: _buildFeedbackContainer(surfaceColor, isDark, dividerColor),
                     ),
 
-                    const SizedBox(height: 120), // Bottom padding for NavBar
+                    const SizedBox(height: 120), 
                   ],
                 ),
               ),
             ],
           ),
-
-          // --- BOTTOM NAVIGATION BAR ---
           ],
       ),
       bottomNavigationBar: HPBottomNavBar(currentIndex: 2, activeColor: themePurple), 
@@ -245,7 +239,6 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
 
  Widget _buildFeedbackContainer(Color surfaceColor, bool isDark, Color dividerColor) {
     final containerColor = isDark ? surfaceColor : const Color(0xFF1A1A1A);
-    // Grab the live list!
     final feedbackList = MockData.feedbackRequests;
 
     return Container(
@@ -273,7 +266,6 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
           ),
           const SizedBox(height: 25),
           
-          // --- DYNAMIC AVATAR LIST ---
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -282,18 +274,18 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
                 if (feedbackList.isEmpty)
                   const Text("No pending feedbacks.", style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic)),
                 
-                // Maps the first 3 requests to Avatars
-                ...feedbackList.take(3).map((req) {
+                // Maps the first 4 requests to Avatars
+                ...feedbackList.take(4).map((req) {
                   return _feedbackAvatar(req.user.fullName.split(" ")[0], req.label, req.color);
                 }),
                 
-                // Calculates the exact +X badge automatically
-                if (feedbackList.length > 3)
+                // If there are more than 4, show the overflow badge
+                if (feedbackList.length > 4)
                   Container(
                     width: 45, height: 45,
-                    margin: const EdgeInsets.only(bottom: 22), // Align with avatars
+                    margin: const EdgeInsets.only(bottom: 22, right: 10), 
                     decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle, border: Border.all(color: Colors.white24)),
-                    child: Center(child: Text("+${feedbackList.length - 3}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+                    child: Center(child: Text("+${feedbackList.length - 4}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
                   ),
               ],
             ),
@@ -302,7 +294,6 @@ class _HPRequestsPageState extends State<HPRequestsPage> {
           
           ElevatedButton(
             onPressed: () {
-               // Routes flawlessly to the desk!
                Navigator.push(context, MaterialPageRoute(builder: (context) => const HPFeedbackDeskPage()));
             },
             style: ElevatedButton.styleFrom(

@@ -209,16 +209,31 @@ class UserSettingsPage extends StatelessWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(theme.translate('cancel'), style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold))),
           ElevatedButton(
-            onPressed: () {
-              context.read<CalorieProvider>().clear();
-              final auth = AuthService();
-              auth.logout();
-              Navigator.pop(context);
-              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF4B4B), elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-            child: Text(theme.translate('log_out'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
+            onPressed: () async {
+    // 1. CLEAR ALL PROVIDER DATA
+    // We use listen: false because we are just calling a method, not drawing UI
+    context.read<ThemeProvider>().resetToDefault();
+    
+    // Example of clearing other providers so data doesn't leak:
+    // context.read<CalorieProvider>().reset();
+    // context.read<HealthProvider>().reset();
+    // context.read<HPProvider>().reset();
+    // context.read<FeedbackProvider>().reset();
+
+    // 2. SIGN OUT OF SUPABASE
+    await Supabase.instance.client.auth.signOut();
+
+    // 3. NAVIGATE TO START PAGE AND DESTROY HISTORY
+    if (context.mounted) {
+      Navigator.pushNamedAndRemoveUntil(
+        context, 
+        '/', 
+        (route) => false 
+      );
+    }
+  },
+  child: const Text("Log Out"),
+)
         ],
       ),
     );

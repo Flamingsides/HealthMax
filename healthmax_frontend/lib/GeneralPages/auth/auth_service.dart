@@ -36,19 +36,36 @@ class AuthService {
     }
   }
 
-  Future<bool> isUserDetailsInitialised() async {
-    if (_supabase.auth.currentUser != null) {
-      final response = await _supabase
-          .from("users")
-          .select(
-            "gender",
-          ) // Gender field is only added after user details have been initialised
-          .eq("id", _supabase.auth.currentUser!.id)
-          .maybeSingle();
+Future<bool> isUserDetailsInitialised() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return false;
 
-      return response?.isNotEmpty ?? false;
+    try {
+      // 1. Fetch fields that are ONLY filled out at the END of the questionnaire
+      final data = await Supabase.instance.client
+          .from('users')
+          .select('gender, height_cm, weight_kg') // Select specific required fields
+          .eq('id', user.id)
+          .maybeSingle(); 
+
+      // 2. If the row doesn't exist at all, they aren't registered.
+      if (data == null) return false;
+
+      // 3. THE CATCH: If the row exists, but the questionnaire data is empty/null/0,
+      // it means they pressed back before finishing!
+      if (data['gender'] == null || 
+          data['height_cm'] == null || data['height_cm'] == 0 ||
+          data['weight_kg'] == null || data['weight_kg'] == 0) {
+        return false; 
+      }
+
+      // 4. Row exists AND has real data = Fully Registered!
+      return true; 
+      
+    } catch (e) {
+      print("Error checking registration status: $e");
+      return false;
     }
-    return false;
   }
 
   void initialiseUserDetails(
@@ -115,5 +132,23 @@ class AuthService {
     final session = _supabase.auth.currentSession;
     final user = session?.user;
     return user?.email;
+  }
+
+  Future<bool> isRegistered() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return false;
+
+    try {
+      // Checks if the user actually completed the questions and saved to the DB
+      final response = await Supabase.instance.client
+          .from('users')
+          .select('id') 
+          .eq('id', user.id)
+          .maybeSingle();
+
+      return response != null; // Returns TRUE if finished, FALSE if incomplete
+    } catch (e) {
+      return false;
+    }
   }
 }
