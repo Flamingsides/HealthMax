@@ -171,20 +171,38 @@ class CalorieProvider extends ChangeNotifier {
     }
   }
 
-  // --- NEW: FETCHES ACTIVE CALORIE TARGETS TO ADD TO BURNED ---
-  Future<void> syncWorkoutCalories() async {
+Future<void> syncWorkoutCalories() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
     try {
-      final targetsData = await supabase.from('user_targets').select('current_value, unit').eq('user_id', user.id);
+      final targetsData = await supabase.from('user_targets').select('current_value, target_value, unit, description').eq('user_id', user.id);
 
       int totalWorkoutCals = 0;
       for (var t in targetsData) {
-        String unit = (t['unit'] ?? '').toString().toLowerCase();
-        if (unit.contains('kcal') || unit.contains('cal')) {
-          totalWorkoutCals += (t['current_value'] as num?)?.toInt() ?? 0;
+        String desc = (t['description'] ?? '').toString();
+        int currentVal = (t['current_value'] as num?)?.toInt() ?? 0;
+        int targetVal = (t['target_value'] as num?)?.toInt() ?? 1;
+        if (targetVal == 0) targetVal = 1;
+
+        // Calculate how much of the target is completed (e.g., 0.5 for 50%)
+        double progress = (currentVal / targetVal).clamp(0.0, 1.0);
+
+        // Scan the description for our secret [kcal:XXX] tag
+        RegExp regExp = RegExp(r'\[kcal:(\d+)\]');
+        var match = regExp.firstMatch(desc);
+        
+        if (match != null) {
+          int totalKcal = int.parse(match.group(1)!);
+          // If target is 50% done, you get 50% of the calories!
+          totalWorkoutCals += (totalKcal * progress).toInt();
+        } else {
+          // Fallback for old targets that used "kcal" as the unit directly
+          String unit = (t['unit'] ?? '').toString().toLowerCase();
+          if (unit.contains('kcal') || unit.contains('cal')) {
+            totalWorkoutCals += currentVal;
+          }
         }
       }
 

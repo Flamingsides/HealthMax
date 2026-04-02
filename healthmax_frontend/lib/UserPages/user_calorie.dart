@@ -19,6 +19,9 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
   final Color themeBlue = const Color(0xFF5A84F1);
   late ScrollController _scrollController;
   bool _isScrolled = false;
+  
+  // --- NEW: Track refreshing state ---
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -38,7 +41,26 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
     super.dispose();
   }
 
-  // --- REMOVED OLD _fetchNutrientData() ---
+  // --- NEW: Explicit Refresh Function ---
+  Future<void> _refreshData() async {
+    setState(() => _isRefreshing = true);
+    try {
+      await Provider.of<CalorieProvider>(context, listen: false).fetchUserDataAndLogs();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Data synced successfully!"), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to sync data."), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,279 +80,296 @@ class _UserCaloriePageState extends State<UserCaloriePage> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: CustomScrollView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: themeBlue,
-            expandedHeight: 200.0,
-            toolbarHeight: 90.0,
-            pinned: true,
-            elevation: 0,
-            scrolledUnderElevation: 0.0,
-            surfaceTintColor: Colors.transparent,
-            title: AnimatedOpacity(
-              duration: const Duration(milliseconds: 250),
-              opacity: _isScrolled ? 1.0 : 0.0,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 15.0, top: 10.0),
-                child: ShaderMask(
-                  shaderCallback: (Rect bounds) => const LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [Colors.white, Colors.white, Colors.transparent],
-                    stops: [0.0, 0.85, 1.0],
-                  ).createShader(bounds),
-                  blendMode: BlendMode.dstIn,
-                  child: Text(
-                    themeProvider.translate('calorie_intake'),
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      fontFamily: "LexendExaNormal",
+      // --- NEW: Wrap with RefreshIndicator ---
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        color: themeBlue,
+        backgroundColor: surfaceColor,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(), // Ensures pull-to-refresh always works
+          slivers: [
+            SliverAppBar(
+              automaticallyImplyLeading: false,
+              backgroundColor: themeBlue,
+              expandedHeight: 200.0,
+              toolbarHeight: 90.0,
+              pinned: true,
+              elevation: 0,
+              scrolledUnderElevation: 0.0,
+              surfaceTintColor: Colors.transparent,
+              title: AnimatedOpacity(
+                duration: const Duration(milliseconds: 250),
+                opacity: _isScrolled ? 1.0 : 0.0,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 15.0, top: 10.0),
+                  child: ShaderMask(
+                    shaderCallback: (Rect bounds) => const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Colors.white, Colors.white, Colors.transparent],
+                      stops: [0.0, 0.85, 1.0],
+                    ).createShader(bounds),
+                    blendMode: BlendMode.dstIn,
+                    child: Text(
+                      themeProvider.translate('calorie_intake'),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        fontFamily: "LexendExaNormal",
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                // --- NEW: Sync Button ---
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0, right: 10.0),
+                  child: IconButton(
+                    icon: _isRefreshing 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.sync_rounded, color: Colors.white, size: 26),
+                    onPressed: _isRefreshing ? null : _refreshData,
+                    tooltip: "Sync with Database",
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(right: 30.0, top: 10.0),
+                  child: Center(child: UserGlassyProfile()),
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.parallax,
+                background: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 20, 30, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            themeProvider.translate('calorie_intake').replaceFirst(' ', '\n'),
+                            style: const TextStyle(
+                              fontSize: 42,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              fontFamily: "LexendExaNormal",
+                              letterSpacing: -1.0,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(30),
+                child: Transform.translate(
+                  offset: const Offset(0, 1),
+                  child: Container(
+                    height: 31, width: double.infinity,
+                    decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40))),
+                  ),
+                ),
+              ),
+            ),
+
+            SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 650),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                    child: Column(
+                      children: [
+                        // --- OVERVIEW CARD ---
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(30),
+                            border: isDark ? Border.all(color: dividerColor) : null,
+                            boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))],
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                themeProvider.translate('today'),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal"),
+                              ),
+                              const SizedBox(height: 25),
+
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: _buildClickableStat(
+                                      label: themeProvider.translate('eaten'),
+                                      value: calorieData.totalEaten,
+                                      textPrimary: textPrimary, textSecondary: textSecondary,
+                                      onTap: () => _showEatenBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 4,
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          CircularProgressIndicator(
+                                            value: 1.0, strokeWidth: 12,
+                                            color: isDark ? Colors.white10 : Colors.grey.shade100,
+                                          ),
+                                          TweenAnimationBuilder(
+                                            tween: Tween<double>(
+                                              begin: 0,
+                                              end: (calorieData.totalEaten / calorieData.targetCalories).clamp(0.0, 1.0),
+                                            ),
+                                            duration: const Duration(seconds: 2),
+                                            curve: Curves.easeOutCubic,
+                                            builder: (context, value, child) =>
+                                                CircularProgressIndicator(
+                                                  value: value, strokeWidth: 12,
+                                                  backgroundColor: Colors.transparent,
+                                                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF7A00)),
+                                                  strokeCap: StrokeCap.round,
+                                                ),
+                                          ),
+                                          Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  "${calorieData.leftCalories}",
+                                                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1),
+                                                ),
+                                              ),
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  themeProvider.translate('kcal_left'),
+                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textSecondary),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 3,
+                                    child: _buildClickableStat(
+                                      label: themeProvider.translate('burned'),
+                                      value: calorieData.burnedCalories,
+                                      textPrimary: textPrimary, textSecondary: textSecondary,
+                                      onTap: () => _showBurnedBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // --- BREAKDOWN & SUMMARY ROW ---
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
+                                decoration: BoxDecoration(
+                                  color: surfaceColor, borderRadius: BorderRadius.circular(30),
+                                  border: isDark ? Border.all(color: dividerColor) : null,
+                                  boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))],
+                                ),
+                                child: Column(
+                                  children: [
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(themeProvider.translate('intake_breakdown'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                                    ),
+                                    const SizedBox(height: 25),
+                                    SizedBox(
+                                      height: 140,
+                                      child: PieChart(
+                                        PieChartData(
+                                          sectionsSpace: 0, centerSpaceRadius: 30, startDegreeOffset: 270,
+                                          sections: _getMacroSections(calorieData),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 35),
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 10.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            _buildLegendItem(carbColor, themeProvider.translate('carbohydrates'), textPrimary),
+                                            _buildLegendItem(proteinColor, themeProvider.translate('protein'), textPrimary),
+                                            _buildLegendItem(fatColor, themeProvider.translate('fats'), textPrimary),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            Expanded(
+                              flex: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
+                                decoration: BoxDecoration(
+                                  color: surfaceColor, borderRadius: BorderRadius.circular(30),
+                                  border: isDark ? Border.all(color: dividerColor) : null,
+                                  boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Center(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(themeProvider.translate('summary'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 25),
+                                    _buildSummaryMacro(themeProvider.translate('carbohydrates'), calorieData.totalCarbs.toInt(), calorieData.targetCarbs, textPrimary, textSecondary, themeProvider),
+                                    const SizedBox(height: 20),
+                                    _buildSummaryMacro(themeProvider.translate('protein'), calorieData.totalProtein.toInt(), calorieData.targetProtein, textPrimary, textSecondary, themeProvider),
+                                    const SizedBox(height: 20),
+                                    _buildSummaryMacro(themeProvider.translate('fats'), calorieData.totalFats.toInt(), calorieData.targetFats, textPrimary, textSecondary, themeProvider),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 120), 
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
-            actions: const [
-              Padding(
-                padding: EdgeInsets.only(right: 30.0, top: 10.0),
-                child: Center(child: UserGlassyProfile()),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.parallax,
-              background: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(30, 20, 30, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          themeProvider.translate('calorie_intake').replaceFirst(' ', '\n'),
-                          style: const TextStyle(
-                            fontSize: 42,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            fontFamily: "LexendExaNormal",
-                            letterSpacing: -1.0,
-                            height: 1.1,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(30),
-              child: Transform.translate(
-                offset: const Offset(0, 1),
-                child: Container(
-                  height: 31, width: double.infinity,
-                  decoration: BoxDecoration(color: bgColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(40))),
-                ),
-              ),
-            ),
-          ),
-
-          SliverToBoxAdapter(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 650),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                  child: Column(
-                    children: [
-                      // --- OVERVIEW CARD ---
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: surfaceColor,
-                          borderRadius: BorderRadius.circular(30),
-                          border: isDark ? Border.all(color: dividerColor) : null,
-                          boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              themeProvider.translate('today'),
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary, fontFamily: "LexendExaNormal"),
-                            ),
-                            const SizedBox(height: 25),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: _buildClickableStat(
-                                    label: themeProvider.translate('eaten'),
-                                    value: calorieData.totalEaten,
-                                    textPrimary: textPrimary, textSecondary: textSecondary,
-                                    onTap: () => _showEatenBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 4,
-                                  child: AspectRatio(
-                                    aspectRatio: 1,
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        CircularProgressIndicator(
-                                          value: 1.0, strokeWidth: 12,
-                                          color: isDark ? Colors.white10 : Colors.grey.shade100,
-                                        ),
-                                        TweenAnimationBuilder(
-                                          tween: Tween<double>(
-                                            begin: 0,
-                                            end: (calorieData.totalEaten / calorieData.targetCalories).clamp(0.0, 1.0),
-                                          ),
-                                          duration: const Duration(seconds: 2),
-                                          curve: Curves.easeOutCubic,
-                                          builder: (context, value, child) =>
-                                              CircularProgressIndicator(
-                                                value: value, strokeWidth: 12,
-                                                backgroundColor: Colors.transparent,
-                                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF7A00)),
-                                                strokeCap: StrokeCap.round,
-                                              ),
-                                        ),
-                                        Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                "${calorieData.leftCalories}",
-                                                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal", letterSpacing: -1),
-                                              ),
-                                            ),
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                themeProvider.translate('kcal_left'),
-                                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textSecondary),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 3,
-                                  child: _buildClickableStat(
-                                    label: themeProvider.translate('burned'),
-                                    value: calorieData.burnedCalories,
-                                    textPrimary: textPrimary, textSecondary: textSecondary,
-                                    onTap: () => _showBurnedBreakdown(calorieData, isDark, surfaceColor, textPrimary, textSecondary, dividerColor, themeProvider),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // --- BREAKDOWN & SUMMARY ROW ---
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 5,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
-                              decoration: BoxDecoration(
-                                color: surfaceColor, borderRadius: BorderRadius.circular(30),
-                                border: isDark ? Border.all(color: dividerColor) : null,
-                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))],
-                              ),
-                              child: Column(
-                                children: [
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(themeProvider.translate('intake_breakdown'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
-                                  ),
-                                  const SizedBox(height: 25),
-                                  SizedBox(
-                                    height: 140,
-                                    child: PieChart(
-                                      PieChartData(
-                                        sectionsSpace: 0, centerSpaceRadius: 30, startDegreeOffset: 270,
-                                        sections: _getMacroSections(calorieData),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 35),
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(left: 10.0),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          _buildLegendItem(carbColor, themeProvider.translate('carbohydrates'), textPrimary),
-                                          _buildLegendItem(proteinColor, themeProvider.translate('protein'), textPrimary),
-                                          _buildLegendItem(fatColor, themeProvider.translate('fats'), textPrimary),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            flex: 4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
-                              decoration: BoxDecoration(
-                                color: surfaceColor, borderRadius: BorderRadius.circular(30),
-                                border: isDark ? Border.all(color: dividerColor) : null,
-                                boxShadow: isDark ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8))],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Center(
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(themeProvider.translate('summary'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 25),
-                                  _buildSummaryMacro(themeProvider.translate('carbohydrates'), calorieData.totalCarbs.toInt(), calorieData.targetCarbs, textPrimary, textSecondary, themeProvider),
-                                  const SizedBox(height: 20),
-                                  _buildSummaryMacro(themeProvider.translate('protein'), calorieData.totalProtein.toInt(), calorieData.targetProtein, textPrimary, textSecondary, themeProvider),
-                                  const SizedBox(height: 20),
-                                  _buildSummaryMacro(themeProvider.translate('fats'), calorieData.totalFats.toInt(), calorieData.targetFats, textPrimary, textSecondary, themeProvider),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 120), 
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
 
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

@@ -359,56 +359,228 @@ class _UserTargetPageState extends State<UserTargetPage> {
   }
 
 void _showAddSubTargetSheet(GoalProvider goalData, Color surfaceColor, Color textPrimary, Color textSecondary, Color dividerColor, bool isDark, ThemeProvider theme) {
-    final TextEditingController titleCtrl = TextEditingController();
-    final TextEditingController targetCtrl = TextEditingController();
-    final TextEditingController unitCtrl = TextEditingController();
+    bool isAiMode = false;
     bool isSaving = false;
+    
+    // Manual Mode State
+    String selectedActivity = "Running";
+    String selectedTargetType = "Distance";
+    String selectedUnit = "km";
+    final TextEditingController valueCtrl = TextEditingController();
+    
+    final List<String> activities = ["Running", "Walking", "Cycling", "Swimming", "Gym", "Yoga"];
+    
+    // Smart Calorie Estimator
+    int calculateEstCalories() {
+      double val = double.tryParse(valueCtrl.text) ?? 0;
+      if (val == 0) return 0;
+      
+      if (selectedTargetType == "Time") {
+        double mins = selectedUnit == "hours" ? val * 60 : val;
+        if (selectedActivity == "Running") return (mins * 11).toInt();
+        if (selectedActivity == "Walking") return (mins * 5).toInt();
+        if (selectedActivity == "Cycling") return (mins * 8).toInt();
+        if (selectedActivity == "Swimming") return (mins * 13).toInt();
+        if (selectedActivity == "Yoga") return (mins * 3).toInt();
+        if (selectedActivity == "Gym") return (mins * 6).toInt();
+      } else {
+        double km = selectedUnit == "miles" ? val * 1.609 : (selectedUnit == "m" ? val / 1000 : val);
+        if (selectedActivity == "Running") return (km * 65).toInt();
+        if (selectedActivity == "Walking") return (km * 45).toInt();
+        if (selectedActivity == "Cycling") return (km * 25).toInt();
+        if (selectedActivity == "Swimming") return (km * 250).toInt();
+      }
+      return (val * 10).toInt(); // Fallback
+    }
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: Container(
-            decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
-            padding: const EdgeInsets.fromLTRB(25, 10, 25, 40),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
-                  Text(theme.translate("set_new_target"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
-                  const SizedBox(height: 20),
-                  
-                  TextField(controller: titleCtrl, decoration: InputDecoration(labelText: theme.translate("Target Name"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none))),
-                  const SizedBox(height: 10),
-                  
-                  Row(
-                    children: [
-                      Expanded(child: TextField(controller: targetCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: theme.translate("target_label"), filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
-                      const SizedBox(width: 10),
-                      Expanded(child: TextField(controller: unitCtrl, decoration: InputDecoration(labelText: "Unit (e.g. kcal, mins)", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)))),
+        builder: (context, setModalState) {
+          final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+          int estKcal = calculateEstCalories();
+          
+          return Padding(
+            padding: EdgeInsets.only(bottom: bottomPadding),
+            child: Container(
+              decoration: BoxDecoration(color: surfaceColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(35))),
+              padding: const EdgeInsets.fromLTRB(25, 10, 25, 40),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: dividerColor, borderRadius: BorderRadius.circular(10))),
+                    Text(theme.translate("Add Activity Target"), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: textPrimary, fontFamily: "LexendExaNormal")),
+                    const SizedBox(height: 20),
+                    
+                    // --- TAB TOGGLE: AI VS MANUAL ---
+                    Container(
+                      height: 45, decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade200, borderRadius: BorderRadius.circular(25)),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setModalState(() => isAiMode = false),
+                              child: Container(
+                                margin: const EdgeInsets.all(4), decoration: BoxDecoration(color: !isAiMode ? surfaceColor : Colors.transparent, borderRadius: BorderRadius.circular(20), boxShadow: !isAiMode && !isDark ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)] : []),
+                                alignment: Alignment.center, child: Text("Manual Entry", style: TextStyle(fontWeight: !isAiMode ? FontWeight.bold : FontWeight.w600, color: !isAiMode ? textPrimary : textSecondary, fontSize: 12)),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setModalState(() => isAiMode = true),
+                              child: Container(
+                                margin: const EdgeInsets.all(4), decoration: BoxDecoration(color: isAiMode ? surfaceColor : Colors.transparent, borderRadius: BorderRadius.circular(20), boxShadow: isAiMode && !isDark ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)] : []),
+                                alignment: Alignment.center, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.auto_awesome, size: 14, color: isAiMode ? themePurple : textSecondary), const SizedBox(width: 4), Text("AI Generate", style: TextStyle(fontWeight: isAiMode ? FontWeight.bold : FontWeight.w600, color: isAiMode ? textPrimary : textSecondary, fontSize: 12))]),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+
+                    // --- AI MODE UI ---
+                    if (isAiMode) ...[
+                      Icon(Icons.auto_awesome, size: 60, color: themePurple.withValues(alpha: 0.5)),
+                      const SizedBox(height: 15),
+                      Text("Let AI plan your day!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textPrimary)),
+                      const SizedBox(height: 5),
+                      Text("Based on your main goal: '${goalData.mainGoal.title}'", textAlign: TextAlign.center, style: TextStyle(color: textSecondary, fontSize: 12)),
+                      const SizedBox(height: 25),
+                    ] 
+                    
+                    // --- MANUAL MODE UI ---
+                    else ...[
+                      // Activity Selection
+                      Align(alignment: Alignment.centerLeft, child: Text("Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textSecondary))),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 15), decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(15)),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedActivity, isExpanded: true, dropdownColor: surfaceColor,
+                            items: activities.map((a) => DropdownMenuItem(value: a, child: Text(a, style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary)))).toList(),
+                            onChanged: (v) {
+                              if (v != null) {
+                                setModalState(() {
+                                  selectedActivity = v;
+                                  if (v == "Gym" || v == "Yoga") { selectedTargetType = "Time"; selectedUnit = "mins"; }
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Target Type Selection
+                      Align(alignment: Alignment.centerLeft, child: Text("Target Type", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textSecondary))),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (selectedActivity != "Gym" && selectedActivity != "Yoga")
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setModalState(() { selectedTargetType = "Distance"; selectedUnit = "km"; }),
+                                child: Container(padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: selectedTargetType == "Distance" ? themeBlue.withValues(alpha: 0.1) : (isDark ? Colors.white10 : Colors.grey.shade100), borderRadius: BorderRadius.circular(12), border: Border.all(color: selectedTargetType == "Distance" ? themeBlue : Colors.transparent)), alignment: Alignment.center, child: Text("Distance", style: TextStyle(color: selectedTargetType == "Distance" ? themeBlue : textSecondary, fontWeight: FontWeight.bold))),
+                              ),
+                            ),
+                          if (selectedActivity != "Gym" && selectedActivity != "Yoga") const SizedBox(width: 10),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setModalState(() { selectedTargetType = "Time"; selectedUnit = "mins"; }),
+                              child: Container(padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: selectedTargetType == "Time" ? themeBlue.withValues(alpha: 0.1) : (isDark ? Colors.white10 : Colors.grey.shade100), borderRadius: BorderRadius.circular(12), border: Border.all(color: selectedTargetType == "Time" ? themeBlue : Colors.transparent)), alignment: Alignment.center, child: Text("Time", style: TextStyle(color: selectedTargetType == "Time" ? themeBlue : textSecondary, fontWeight: FontWeight.bold))),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Value and Unit
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: TextField(
+                              controller: valueCtrl, keyboardType: TextInputType.number,
+                              onChanged: (v) => setModalState(() {}), // Trigger calorie recalculation
+                              decoration: InputDecoration(labelText: "Target Goal", filled: true, fillColor: isDark ? Colors.white10 : Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none)),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 1,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey.shade100, borderRadius: BorderRadius.circular(15)),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: selectedUnit, isExpanded: true, dropdownColor: surfaceColor,
+                                  items: (selectedTargetType == "Distance" ? ["km", "m", "miles"] : ["mins", "hours"]).map((u) => DropdownMenuItem(value: u, child: Text(u, style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary)))).toList(),
+                                  onChanged: (v) => setModalState(() => selectedUnit = v!),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Real-time Calorie Estimation Badge
+                      if (estKcal > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+                          decoration: BoxDecoration(color: Colors.orangeAccent.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.5))),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 18),
+                              const SizedBox(width: 8),
+                              Text("Estimated Burn: $estKcal kcal", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 25),
                     ],
-                  ),
-                  
-                  const SizedBox(height: 25),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: themeBlue, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-                      onPressed: isSaving ? null : () async {
-                        if (titleCtrl.text.isNotEmpty && targetCtrl.text.isNotEmpty) {
+
+                    // --- SAVE / GENERATE BUTTON ---
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: isAiMode ? themePurple : themeBlue, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                        onPressed: isSaving ? null : () async {
                           setModalState(() => isSaving = true);
-                          int targetVal = int.tryParse(targetCtrl.text) ?? 1;
-                          if (targetVal <= 0) targetVal = 1; 
-                          
+
                           try {
-                            await goalData.addTarget(TargetItem(
-                              title: titleCtrl.text, description: "Custom User Target", progress: 0.0, currentValue: 0,
-                              targetValue: targetVal, unit: unitCtrl.text, isCompleted: false,
-                            ));
+                            if (isAiMode) {
+                              // Simulate AI logic for demo/safety (You can replace with real Gemini call here)
+                              await Future.delayed(const Duration(seconds: 2));
+                              String aiActivity = goalData.mainGoal.title == "Build Muscle" ? "Gym Session" : "Morning Jog";
+                              int aiTarget = goalData.mainGoal.title == "Build Muscle" ? 45 : 5;
+                              String aiUnit = goalData.mainGoal.title == "Build Muscle" ? "mins" : "km";
+                              int aiKcal = goalData.mainGoal.title == "Build Muscle" ? 250 : 325;
+
+                              await goalData.addTarget(TargetItem(
+                                title: aiActivity, 
+                                description: "AI Generated Activity [kcal:$aiKcal]", // Secret Tag!
+                                progress: 0.0, currentValue: 0, targetValue: aiTarget, unit: aiUnit, isCompleted: false,
+                              ));
+                            } else {
+                              if (valueCtrl.text.isEmpty) { setModalState(() => isSaving = false); return; }
+                              
+                              int targetVal = int.tryParse(valueCtrl.text) ?? 1;
+                              if (targetVal <= 0) targetVal = 1; 
+
+                              await goalData.addTarget(TargetItem(
+                                title: selectedActivity, 
+                                description: "Manual Activity [kcal:$estKcal]", // Secret Tag!
+                                progress: 0.0, currentValue: 0, targetValue: targetVal, unit: selectedUnit, isCompleted: false,
+                              ));
+                            }
+
                             if (context.mounted) {
-                              // --- TRIGGERS CALORIE SYNC IF IT'S A WORKOUT TARGET ---
+                              // Trigger Calorie sync immediately so the Burned section updates!
                               await context.read<CalorieProvider>().syncWorkoutCalories();
                               Navigator.pop(context);
                             }
@@ -416,18 +588,25 @@ void _showAddSubTargetSheet(GoalProvider goalData, Color surfaceColor, Color tex
                             setModalState(() => isSaving = false);
                             if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to save target. Check connection."), backgroundColor: Colors.redAccent));
                           }
-                        }
-                      },
-                      child: isSaving 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                        : Text(theme.translate("Add Target"), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                ],
+                        },
+                        child: isSaving 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (isAiMode) const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                                if (isAiMode) const SizedBox(width: 8),
+                                Text(isAiMode ? "Generate Activities" : "Save Activity", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, fontFamily: "LexendExaNormal")),
+                              ],
+                            ),
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        }
       ),
     );
   }
