@@ -75,7 +75,7 @@ class CalorieRecord {
   CalorieRecord.fromMap(Map<String, dynamic> map)
     : foodName = map['food_name'] ?? '',
       quantity = map['quantity'] ?? 1,
-      protein = map['proteins']?.toString() ?? '0', 
+      protein = map['protein']?.toString() ?? '0', 
       carbs = map['carbohydrates']?.toString() ?? '0',
       fats = map['fats']?.toString() ?? '0',
       calories = map['calories'] ?? 0,
@@ -234,7 +234,7 @@ Future<void> syncWorkoutCalories() async {
         "notes": newRecord.notes,
         "confidence": newRecord.confidence,
         "fats": double.tryParse(newRecord.fats.replaceAll('g', '').trim()) ?? 0,
-        "proteins": double.tryParse(newRecord.protein.replaceAll('g', '').trim()) ?? 0, 
+        "protein": double.tryParse(newRecord.protein.replaceAll('g', '').trim()) ?? 0, 
         "carbohydrates": double.tryParse(newRecord.carbs.replaceAll('g', '').trim()) ?? 0,
         "logged_at": newRecord.timestamp.toIso8601String(),
       });
@@ -258,7 +258,7 @@ Future<void> syncWorkoutCalories() async {
       if (existingStats != null) {
         await supabase.from("user_food_stats").update({
           "total_calories": totalEaten,
-          "total_proteins": totalProtein,
+          "total_protein": totalProtein,
           "total_fats": totalFats,
           "total_carbohydrates": totalCarbs,
         }).eq("user_id", user.id);
@@ -266,7 +266,7 @@ Future<void> syncWorkoutCalories() async {
         await supabase.from("user_food_stats").insert({
           "user_id": user.id,
           "total_calories": totalEaten,
-          "total_proteins": totalProtein,
+          "total_protein": totalProtein,
           "total_fats": totalFats,
           "total_carbohydrates": totalCarbs,
         });

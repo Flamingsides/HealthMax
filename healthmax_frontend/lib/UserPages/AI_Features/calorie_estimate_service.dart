@@ -25,7 +25,7 @@ class CalorieEstimatorService {
     );
   }
 
-  // --- NEW: Helper function to clean Markdown formatting ---
+  // Helper function to clean Markdown formatting
   String _cleanJsonResponse(String text) {
     String cleaned = text.trim();
     if (cleaned.startsWith('```json')) {
@@ -46,14 +46,18 @@ You are a nutrition expert. Estimate the nutritional content for a food describe
 
 If there is missing information then assume and specify assumption in "notes" in the JSON below.
 
+CRITICAL INSTRUCTIONS: 
+1. Extract the exact quantity/servings requested. If the user says "3 fried chickens", the "servings" value MUST be 3.
+2. The "total_calories_kcal" and all other "total_*" fields MUST represent the COMBINED total for ALL servings requested.
+
 Respond ONLY with this exact JSON structure:
 {
-  "label": "Name of the food without the number",
-  "servings": 1,
+  "label": "Name of the food without the number (e.g. 'Fried Chicken')",
+  "servings": <integer representing the exact quantity>,
   "foods": [
     {
       "name": "food name",
-      "amount": "estimated portion",
+      "amount": "estimated portion for one serving",
       "calories_kcal": 000,
       "protein_g": 00.0,
       "carbs_g": 00.0,
@@ -86,14 +90,18 @@ Respond ONLY with this exact JSON structure:
 You are a nutrition expert analyzing a food photo.
 Identify all visible foods and estimate their nutritional content.
 
+CRITICAL INSTRUCTIONS: 
+1. Estimate the exact quantity/servings visible. If there are 3 slices of pizza, the "servings" value MUST be 3.
+2. The "total_calories_kcal" and all other "total_*" fields MUST represent the COMBINED total for ALL servings visible.
+
 Respond ONLY with this exact JSON structure:
 {
-  "label": "Concise label for this food",
-  "servings": 1,
+  "label": "Concise label for this food without numbers",
+  "servings": <integer representing the exact quantity visible>,
   "foods": [
     {
       "name": "food name",
-      "amount": "estimated portion",
+      "amount": "estimated portion for one serving",
       "calories_kcal": 000,
       "protein_g": 00.0,
       "carbs_g": 00.0,
