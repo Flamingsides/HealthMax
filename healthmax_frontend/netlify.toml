@@ -12,7 +12,7 @@ EOF
 
   export PATH="$PATH:$(pwd)/flutter/bin"
   flutter pub get
-  flutter build web --release
+  flutter build web --release --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY
   """
 
 [[redirects]]

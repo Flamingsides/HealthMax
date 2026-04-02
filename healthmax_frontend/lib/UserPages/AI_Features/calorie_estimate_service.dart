@@ -8,10 +8,13 @@ class CalorieEstimatorService {
   late final GenerativeModel model;
 
   CalorieEstimatorService() {
-    final apiKey = dotenv.env["GEMINI_API_KEY"];
+    String? apiKey = dotenv.env["GEMINI_API_KEY"];
 
     if (apiKey == null || apiKey.isEmpty) {
-      throw ("Gemini API key not found in .env file!");
+      apiKey = const String.fromEnvironment('GEMINI_API_KEY');
+      if (apiKey.isEmpty) {
+        throw ("Gemini API key not found in .env file!");
+      }
     }
 
     model = GenerativeModel(
@@ -26,7 +29,8 @@ class CalorieEstimatorService {
 
   // Getting AI calorie estimation from text
   Future<NutritionResult> estimateFromText(String foodDescription) async {
-    final prompt = '''
+    final prompt =
+        '''
 You are a nutrition expert. Estimate the nutritional content for a food described as: "$foodDescription"
 
 If there is missing information then assume and specify assumption in "notes" in the JSON below.
@@ -104,4 +108,3 @@ Be realistic with portion sizes. If image is unclear, set confidence to "low".
     return NutritionResult.fromJson(jsonResponse.text!);
   }
 }
-
